@@ -24,6 +24,7 @@ GET     /api/gpslog/from/*startTime/to/*endTime             controllers.Applicat
 GET     /api/compasslog/from/*startTime/to/*endTime         controllers.Application.getCompassLogByTimeInterval(startTime, endTime)
 GET     /api/temperaturelog/from/*startTime/to/*endTime     controllers.Application.getTemperatureLogByTimeInterval(startTime, endTime)
 GET     /api/radiometerlog/from/*startTime/to/*endTime      controllers.Application.getRadiometerLogByTimeInterval(startTime, endTime)
+GET     /api/windlog/from/*startTime/to/*endTime            controllers.Application.getWindLogByTimeInterval(startTime, endTime)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
