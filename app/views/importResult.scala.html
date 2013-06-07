@@ -1,0 +1,11 @@
+@(success: Boolean, nbImportedData: Int)
+
+@main("import result - ECOL") {
+    @if(success) {
+        <h2>Import Succeeded !</h2>
+        <p>Nb imported measures: @nbImportedData</p>
+    } else {
+        <h2>Import failed !</h2>
+    }
+    <h2></h2>
+}

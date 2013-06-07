@@ -1,0 +1,38 @@
+@main("import - ECOL") {
+
+    <h2>Import sensor data</h2>
+    @helper.form(action = routes.Application.importData, 'enctype -> "multipart/form-data") {
+        <div class="form-horizontal">
+            <div class="control-group">
+                <label class="control-label" for="inputAddressFile">Address file</label>
+                <div class="controls">
+                    <input type="file" id="inputAddressFile" name="addressFile">
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="inputDataFile">Data file</label>
+                <div class="controls">
+                    <input type="file" id="inputDataFile" name="dataFile">
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="selectDataType">Data type</label>
+                <div class="controls">
+                    <select id="selectDataType" name="dataType">
+                        <option>Temperature</option>
+                        <option>Compass</option>
+                        <option>GPS</option>
+                        <option>Radiometer</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="controls">
+                    <button type="submit" class="btn">Import</button>
+                </div>
+            </div>
+        </div>
+    }
+
+}
