@@ -7,9 +7,12 @@ GET     /                           controllers.Application.index
 GET     /test                       controllers.database.PostgresConnector.insert
 GET     /importForm                 controllers.Application.importForm
 GET     /importResult/*success/*nb  controllers.Application.importResult(success, nb)
+GET     /spatializeForm             controllers.Application.spatializeForm
+GET     /spatializreResult/*nbSuccess/*nbFailure  controllers.Application.spatializeResult(nbSuccess, nbFailure)
 GET     /contact                    controllers.Application.contact
 
 POST     /import                    controllers.Application.importData
+POST     /spatialize                controllers.Application.spatializeData
 
 # Get sensor logs (by id)
 GET     /sensors/*sId               controllers.Application.getSensorById(sId)
@@ -17,6 +20,7 @@ GET     /gpslogs/*gId               controllers.Application.getGpsLogById(gId)
 GET     /compasslogs/*cId           controllers.Application.getCompassLogById(cId)
 GET     /temperaturelogs/*tId       controllers.Application.getTemperatureLogById(tId)
 GET     /radiometerlogs/*rId        controllers.Application.getRadiometerLogById(rId)
+GET     /windlogs/*wId              controllers.Application.getWindLogById(wId)
 
 
 # Get sensor logs (by time interval)

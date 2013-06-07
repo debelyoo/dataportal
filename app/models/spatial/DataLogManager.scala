@@ -1,10 +1,12 @@
 package models.spatial
 
-import controllers.util.{DateFormatHelper, JPAUtil}
-import javax.persistence.{TemporalType, NoResultException}
+import controllers.util.{DataImporter, DateFormatHelper, JPAUtil}
+import javax.persistence.{Query, EntityManager, TemporalType, NoResultException}
 import scala.reflect.{ClassTag, classTag}
-import java.util.Date
+import java.util.{Calendar, Date}
 import scala.collection.JavaConversions._
+import scala.Predef.String
+import com.vividsolutions.jts.geom.Point
 
 object DataLogManager {
   /**
@@ -26,6 +28,22 @@ object DataLogManager {
     } catch {
       case nre: NoResultException => None
       case ex: Exception => ex.printStackTrace; None
+    }
+  }
+
+  def getNotGeolocated[T:ClassTag]: List[T] = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val clazz = classTag[T].runtimeClass
+      val q = em.createQuery("from "+ clazz.getName +" where geo_pos IS NULL")
+      val logs = q.getResultList.map(_.asInstanceOf[T]).toList
+      em.getTransaction().commit()
+      em.close()
+      logs
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
     }
   }
 
@@ -70,6 +88,91 @@ object DataLogManager {
       Some(intValue)
     } catch {
       case ex: Exception => None
+    }
+  }
+
+  /**
+   * Add the location to data logs that don't have this info
+   * @param dataType The type of data to handle
+   * @return The number of successes, the number of failures
+   */
+  def spatialize(dataType: String): (Int, Int) = {
+    dataType match {
+      case DataImporter.Types.COMPASS => {
+        val logs = getNotGeolocated[CompassLog]
+        val successes = logs.map(log => {
+          val geo_pos = getClosestGPSPoint(log.getTimestamp)
+          updateGeoPos[CompassLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+        }).filter(b => b)
+        (successes.length, logs.length - successes.length)
+      }
+      case DataImporter.Types.TEMPERATURE => {
+        val logs = getNotGeolocated[TemperatureLog]
+        val successes = logs.map(log => {
+          val geo_pos = getClosestGPSPoint(log.getTimestamp)
+          updateGeoPos[TemperatureLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+        }).filter(b => b)
+        (successes.length, logs.length - successes.length)
+      }
+      case DataImporter.Types.RADIOMETER => {
+        val logs = getNotGeolocated[RadiometerLog]
+        val successes = logs.map(log => {
+          val geo_pos = getClosestGPSPoint(log.getTimestamp)
+          updateGeoPos[RadiometerLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+        }).filter(b => b)
+        (successes.length, logs.length - successes.length)
+      }
+      case DataImporter.Types.WIND => {
+        val logs = getNotGeolocated[WindLog]
+        val successes = logs.map(log => {
+          val geo_pos = getClosestGPSPoint(log.getTimestamp)
+          updateGeoPos[WindLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+        }).filter(b => b)
+        (successes.length, logs.length - successes.length)
+      }
+      case _ => (0, 0)
+    }
+  }
+
+  private def getClosestGPSPoint(ts: Date): Option[GpsLog] = {
+    val beforeDate = Calendar.getInstance()
+    beforeDate.setTime(ts)
+    beforeDate.add(Calendar.SECOND, -1)
+    val afterDate = Calendar.getInstance()
+    afterDate.setTime(ts)
+    afterDate.add(Calendar.SECOND, 1)
+    val closeGpsLogs = getByTimeInterval[GpsLog](beforeDate.getTime, afterDate.getTime)
+    if (closeGpsLogs.nonEmpty) {
+      val (closestPoint, diff) = closeGpsLogs.map(gl => {
+        val timeDiff = math.abs(gl.getTimestamp.getTime - ts.getTime)
+        (gl, timeDiff)
+      }).minBy(_._2)
+      Some(closestPoint)
+    } else None
+  }
+
+  /**
+   * Update the geo position
+   * @param pos The new geo position
+   * @return true if success
+   */
+  private def updateGeoPos[T: ClassTag](dataLogId: Long, pos: Point): Boolean = {
+    val em: EntityManager = JPAUtil.createEntityManager
+    try {
+      em.getTransaction.begin
+      val queryStr: String = "UPDATE " + classTag[T].runtimeClass.getName + " SET geo_pos = ST_GeomFromText('POINT(" + pos.getX + " " + pos.getY + ")', 4326) WHERE id=" + dataLogId
+      val q: Query = em.createQuery(queryStr)
+      q.executeUpdate
+      em.getTransaction.commit
+      true
+    }
+    catch {
+      case ex: Exception => {
+        false
+      }
+    }
+    finally {
+      em.close
     }
   }
 

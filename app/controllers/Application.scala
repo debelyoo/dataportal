@@ -24,10 +24,21 @@ object Application extends Controller with GetApi {
     Ok(views.html.importResult(success.toBoolean, nbImportedData.toInt))
   }
 
+  def spatializeResult(nbSuccess: String = "0", nbFailures: String = "0") = Action {
+    Ok(views.html.spatializeResult(nbSuccess.toInt, nbFailures.toInt))
+  }
+
+  def spatializeForm = Action {
+    Ok(views.html.spatializeSensorData())
+  }
+
   def contact = Action {
     Ok(views.html.contact())
   }
 
+  /*
+  Called when import form is submitted
+   */
   def importData = Action(parse.multipartFormData) { request =>
     val (addressFile, dataFile, dataType) = DataImporter.uploadFiles(request)
     if (addressFile.isDefined && dataFile.isDefined) {
@@ -43,6 +54,17 @@ object Application extends Controller with GetApi {
         "error" -> "Missing file"
       )
     }
+  }
+
+  /*
+  Called when spatialize form is submitted
+   */
+  def spatializeData = Action(parse.multipartFormData) { request =>
+    val dataType = request.body.dataParts("dataType").mkString(",").toLowerCase
+    val (successes, failures) = DataLogManager.spatialize(dataType)
+    Redirect(routes.Application.spatializeResult(successes.toString, failures.toString))
+
+
   }
 
 }

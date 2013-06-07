@@ -75,7 +75,7 @@ public class WindLog implements JsonSerializable {
 
     @Override
     public String toJson() {
-        return new GsonBuilder().registerTypeAdapter(CompassLog.class, new WindLogSerializer()).create().toJson(this);
+        return new GsonBuilder().registerTypeAdapter(WindLog.class, new WindLogSerializer()).create().toJson(this);
     }
 
     /**
@@ -89,6 +89,7 @@ public class WindLog implements JsonSerializable {
             logJson.getAsJsonObject().addProperty("sensor_id", windLog.getSensorId());
             logJson.getAsJsonObject().addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(windLog.getTimestamp()));
             logJson.getAsJsonObject().addProperty("value", windLog.getValue());
+            //System.out.println(windLog.getGeoPos().toString());
             if(windLog.getGeoPos() != null) {
                 JsonObject point = new JsonObject();
                 point.addProperty("x", windLog.getGeoPos().getX());

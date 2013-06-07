@@ -84,7 +84,7 @@ public class RadiometerLog implements JsonSerializable {
 
     @Override
     public String toJson() {
-        return new GsonBuilder().registerTypeAdapter(CompassLog.class, new RadiometerLogSerializer()).create().toJson(this);
+        return new GsonBuilder().registerTypeAdapter(RadiometerLog.class, new RadiometerLogSerializer()).create().toJson(this);
     }
 
     /**

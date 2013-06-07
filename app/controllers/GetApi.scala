@@ -98,4 +98,9 @@ trait GetApi {
     val logOpt = DataLogManager.getById[RadiometerLog](rId.toLong)
     logOpt.map(rl => Ok(rl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'rId' exists
   }
+
+  def getWindLogById(wId: String) = Action {
+    val logOpt = DataLogManager.getById[WindLog](wId.toLong)
+    logOpt.map(wl => Ok(Json.toJson(Json.parse(wl.toJson)))).getOrElse(NotFound) // return Not Found if no log with id 'wId' exists
+  }
 }

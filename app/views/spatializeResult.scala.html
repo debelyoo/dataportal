@@ -1,0 +1,11 @@
+@(nbSuccess: Int, nbFailures: Int)
+
+@main("spatialize result - ECOL") {
+    @if(nbFailures == 0) {
+        <h2>Spatialization Succeeded !</h2>
+        <p>Nb spatialized measures: @nbSuccess</p>
+    } else {
+        <h2>Spatialization partially failed !</h2>
+        <p>Nb spatialized measures: @nbSuccess (But @nbFailures failures)</p>
+    }
+}
