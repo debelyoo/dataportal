@@ -1,7 +1,7 @@
 package controllers.database
 
 import akka.actor.Actor
-import controllers.util.{DateFormatHelper, FiniteQueue, CoordinateHelper, Message}
+import controllers.util.{DateFormatHelper, FiniteQueue, CoordinateHelper, Message, ApproxSwissProj}
 import models.spatial._
 import models.Sensor
 import com.vividsolutions.jts.geom.Point
@@ -83,14 +83,17 @@ class InsertWorker extends Actor {
         case ae: AssertionError => None
       }
     }
-    case Message.InsertGpsLog(ts, sensor, x, y) => {
+    case Message.InsertGpsLog(ts, sensor, north, east) => {
       try {
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
-        println("[RCV message] - insert gps log: "+ x +":"+ y +", "+ sensorInDb.get)
         val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
         val res = if (!logCache.contains(uniqueString)) {
-          val geom = CoordinateHelper.wktToGeometry("POINT("+ x +" "+ y +")")
+          val arr = ApproxSwissProj.LV03toWGS84(east, north, 0L).toList
+          val latitude = arr(0)
+          val longitude = arr(1)
+          println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
+          val geom = CoordinateHelper.wktToGeometry("POINT("+ longitude +" "+ latitude +")")
           val gl = new GpsLog()
           gl.setSensorId(sensorInDb.get.id)
           gl.setTimestamp(ts)

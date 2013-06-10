@@ -102,7 +102,7 @@ object FileParser {
               }
               case DataImporter.Types.GPS  => {
                 if (chunksOnLine.length == 4) {
-                  // address - timestamp - x value - y value
+                  // address - timestamp - north value - east value
                   val f_glInsertion = insertWorker ? Message.InsertGpsLog(date, sensor, chunksOnLine(2).toDouble, chunksOnLine(3).toDouble)
                   val glResOpt = Await.result(f_glInsertion, TIMEOUT).asInstanceOf[Option[Boolean]] // Blocking call - necessary to show on web page if errors occurred
                   updateCounters(glResOpt)

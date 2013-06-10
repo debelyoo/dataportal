@@ -31,6 +31,11 @@ object DataLogManager {
     }
   }
 
+  /**
+   * Get the sensor logs that do not have geo pos yet
+   * @tparam T The type of data to get
+   * @return A list with the non-geolocated logs
+   */
   def getNotGeolocated[T:ClassTag]: List[T] = {
     val em = JPAUtil.createEntityManager()
     try {
