@@ -88,7 +88,7 @@ public class RadiometerLog implements JsonSerializable {
     }
 
     /**
-     * Custom Serializer for Compass log
+     * Custom Serializer for Radiometer log
      */
     public static class RadiometerLogSerializer implements JsonSerializer<RadiometerLog> {
         @Override

@@ -110,24 +110,27 @@ class InsertWorker extends Actor {
       try {
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertRadiometerLog] Sensor is not in Database !")})
-        println("[RCV message] - insert radiometer log: "+ radiometerValue +", "+ sensorInDb.get)
         //println("QUEUE -> "+logCache)
         val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
         val res = if (!logCache.contains(uniqueString)) {
           // if value is Int -> radiometer sensor, if Double -> temperature sensor
-          val intVal = DataLogManager.doubleToInt(radiometerValue)
-          if (intVal.isDefined) {
+          //val intVal = DataLogManager.doubleToInt(radiometerValue)
+          if (radiometerValue.isValidInt) {
+            println("[RCV message] - insert radiometer log: "+ radiometerValue.toInt +", "+ sensorInDb.get)
             val rl = new RadiometerLog()
             rl.setSensorId(sensorInDb.get.id)
             rl.setTimestamp(ts)
-            rl.setValue(intVal.get)
+            rl.setValue(radiometerValue.toInt)
             val persisted = rl.save() // persist in DB
             if (persisted) {
               logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
               Some(true)
             } else None
           } else {
-            sensorInDb.get.updateType("temperature") // update the type of the sensor (the PT100 of the radiometer)
+            //println("[RCV message] - insert temperature log: "+ intVal.get)
+            if (sensorInDb.get.dataType != "temperature") {
+              sensorInDb.get.updateType("temperature") // update the type of the sensor (the PT100 of the radiometer)
+            }
             val tl = new TemperatureLog()
             tl.setSensorId(sensorInDb.get.id)
             tl.setTimestamp(ts)

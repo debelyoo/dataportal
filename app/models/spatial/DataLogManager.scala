@@ -5,7 +5,7 @@ import javax.persistence.{Query, EntityManager, TemporalType, NoResultException}
 import scala.reflect.{ClassTag, classTag}
 import java.util.{Calendar, Date}
 import scala.collection.JavaConversions._
-import scala.Predef.String
+//import scala.Predef.String
 import com.vividsolutions.jts.geom.Point
 
 object DataLogManager {
@@ -84,7 +84,7 @@ object DataLogManager {
    */
   def doubleToInt(valueToTest: Double): Option[Int] = {
     try {
-      val intValue = valueToTest.toInt
+      val intValue = valueToTest.asInstanceOf[Int]
       Some(intValue)
     } catch {
       case ex: Exception => None
@@ -97,36 +97,53 @@ object DataLogManager {
    * @return The number of successes, the number of failures
    */
   def spatialize(dataType: String): (Int, Int) = {
+    val MARGIN_IN_SEC = 1
     dataType match {
       case DataImporter.Types.COMPASS => {
         val logs = getNotGeolocated[CompassLog]
         val successes = logs.map(log => {
-          val geo_pos = getClosestGPSPoint(log.getTimestamp)
-          updateGeoPos[CompassLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+          val geo_pos = getClosestGPSPoint(log.getTimestamp, MARGIN_IN_SEC)
+          if (geo_pos.isDefined) {
+            updateGeoPos[CompassLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+          } else {
+            false
+          }
         }).filter(b => b)
         (successes.length, logs.length - successes.length)
       }
       case DataImporter.Types.TEMPERATURE => {
         val logs = getNotGeolocated[TemperatureLog]
         val successes = logs.map(log => {
-          val geo_pos = getClosestGPSPoint(log.getTimestamp)
-          updateGeoPos[TemperatureLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+          val geo_pos = getClosestGPSPoint(log.getTimestamp, MARGIN_IN_SEC)
+          if (geo_pos.isDefined) {
+            updateGeoPos[TemperatureLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+          } else {
+            false
+          }
         }).filter(b => b)
         (successes.length, logs.length - successes.length)
       }
       case DataImporter.Types.RADIOMETER => {
         val logs = getNotGeolocated[RadiometerLog]
         val successes = logs.map(log => {
-          val geo_pos = getClosestGPSPoint(log.getTimestamp)
-          updateGeoPos[RadiometerLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+          val geo_pos = getClosestGPSPoint(log.getTimestamp, MARGIN_IN_SEC)
+          if (geo_pos.isDefined) {
+            updateGeoPos[RadiometerLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+          } else {
+            false
+          }
         }).filter(b => b)
         (successes.length, logs.length - successes.length)
       }
       case DataImporter.Types.WIND => {
         val logs = getNotGeolocated[WindLog]
         val successes = logs.map(log => {
-          val geo_pos = getClosestGPSPoint(log.getTimestamp)
-          updateGeoPos[WindLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+          val geo_pos = getClosestGPSPoint(log.getTimestamp, MARGIN_IN_SEC)
+          if (geo_pos.isDefined) {
+            updateGeoPos[WindLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+          } else {
+            false
+          }
         }).filter(b => b)
         (successes.length, logs.length - successes.length)
       }
@@ -134,13 +151,19 @@ object DataLogManager {
     }
   }
 
-  private def getClosestGPSPoint(ts: Date): Option[GpsLog] = {
+  /**
+   * Get the closest GPS log from a specific timestamp
+   * @param ts The target timestamp
+   * @param marginInSeconds The nb of seconds to search before and after the timestamp
+   * @return An option with the closest GPS point
+   */
+  private def getClosestGPSPoint(ts: Date, marginInSeconds: Int): Option[GpsLog] = {
     val beforeDate = Calendar.getInstance()
     beforeDate.setTime(ts)
-    beforeDate.add(Calendar.SECOND, -1)
+    beforeDate.add(Calendar.SECOND, -marginInSeconds)
     val afterDate = Calendar.getInstance()
     afterDate.setTime(ts)
-    afterDate.add(Calendar.SECOND, 1)
+    afterDate.add(Calendar.SECOND, marginInSeconds)
     val closeGpsLogs = getByTimeInterval[GpsLog](beforeDate.getTime, afterDate.getTime)
     if (closeGpsLogs.nonEmpty) {
       val (closestPoint, diff) = closeGpsLogs.map(gl => {
@@ -148,7 +171,10 @@ object DataLogManager {
         (gl, timeDiff)
       }).minBy(_._2)
       Some(closestPoint)
-    } else None
+    } else {
+      println("[WARNING] No close GPS point for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
+      None
+    }
   }
 
   /**
