@@ -1,15 +1,18 @@
 package controllers
 
 import controllers.util.json.JsonSerializable
-import controllers.util.DateFormatHelper
+import controllers.util.{ResponseFormatter, DateFormatHelper}
 import models.spatial._
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import scala.reflect.{ClassTag, classTag}
 import models.Sensor
 
-trait GetApi {
+trait GetApi extends ResponseFormatter {
   this: Controller =>
+
+  val JSON_FORMAT = "json"
+  val KML_FORMAT = "kml"
 
   /*
   Get logs by time interval
@@ -32,13 +35,18 @@ trait GetApi {
     Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
   }
 
-  def getTemperatureLogByTimeInterval(startTime: String, endTime: String) = Action {
+  def getTemperatureLogByTimeInterval(format: String, startTime: String, endTime: String) = Action {
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
     val logList = DataLogManager.getByTimeInterval[TemperatureLog](startDate, endDate)
-    val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
+    //val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
     // build return JSON obj with array and count
-    Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
+    //Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
+    format match {
+      case JSON_FORMAT => Ok(logsAsJson(logList))
+      case KML_FORMAT => Ok(logsAsKml(logList))
+      case _ => Ok(logsAsJson(logList))
+    }
   }
 
   def getRadiometerLogByTimeInterval(startTime: String, endTime: String) = Action {

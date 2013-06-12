@@ -5,26 +5,45 @@ import com.vividsolutions.jts.geom.Point;
 import controllers.util.DateFormatHelper;
 import controllers.util.JPAUtil;
 import controllers.util.json.JsonSerializable;
+import controllers.util.kml.KmlSerializable;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
+import org.w3c.dom.Document;
 
 import javax.persistence.*;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "temperaturelog", uniqueConstraints = @UniqueConstraint(columnNames = {"sensor_id", "timestamp"}))
-public class TemperatureLog implements JsonSerializable {
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
+public class TemperatureLog implements JsonSerializable, KmlSerializable {
 
     @Id
     @GeneratedValue(generator="increment")
     @GenericGenerator(name="increment", strategy = "increment")
+    @XmlElement(name="id")
     private Long id;
 
     @Column(name="sensor_id")
+    @XmlElement(name="sensor_id")
     private Long sensorId;
 
+    @XmlElement(name="timestamp")
     private Date timestamp;
 
+    @XmlElement(name="value")
     private Double value;
 
     @Column(name="geo_pos")
@@ -77,6 +96,19 @@ public class TemperatureLog implements JsonSerializable {
     @Override
     public String toJson() {
         return new GsonBuilder().registerTypeAdapter(CompassLog.class, new TemperatureLogSerializer()).create().toJson(this);
+    }
+
+    @Override
+    public String toKml() {
+        String kmlStr = "";
+        kmlStr += "<Placemark>";
+        kmlStr += "<name>temperaturelog"+ this.id +"</name>";
+        kmlStr += "<description>The temperature measured in one point</description>";
+        kmlStr += "<Point>";
+        kmlStr += "<coordinates>"+ this.geoPos.getX()+","+ this.geoPos.getY() +"</coordinates>";
+        kmlStr += "</Point>";
+        kmlStr += "</Placemark>";
+        return kmlStr;
     }
 
     /**

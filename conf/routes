@@ -26,7 +26,7 @@ GET     /windlogs/*wId              controllers.Application.getWindLogById(wId)
 # Get sensor logs (by time interval)
 GET     /api/gpslog/from/*startTime/to/*endTime             controllers.Application.getGpsLogByTimeInterval(startTime, endTime)
 GET     /api/compasslog/from/*startTime/to/*endTime         controllers.Application.getCompassLogByTimeInterval(startTime, endTime)
-GET     /api/temperaturelog/from/*startTime/to/*endTime     controllers.Application.getTemperatureLogByTimeInterval(startTime, endTime)
+GET     /api/*format/temperaturelog/from/*startTime/to/*endTime     controllers.Application.getTemperatureLogByTimeInterval(format, startTime, endTime)
 GET     /api/radiometerlog/from/*startTime/to/*endTime      controllers.Application.getRadiometerLogByTimeInterval(startTime, endTime)
 GET     /api/windlog/from/*startTime/to/*endTime            controllers.Application.getWindLogByTimeInterval(startTime, endTime)
 
