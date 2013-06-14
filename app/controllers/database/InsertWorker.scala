@@ -20,7 +20,7 @@ class InsertWorker extends Actor {
         // fetch the sensor in DB, to get its id
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertTemperatureLog] Sensor is not in Database !")})
-        println("[RCV message] - insert temperature log: "+temperatureValue+", "+ sensorInDb.get)
+        //println("[RCV message] - insert temperature log: "+temperatureValue+", "+ sensorInDb.get)
         val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
         val res = if (!logCache.contains(uniqueString)) {
           // insert log in cache only if cache does not contain unique string (address-timestamp)
@@ -43,7 +43,7 @@ class InsertWorker extends Actor {
       try {
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertCompassLog] Sensor is not in Database !")})
-        println("[RCV message] - insert compass log: "+compassValue+", "+ sensorInDb.get)
+        //println("[RCV message] - insert compass log: "+compassValue+", "+ sensorInDb.get)
         val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
         val res = if (!logCache.contains(uniqueString)) {
           val cl = new CompassLog()
@@ -65,7 +65,7 @@ class InsertWorker extends Actor {
       try {
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertWindLog] Sensor is not in Database !")})
-        println("[RCV message] - insert wind log: "+ windValue +", "+ sensorInDb.get)
+        //println("[RCV message] - insert wind log: "+ windValue +", "+ sensorInDb.get)
         val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
         val res = if (!logCache.contains(uniqueString)) {
           val wl = new WindLog()
@@ -92,7 +92,7 @@ class InsertWorker extends Actor {
           val arr = ApproxSwissProj.LV03toWGS84(east, north, 0L).toList
           val latitude = arr(0)
           val longitude = arr(1)
-          println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
+          //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
           val geom = CoordinateHelper.wktToGeometry("POINT("+ longitude +" "+ latitude +")")
           val gl = new GpsLog()
           gl.setSensorId(sensorInDb.get.id)
@@ -119,7 +119,7 @@ class InsertWorker extends Actor {
           // if value is Int -> radiometer sensor, if Double -> temperature sensor
           //val intVal = DataLogManager.doubleToInt(radiometerValue)
           if (radiometerValue.isValidInt) {
-            println("[RCV message] - insert radiometer log: "+ radiometerValue.toInt +", "+ sensorInDb.get)
+            //println("[RCV message] - insert radiometer log: "+ radiometerValue.toInt +", "+ sensorInDb.get)
             val rl = new RadiometerLog()
             rl.setSensorId(sensorInDb.get.id)
             rl.setTimestamp(ts)
