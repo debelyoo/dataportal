@@ -12,7 +12,8 @@ trait GetApi extends ResponseFormatter {
   this: Controller =>
 
   val JSON_FORMAT = "json"
-  val KML_FORMAT = "kml"
+  val KML_FORMAT = "xml"
+  val GML_FORMAT = "gml"
 
   /*
   Get logs by time interval
@@ -39,12 +40,10 @@ trait GetApi extends ResponseFormatter {
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
     val logList = DataLogManager.getByTimeInterval[TemperatureLog](startDate, endDate)
-    //val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
-    // build return JSON obj with array and count
-    //Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
     format match {
       case JSON_FORMAT => Ok(logsAsJson(logList))
       case KML_FORMAT => Ok(logsAsKml(logList))
+      case GML_FORMAT => Ok(logsAsGml(logList))
       case _ => Ok(logsAsJson(logList))
     }
   }

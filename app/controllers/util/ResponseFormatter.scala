@@ -2,7 +2,7 @@ package controllers.util
 
 import play.api.libs.json.{Json, JsValue}
 import controllers.util.json.JsonSerializable
-import controllers.util.kml.KmlSerializable
+import controllers.util.xml.{GmlSerializable, KmlSerializable}
 import play.libs.XML
 import scala.xml.{Node, NodeSeq}
 import com.sun.org.apache.xalan.internal.xsltc.trax.DOM2SAX
@@ -19,7 +19,7 @@ trait ResponseFormatter {
 
   def logsAsKml(logList: List[KmlSerializable]): NodeSeq = {
     val xmlList = logList.map(log => log.toKml)
-    val kmlStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><kml xmlns=\"http://www.opengis.net/kml/2.2\">"+ xmlList.mkString("") +"</kml>"
+    val kmlStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><xml xmlns=\"http://www.opengis.net/xml/2.2\">"+ xmlList.mkString("") +"</xml>"
     val xmlDoc = XML.fromString(kmlStr)
     //xmlDoc.setXmlVersion("1.0")
     //println(xmlDoc.getDoctype)
@@ -27,6 +27,23 @@ trait ResponseFormatter {
     asXml(xmlDoc)
     //kmlStr
 
+  }
+
+  /**
+   * Create a GML document with a list of data logs
+   * @param logList The list of logs to put in the GML document
+   * @return An XML document
+   */
+  def logsAsGml(logList: List[GmlSerializable]): NodeSeq = {
+    val xmlList = logList.map(log => log.toGml)
+    val gmlStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+      "<wfs:FeatureCollection xmlns=\"http://www.opengis.net/wfs\" xmlns:wfs=\"http://www.opengis.net/wfs\" xmlns:gml=\"http://www.opengis.net/gml\" xmlns:ecol=\"http://ecol.epfl.ch\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">" +
+      "<gml:boundedBy><gml:null>unknown</gml:null></gml:boundedBy>" +
+      "" + xmlList.mkString("") +
+      "</wfs:FeatureCollection>";
+    val xmlDoc = XML.fromString(gmlStr)
+
+    asXml(xmlDoc)
   }
 
   private def asXml(dom: org.w3c.dom.Node): Node = {

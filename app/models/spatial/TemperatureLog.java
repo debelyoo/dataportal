@@ -5,30 +5,23 @@ import com.vividsolutions.jts.geom.Point;
 import controllers.util.DateFormatHelper;
 import controllers.util.JPAUtil;
 import controllers.util.json.JsonSerializable;
-import controllers.util.kml.KmlSerializable;
+import controllers.util.xml.GmlSerializable;
+import controllers.util.xml.KmlSerializable;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
-import org.w3c.dom.Document;
 
 import javax.persistence.*;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.Marshaller;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 @Entity
 @Table(name = "temperaturelog", uniqueConstraints = @UniqueConstraint(columnNames = {"sensor_id", "timestamp"}))
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
-public class TemperatureLog implements JsonSerializable, KmlSerializable {
+public class TemperatureLog implements JsonSerializable, KmlSerializable, GmlSerializable {
 
     @Id
     @GeneratedValue(generator="increment")
@@ -77,11 +70,11 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable {
         this.timestamp = ts;
     }
 
-    public Double getValue() {
+    public double getValue() {
         return value;
     }
 
-    public void setValue(Double v) {
+    public void setValue(double v) {
         this.value = v;
     }
 
@@ -95,13 +88,20 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable {
 
     @Override
     public String toString() {
+        String gpsStr = "";
+        if (this.geoPos != null) {
+            gpsStr = "GPS: ("+ this.geoPos.getX() + ","+ this.geoPos.getY() +")";
+        } else {
+            gpsStr = "GPS: NULL";
+        }
         return "[TemperatureLog] id: "+ this.id +", sensor_id: "+this.sensorId +", TS: "+this.timestamp +", " +
-                "value: "+this.value +", GPS: ("+ this.geoPos.getX() + ","+ this.geoPos.getY() +")";
+                "value: "+this.value +", "+gpsStr;
     }
 
     @Override
     public String toJson() {
-        return new GsonBuilder().registerTypeAdapter(CompassLog.class, new TemperatureLogSerializer()).create().toJson(this);
+        //System.out.println(this.toString());
+        return new GsonBuilder().registerTypeAdapter(TemperatureLog.class, new TemperatureLogSerializer()).create().toJson(this);
     }
 
     @Override
@@ -110,11 +110,33 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable {
         kmlStr += "<Placemark>";
         kmlStr += "<name>temperaturelog"+ this.id +"</name>";
         kmlStr += "<description>The temperature measured in one point</description>";
-        kmlStr += "<Point>";
-        kmlStr += "<coordinates>"+ this.geoPos.getX()+","+ this.geoPos.getY() +"</coordinates>";
-        kmlStr += "</Point>";
+        if (this.geoPos != null) {
+            kmlStr += "<Point>";
+            kmlStr += "<coordinates>"+ this.geoPos.getX()+","+ this.geoPos.getY() +"</coordinates>";
+            kmlStr += "</Point>";
+        }
         kmlStr += "</Placemark>";
         return kmlStr;
+    }
+
+    @Override
+    public String toGml() {
+        String gmlStr = "";
+        gmlStr += "<gml:featureMember>";
+        gmlStr += "<ecol:restRequest fid=\"temperaturelog"+ this.id +"\">";
+        gmlStr += "<ecol:id>"+ this.id +"</ecol:id>";
+        gmlStr += "<ecol:sensor_id>"+ this.sensorId +"</ecol:sensor_id>";
+        gmlStr += "<ecol:timestamp>"+ this.timestamp.toString() +"</ecol:timestamp>";
+        if (this.geoPos != null) {
+            gmlStr += "<ecol:geo_pos>";
+            gmlStr += "<gml:Point srsName=\"http://www.opengis.net/gml/srs/epsg.xml#4326\">";
+            gmlStr += "<gml:coordinates xmlns:gml=\"http://www.opengis.net/gml\" decimal=\".\" cs=\",\" ts=\" \">"+ this.geoPos.getX() +","+ this.geoPos.getY() +"</gml:coordinates>";
+            gmlStr += "</gml:Point>";
+            gmlStr += "</ecol:geo_pos>";
+        }
+        gmlStr += "</ecol:restRequest>";
+        gmlStr += "</gml:featureMember>";
+        return gmlStr;
     }
 
     /**
@@ -123,7 +145,6 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable {
     public static class TemperatureLogSerializer implements JsonSerializer<TemperatureLog> {
         @Override
         public JsonElement serialize(TemperatureLog temperatureLog, java.lang.reflect.Type type, JsonSerializationContext context) {
-            System.out.println(this.toString());
             JsonElement logJson = new JsonObject();
             logJson.getAsJsonObject().addProperty("id", temperatureLog.getId());
             logJson.getAsJsonObject().addProperty("sensor_id", temperatureLog.getSensorId());
