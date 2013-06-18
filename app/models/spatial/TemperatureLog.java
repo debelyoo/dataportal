@@ -127,6 +127,7 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable, GmlSer
         gmlStr += "<ecol:id>"+ this.id +"</ecol:id>";
         gmlStr += "<ecol:sensor_id>"+ this.sensorId +"</ecol:sensor_id>";
         gmlStr += "<ecol:timestamp>"+ this.timestamp.toString() +"</ecol:timestamp>";
+        gmlStr += "<ecol:value>"+ this.value +"</ecol:value>";
         if (this.geoPos != null) {
             gmlStr += "<ecol:geo_pos>";
             gmlStr += "<gml:Point srsName=\"http://www.opengis.net/gml/srs/epsg.xml#4326\">";
