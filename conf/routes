@@ -26,9 +26,13 @@ GET     /windlogs/*wId              controllers.Application.getWindLogById(wId)
 # Get sensor logs (by time interval)
 GET     /api/gpslog/from/*startTime/to/*endTime             controllers.Application.getGpsLogByTimeInterval(startTime, endTime)
 GET     /api/compasslog/from/*startTime/to/*endTime         controllers.Application.getCompassLogByTimeInterval(startTime, endTime)
-GET     /api/*format/temperaturelog/from/*startTime/to/*endTime     controllers.Application.getTemperatureLogByTimeInterval(format, startTime, endTime)
+GET     /api/*format/temperaturelog/from/*startTime/to/*endTime/sensorid/*sid     controllers.Application.getTemperatureLogByTimeIntervalAndSensor(format, startTime, endTime, sid)
 GET     /api/radiometerlog/from/*startTime/to/*endTime      controllers.Application.getRadiometerLogByTimeInterval(startTime, endTime)
 GET     /api/windlog/from/*startTime/to/*endTime            controllers.Application.getWindLogByTimeInterval(startTime, endTime)
+
+# Get misc
+GET     /api/dates                                          controllers.Application.getLogDates
+GET     /api/sensors/from/*startDate/to/*endDate            controllers.Application.getSensorByDatetime(startDate, endDate)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

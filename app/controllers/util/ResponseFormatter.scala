@@ -40,7 +40,7 @@ trait ResponseFormatter {
       "<wfs:FeatureCollection xmlns=\"http://www.opengis.net/wfs\" xmlns:wfs=\"http://www.opengis.net/wfs\" xmlns:gml=\"http://www.opengis.net/gml\" xmlns:ecol=\"http://ecol.epfl.ch\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">" +
       "<gml:boundedBy><gml:null>unknown</gml:null></gml:boundedBy>" +
       "" + xmlList.mkString("") +
-      "</wfs:FeatureCollection>";
+      "</wfs:FeatureCollection>"
     val xmlDoc = XML.fromString(gmlStr)
 
     asXml(xmlDoc)

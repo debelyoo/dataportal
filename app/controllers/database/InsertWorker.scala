@@ -131,7 +131,7 @@ class InsertWorker extends Actor {
             } else None
           } else {
             //println("[RCV message] - insert temperature log: "+ intVal.get)
-            if (sensorInDb.get.dataType != "temperature") {
+            if (sensorInDb.get.datatype != "temperature") {
               sensorInDb.get.updateType("temperature") // update the type of the sensor (the PT100 of the radiometer)
             }
             val tl = new TemperatureLog()

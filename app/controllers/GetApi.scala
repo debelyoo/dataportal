@@ -36,10 +36,10 @@ trait GetApi extends ResponseFormatter {
     Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
   }
 
-  def getTemperatureLogByTimeInterval(format: String, startTime: String, endTime: String) = Action {
+  def getTemperatureLogByTimeIntervalAndSensor(format: String, startTime: String, endTime: String, sensorId: String) = Action {
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-    val logList = DataLogManager.getByTimeInterval[TemperatureLog](startDate, endDate)
+    val logList = DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, sensorId)
     format match {
       case JSON_FORMAT => Ok(logsAsJson(logList))
       case KML_FORMAT => Ok(logsAsKml(logList))
@@ -86,6 +86,15 @@ trait GetApi extends ResponseFormatter {
     sensorOpt.map(s => Ok(Json.toJson(s.toJson))).getOrElse(NotFound) // return Not Found if no sensor with id 'sId' exists
   }
 
+  def getSensorByDatetime(startTime: String, endTime: String) = Action {
+    val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
+    val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
+    val sensorList = Sensor.getByDatetime(startDate, endDate)
+    val jsList = Json.toJson(sensorList.map(s => Json.parse(s.toJson)))
+    // build return JSON obj with array and count
+    Ok(Json.toJson(Map("sensors" -> jsList, "count" -> Json.toJson(sensorList.length))))
+  }
+
   def getGpsLogById(gId: String) = Action {
     val logOpt = DataLogManager.getById[GpsLog](gId.toLong)
     logOpt.map(gl => Ok(gl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'gId' exists
@@ -109,5 +118,11 @@ trait GetApi extends ResponseFormatter {
   def getWindLogById(wId: String) = Action {
     val logOpt = DataLogManager.getById[WindLog](wId.toLong)
     logOpt.map(wl => Ok(Json.toJson(Json.parse(wl.toJson)))).getOrElse(NotFound) // return Not Found if no log with id 'wId' exists
+  }
+
+  def getLogDates = Action {
+    val dateList = DataLogManager.getDates
+    val jsList = Json.toJson(dateList.map(date => Json.toJson(date)))
+    Ok(Json.toJson(Map("dates" -> jsList, "count" -> Json.toJson(dateList.length))))
   }
 }

@@ -5,6 +5,8 @@ import javax.persistence.{Query, EntityManager, TemporalType, NoResultException}
 import scala.reflect.{ClassTag, classTag}
 import java.util.{Calendar, Date}
 import scala.collection.JavaConversions._
+import org.hibernate.`type`.StringType
+
 //import scala.Predef.String
 import com.vividsolutions.jts.geom.Point
 
@@ -71,6 +73,37 @@ object DataLogManager {
       val q = em.createQuery(queryStr)
       q.setParameter("start", startTime, TemporalType.TIMESTAMP)
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
+      //println(q.getResultList)
+      val logs = q.getResultList.map(_.asInstanceOf[T]).toList
+      em.getTransaction().commit()
+      em.close()
+      logs
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
+    }
+  }
+
+  /**
+   * Get the data logs of a type between a time interval, filtered by sensor id
+   * @param startTime The start time of the interval
+   * @param endTime The end time of the interval
+   * @tparam T The type of data log to get
+   * @return A list of the logs in the specified time interval
+   */
+  def getByTimeIntervalAndSensor[T: ClassTag](startTime: Date, endTime: Date, sensorId: String): List[T] = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val clazz = classTag[T].runtimeClass
+      // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
+      val queryStr = "from "+ clazz.getName +" " +
+        "where timestamp BETWEEN :start AND :end AND sensor_id = :sid"
+      //println(queryStr)
+      val q = em.createQuery(queryStr)
+      q.setParameter("start", startTime, TemporalType.TIMESTAMP)
+      q.setParameter("end", endTime, TemporalType.TIMESTAMP)
+      q.setParameter("sid", sensorId.toLong)
       //println(q.getResultList)
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList
       em.getTransaction().commit()
@@ -153,6 +186,21 @@ object DataLogManager {
         (successes.length, logs.length - successes.length)
       }
       case _ => (0, 0)
+    }
+  }
+
+  def getDates: List[String] = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val q = em.createQuery("SELECT DISTINCT cast(timestamp as date) FROM "+ classOf[GpsLog].getName)
+      val dates = q.getResultList.map(_.asInstanceOf[Date]).toList.map(ts => DateFormatHelper.selectYearFormatter.format(ts))
+      em.getTransaction().commit()
+      em.close()
+      dates
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
     }
   }
 
