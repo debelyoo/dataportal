@@ -94,6 +94,12 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable {
     }
 
     @Override
+    public String toString() {
+        return "[TemperatureLog] id: "+ this.id +", sensor_id: "+this.sensorId +", TS: "+this.timestamp +", " +
+                "value: "+this.value +", GPS: ("+ this.geoPos.getX() + ","+ this.geoPos.getY() +")";
+    }
+
+    @Override
     public String toJson() {
         return new GsonBuilder().registerTypeAdapter(CompassLog.class, new TemperatureLogSerializer()).create().toJson(this);
     }
@@ -117,6 +123,7 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable {
     public static class TemperatureLogSerializer implements JsonSerializer<TemperatureLog> {
         @Override
         public JsonElement serialize(TemperatureLog temperatureLog, java.lang.reflect.Type type, JsonSerializationContext context) {
+            System.out.println(this.toString());
             JsonElement logJson = new JsonObject();
             logJson.getAsJsonObject().addProperty("id", temperatureLog.getId());
             logJson.getAsJsonObject().addProperty("sensor_id", temperatureLog.getSensorId());
