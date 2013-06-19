@@ -134,9 +134,13 @@ object Sensor {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
-      val q = em.createQuery("SELECT DISTINCT s.id, s.name, s.address, s.datatype FROM "+ classOf[Sensor].getName +" s,"+ classOf[TemperatureLog].getName +" tl " +
-        "WHERE timestamp BETWEEN :start AND :end AND tl.sensor_id = s.id")
-      val sensors = q.getResultList.map(_.asInstanceOf[Sensor]).toList
+      val q = em.createQuery("SELECT DISTINCT s FROM "+ classOf[Sensor].getName +" s, " +
+        classOf[TemperatureLog].getName +" tl WHERE tl.sensor_id = s.id " +
+        "AND timestamp BETWEEN :start AND :end", classOf[Sensor])
+      q.setParameter("start", from, TemporalType.TIMESTAMP)
+      q.setParameter("end", to, TemporalType.TIMESTAMP)
+      val sensors = q.getResultList.toList
+
       em.getTransaction().commit()
       em.close()
       sensors

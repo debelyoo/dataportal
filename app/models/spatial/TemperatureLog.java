@@ -31,7 +31,7 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable, GmlSer
 
     @Column(name="sensor_id")
     @XmlElement(name="sensor_id")
-    private Long sensorId;
+    private Long sensor_id;
 
     @XmlElement(name="timestamp")
     private Date timestamp;
@@ -55,11 +55,11 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable, GmlSer
     }
 
     public Long getSensorId() {
-        return sensorId;
+        return sensor_id;
     }
 
     public void setSensorId(Long sId) {
-        this.sensorId = sId;
+        this.sensor_id = sId;
     }
 
     public Date getTimestamp() {
@@ -94,7 +94,7 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable, GmlSer
         } else {
             gpsStr = "GPS: NULL";
         }
-        return "[TemperatureLog] id: "+ this.id +", sensor_id: "+this.sensorId +", TS: "+this.timestamp +", " +
+        return "[TemperatureLog] id: "+ this.id +", sensor_id: "+this.sensor_id +", TS: "+this.timestamp +", " +
                 "value: "+this.value +", "+gpsStr;
     }
 
@@ -125,7 +125,7 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable, GmlSer
         gmlStr += "<gml:featureMember>";
         gmlStr += "<ecol:restRequest fid=\"temperaturelog"+ this.id +"\">";
         gmlStr += "<ecol:id>"+ this.id +"</ecol:id>";
-        gmlStr += "<ecol:sensor_id>"+ this.sensorId +"</ecol:sensor_id>";
+        gmlStr += "<ecol:sensor_id>"+ this.sensor_id +"</ecol:sensor_id>";
         gmlStr += "<ecol:timestamp>"+ this.timestamp.toString() +"</ecol:timestamp>";
         gmlStr += "<ecol:value>"+ this.value +"</ecol:value>";
         if (this.geoPos != null) {

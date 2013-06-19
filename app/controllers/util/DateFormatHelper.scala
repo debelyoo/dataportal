@@ -9,6 +9,7 @@ object DateFormatHelper {
   val postgresTimestampFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
   val postgresTimestampWithMilliFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
   val selectYearFormatter = new SimpleDateFormat("yyyy-MM-dd")
+  val selectTimeFormatter = new SimpleDateFormat("HH:mm:ss")
 
   /**
    * Convert a labview timestamp to Java Date (in time zone UTC+01:00)

@@ -87,6 +87,7 @@ trait GetApi extends ResponseFormatter {
   }
 
   def getSensorByDatetime(startTime: String, endTime: String) = Action {
+    //println("Start: "+startTime +", End: "+endTime)
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
     val sensorList = Sensor.getByDatetime(startDate, endDate)
@@ -124,5 +125,11 @@ trait GetApi extends ResponseFormatter {
     val dateList = DataLogManager.getDates
     val jsList = Json.toJson(dateList.map(date => Json.toJson(date)))
     Ok(Json.toJson(Map("dates" -> jsList, "count" -> Json.toJson(dateList.length))))
+  }
+
+  def getLogTimesForDate(dateStr: String) = Action {
+    val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
+    val (firstTime, lastTime) = DataLogManager.getTimesForDate(date)
+    Ok(Json.toJson(Map("first_time" -> Json.toJson(firstTime), "last_time" -> Json.toJson(lastTime))))
   }
 }

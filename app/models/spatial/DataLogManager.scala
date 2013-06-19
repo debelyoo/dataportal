@@ -204,6 +204,23 @@ object DataLogManager {
     }
   }
 
+  def getTimesForDate(date: Date): (String, String)= {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val q = em.createQuery("SELECT MIN(cast(timestamp as time)), MAX(cast(timestamp as time)) FROM "+ classOf[GpsLog].getName)
+      val res = q.getSingleResult.asInstanceOf[Array[Object]]
+      val firstTime = res(0).asInstanceOf[Date]
+      val lastTime = res(1).asInstanceOf[Date]
+      em.getTransaction().commit()
+      em.close()
+      (DateFormatHelper.selectTimeFormatter.format(firstTime), DateFormatHelper.selectTimeFormatter.format(lastTime))
+    } catch {
+      case nre: NoResultException => ("00:00:00", "00:00:00")
+      case ex: Exception => ex.printStackTrace; ("00:00:00", "00:00:00")
+    }
+  }
+
   /**
    * Get the closest GPS log from a specific timestamp
    * @param ts The target timestamp
