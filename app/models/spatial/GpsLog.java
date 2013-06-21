@@ -4,6 +4,7 @@ import com.google.gson.*;
 import com.vividsolutions.jts.geom.Point;
 import controllers.util.DateFormatHelper;
 import controllers.util.JPAUtil;
+import controllers.util.SensorLog;
 import controllers.util.json.JsonSerializable;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
@@ -13,7 +14,7 @@ import java.util.Date;
 
 @Entity
 @Table(name = "gpslog")
-public class GpsLog implements JsonSerializable {
+public class GpsLog implements JsonSerializable, SensorLog {
 
     @Id
     @GeneratedValue(generator="increment")
@@ -32,6 +33,7 @@ public class GpsLog implements JsonSerializable {
     public GpsLog() {
     }
 
+    @Override
     public Long getId() {
         return id;
     }
@@ -40,6 +42,7 @@ public class GpsLog implements JsonSerializable {
         this.id = id;
     }
 
+    @Override
     public Long getSensorId() {
         return sensorId;
     }
@@ -48,6 +51,7 @@ public class GpsLog implements JsonSerializable {
         this.sensorId = sId;
     }
 
+    @Override
     public Date getTimestamp() {
         return timestamp;
     }

@@ -1,24 +1,24 @@
 package controllers
 
 import controllers.util.json.JsonSerializable
-import controllers.util.{ResponseFormatter, DateFormatHelper}
+import controllers.util.{DataImporter, JPAUtil, ResponseFormatter, DateFormatHelper}
 import models.spatial._
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
-import scala.reflect.{ClassTag, classTag}
+import javax.persistence.EntityManager
+import models.mapping.{MapGpsRadiometer, MapGpsCompass, MapGpsTemperature, MapGpsWind}
+import java.util.Date
+
+//import scala.reflect.{ClassTag, classTag}
 import models.Sensor
 
 trait GetApi extends ResponseFormatter {
   this: Controller =>
 
-  val JSON_FORMAT = "json"
-  val KML_FORMAT = "xml"
-  val GML_FORMAT = "gml"
-
   /*
   Get logs by time interval
    */
-  def getGpsLogByTimeInterval(startTime: String, endTime: String) = Action {
+  def getGpsLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
     val logList = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate)
@@ -27,43 +27,99 @@ trait GetApi extends ResponseFormatter {
     Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
   }
 
-  def getCompassLogByTimeInterval(startTime: String, endTime: String) = Action {
+  def getCompassLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
     val logList = DataLogManager.getByTimeInterval[CompassLog](startDate, endDate)
-    val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
-    // build return JSON obj with array and count
-    Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
+    formatResponse(format, logList)
   }
 
-  def getTemperatureLogByTimeIntervalAndSensor(format: String, startTime: String, endTime: String, sensorId: String) = Action {
-    val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
-    val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-    val logList = DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, sensorId)
-    format match {
-      case JSON_FORMAT => Ok(logsAsJson(logList))
-      case KML_FORMAT => Ok(logsAsKml(logList))
-      case GML_FORMAT => Ok(logsAsGml(logList))
-      case _ => Ok(logsAsJson(logList))
+  def getTemperatureLogByTimeIntervalAndSensor(format: String, startTime: String, endTime: String, sensorIdStr: String) = Action {
+    try {
+      val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
+      val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
+      val sensorId = sensorIdStr.toLong
+      val logList = DataLogManager.getByTimeIntervalAndSensorWithJoin[TemperatureLog, MapGpsTemperature](startDate, endDate, Some(sensorId))
+      formatResponse(format, logList)
+    } catch {
+      case ex: Exception => BadRequest
     }
   }
 
-  def getRadiometerLogByTimeInterval(startTime: String, endTime: String) = Action {
+  def getRadiometerLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
     val logList = DataLogManager.getByTimeInterval[RadiometerLog](startDate, endDate)
-    val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
-    // build return JSON obj with array and count
-    Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
+    formatResponse(format, logList)
   }
 
-  def getWindLogByTimeInterval(startTime: String, endTime: String) = Action {
+  def getWindLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
+    val start = new Date
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-    val logList = DataLogManager.getByTimeInterval[WindLog](startDate, endDate)
-    val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
-    // build return JSON obj with array and count
-    Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
+    //val logList = DataLogManager.getByTimeInterval[WindLog](startDate, endDate)
+    val logList = DataLogManager.getByTimeIntervalWithJoin[WindLog, MapGpsWind](startDate, endDate) // Request with JOIN seems to be faster
+    val diff = (new Date).getTime - start.getTime
+    println("Time: "+ diff +"ms")
+    formatResponse(format, logList)
+  }
+
+  /**
+   * Handle data request with query params
+   * @return
+   */
+  def getData = Action {
+    implicit request =>
+      try {
+        val map = request.queryString.map { case (k,v) => k -> v.mkString }
+        assert(map.contains("data_type"), {println("Missing data_type parameter")})
+        assert(map.contains("from_date"), {println("Missing from_date parameter")})
+        assert(map.contains("to_date"), {println("Missing to_date parameter")})
+        val format = map.get("format").getOrElse(JSON_FORMAT) // default format is Json
+        val startDate = DateFormatHelper.dateTimeFormatter.parse(map.get("from_date").get)
+        val endDate = DateFormatHelper.dateTimeFormatter.parse(map.get("to_date").get)
+        val geoOnly = map.get("geo_only").getOrElse("true").toBoolean
+        val sensorId = map.get("sensor_id").map(_.toLong)
+        val logList = map.get("data_type").get match {
+          case DataImporter.Types.TEMPERATURE => {
+            println("GET data - "+DataImporter.Types.TEMPERATURE)
+            if (geoOnly) {
+              DataLogManager.getByTimeIntervalAndSensorWithJoin[TemperatureLog, MapGpsTemperature](startDate, endDate, sensorId) // only geo-referenced points (Request with JOIN seems to be faster)
+            } else {
+              DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, sensorId) // all data points
+            }
+          }
+          case DataImporter.Types.WIND => {
+            if (geoOnly) {
+              DataLogManager.getByTimeIntervalAndSensorWithJoin[WindLog, MapGpsWind](startDate, endDate, sensorId)
+            } else {
+              DataLogManager.getByTimeIntervalAndSensor[WindLog](startDate, endDate, sensorId)
+            }
+          }
+          case DataImporter.Types.COMPASS => {
+            if (geoOnly) {
+              DataLogManager.getByTimeIntervalAndSensorWithJoin[CompassLog, MapGpsCompass](startDate, endDate, sensorId)
+            } else {
+              DataLogManager.getByTimeIntervalAndSensor[CompassLog](startDate, endDate, sensorId)
+            }
+          }
+          case DataImporter.Types.RADIOMETER => {
+            if (geoOnly) {
+              DataLogManager.getByTimeIntervalAndSensorWithJoin[RadiometerLog, MapGpsRadiometer](startDate, endDate, sensorId)
+            } else {
+              DataLogManager.getByTimeIntervalAndSensor[RadiometerLog](startDate, endDate, sensorId)
+            }
+          }
+          case _ => {
+            println("GET data - Unknown data type")
+            List()
+          }
+        }
+        formatResponse(format, logList)
+      } catch {
+        case ae: AssertionError => BadRequest
+        case ex: Exception => BadRequest
+      }
   }
 
   /* Does not work - because of mix between Scala and Java ? */

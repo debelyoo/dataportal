@@ -1,3 +1,5 @@
+@import models.spatial.DataLogManager
+
 @main("spatialize - ECOL") {
 
 <h2>Spatialize sensor data</h2>
@@ -11,6 +13,16 @@
                 <option>Compass</option>
                 <option>Radiometer</option>
                 <option>Wind</option>
+            </select>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="selectDate">Date</label>
+        <div class="controls">
+            <select id="selectDate" name="date">
+                @for(date <- DataLogManager.getDates) {
+                    <option>@date</option>
+                }
             </select>
         </div>
     </div>

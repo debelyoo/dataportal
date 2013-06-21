@@ -61,8 +61,9 @@ object Application extends Controller with GetApi {
    */
   def spatializeData = Action(parse.multipartFormData) { request =>
     val dataType = request.body.dataParts("dataType").mkString(",").toLowerCase
+    val date = request.body.dataParts("date").mkString(",").toLowerCase
     println("Spatialization process [START] ...")
-    val (successes, failures) = DataLogManager.spatialize(dataType)
+    val (successes, failures) = DataLogManager.spatialize(dataType, date)
     println("Spatialization process [END]")
     Redirect(routes.Application.spatializeResult(successes.toString, failures.toString))
   }

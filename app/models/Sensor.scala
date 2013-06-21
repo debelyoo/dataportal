@@ -4,7 +4,7 @@ import javax.persistence._
 import controllers.util.JPAUtil
 import org.hibernate.annotations.GenericGenerator
 import java.lang.Boolean
-import models.spatial.{TemperatureLog, CompassLog}
+import models.spatial.{WindLog, TemperatureLog, CompassLog}
 import com.google.gson.Gson
 import java.util.Date
 import scala.collection.JavaConversions._
@@ -43,7 +43,6 @@ case class Sensor(name: String, address: String, datatype: String) {
         true
       } catch {
         case ex: Exception => {
-          em.getTransaction.rollback
           false
         }
       } finally {
@@ -139,14 +138,20 @@ object Sensor {
         "AND timestamp BETWEEN :start AND :end", classOf[Sensor])
       q.setParameter("start", from, TemporalType.TIMESTAMP)
       q.setParameter("end", to, TemporalType.TIMESTAMP)
-      val sensors = q.getResultList.toList
+      val q2 = em.createQuery("SELECT DISTINCT s FROM "+ classOf[Sensor].getName +" s, " +
+        classOf[WindLog].getName +" wl WHERE wl.sensor_id = s.id " +
+        "AND timestamp BETWEEN :start AND :end", classOf[Sensor])
+      q2.setParameter("start", from, TemporalType.TIMESTAMP)
+      q2.setParameter("end", to, TemporalType.TIMESTAMP)
+      val sensors = q.getResultList.toList ++ q2.getResultList.toList
 
       em.getTransaction().commit()
-      em.close()
       sensors
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      em.close()
     }
   }
 }

@@ -38,7 +38,6 @@ object DataImporter {
   }
 
   def uploadFiles(request: Request[MultipartFormData[Files.TemporaryFile]]): (Option[File], Option[File], String) = {
-
     val addressFile = request.body.file("addressFile").map { file =>
       import java.io.File
       val filename = file.filename

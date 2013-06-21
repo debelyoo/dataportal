@@ -4,9 +4,8 @@ import com.google.gson.*;
 import com.vividsolutions.jts.geom.Point;
 import controllers.util.DateFormatHelper;
 import controllers.util.JPAUtil;
-import controllers.util.json.JsonSerializable;
-import controllers.util.xml.GmlSerializable;
-import controllers.util.xml.KmlSerializable;
+import controllers.util.SensorLog;
+import controllers.util.WebSerializable;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
@@ -19,24 +18,24 @@ import java.util.Date;
 
 @Entity
 @Table(name = "temperaturelog", uniqueConstraints = @UniqueConstraint(columnNames = {"sensor_id", "timestamp"}))
-@XmlRootElement
-@XmlAccessorType(XmlAccessType.FIELD)
-public class TemperatureLog implements JsonSerializable, KmlSerializable, GmlSerializable {
+//@XmlRootElement
+//@XmlAccessorType(XmlAccessType.FIELD)
+public class TemperatureLog implements WebSerializable, SensorLog {
 
     @Id
     @GeneratedValue(generator="increment")
     @GenericGenerator(name="increment", strategy = "increment")
-    @XmlElement(name="id")
+    //@XmlElement(name="id")
     private Long id;
 
     @Column(name="sensor_id")
-    @XmlElement(name="sensor_id")
+    //@XmlElement(name="sensor_id")
     private Long sensor_id;
 
-    @XmlElement(name="timestamp")
+    //@XmlElement(name="timestamp")
     private Date timestamp;
 
-    @XmlElement(name="value")
+    //@XmlElement(name="value")
     private Double value;
 
     @Column(name="geo_pos")
@@ -46,6 +45,7 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable, GmlSer
     public TemperatureLog() {
     }
 
+    @Override
     public Long getId() {
         return id;
     }
@@ -54,6 +54,7 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable, GmlSer
         this.id = id;
     }
 
+    @Override
     public Long getSensorId() {
         return sensor_id;
     }
@@ -62,6 +63,7 @@ public class TemperatureLog implements JsonSerializable, KmlSerializable, GmlSer
         this.sensor_id = sId;
     }
 
+    @Override
     public Date getTimestamp() {
         return timestamp;
     }

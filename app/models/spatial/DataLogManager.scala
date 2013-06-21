@@ -1,11 +1,14 @@
 package models.spatial
 
-import controllers.util.{DataImporter, DateFormatHelper, JPAUtil}
+import controllers.util._
 import javax.persistence.{Query, EntityManager, TemporalType, NoResultException}
 import scala.reflect.{ClassTag, classTag}
 import java.util.{Calendar, Date}
 import scala.collection.JavaConversions._
 import org.hibernate.`type`.StringType
+import models.mapping.{MapGpsRadiometer, MapGpsWind, MapGpsCompass, MapGpsTemperature}
+import models.Sensor
+import scala.Some
 
 //import scala.Predef.String
 import com.vividsolutions.jts.geom.Point
@@ -38,20 +41,120 @@ object DataLogManager {
    * @tparam T The type of data to get
    * @return A list with the non-geolocated logs
    */
-  def getNotGeolocated[T:ClassTag]: List[T] = {
-    val em = JPAUtil.createEntityManager()
+  private def getNotGeolocated[T:ClassTag](emOpt: Option[EntityManager] = None): List[T] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
-      em.getTransaction().begin()
+      if (emOpt.isEmpty) em.getTransaction().begin()
       val clazz = classTag[T].runtimeClass
-      val q = em.createQuery("from "+ clazz.getName +" where geo_pos IS NULL")
+      val q = em.createQuery("from "+ clazz.getName +" where geo_pos IS NULL ORDER BY timestamp")
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList
-      em.getTransaction().commit()
-      em.close()
+      if (emOpt.isEmpty) em.getTransaction().commit()
       logs
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      if (emOpt.isEmpty) em.close()
     }
+  }
+
+  /**
+   * Get the sensor logs by date
+   * @tparam T The type of data to get
+   * @return A list with the logs
+   */
+  private def getByDate[T:ClassTag](date: Date, emOpt: Option[EntityManager] = None): List[T] = {
+    val afterDate = Calendar.getInstance()
+    afterDate.setTime(date)
+    afterDate.add(Calendar.DAY_OF_YEAR, 1)
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
+    try {
+      if (emOpt.isEmpty) em.getTransaction().begin()
+      val clazz = classTag[T].runtimeClass
+      val q = em.createQuery("from "+ clazz.getName +" WHERE timestamp BETWEEN :start AND :end ORDER BY timestamp")
+      q.setParameter("start", date, TemporalType.DATE)
+      q.setParameter("end", afterDate.getTime, TemporalType.DATE)
+      val logs = q.getResultList.map(_.asInstanceOf[T]).toList
+      if (emOpt.isEmpty) em.getTransaction().commit()
+      logs
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      if (emOpt.isEmpty) em.close()
+    }
+  }
+
+  /**
+   * Link each GPS log to one sensor log (of a specific datatype)
+   * @param dataType The type of data to link
+   * @param logs The sensor logs to spatialize
+   */
+  private def linkGpsLogToSensorLog(dataType: String, logs: List[SensorLog], em: EntityManager) {
+    println("GPS mapping [Start]")
+    val firstTime = logs.head.getTimestamp
+    val lastTime = logs.last.getTimestamp
+    val MARGIN_IN_SEC = 1
+    val start = new Date
+    dataType match {
+      /*case DataImporter.Types.COMPASS => {
+        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, Some(em))
+        gLogs.foreach(gl => {
+          val clOpt = getClosestLog[CompassLog](gl.getTimestamp, MARGIN_IN_SEC, em)
+          clOpt.map(cl => {
+            MapGpsCompass(gl.getId, cl.getId).save(em)
+          })
+        })
+      }*/
+      case DataImporter.Types.TEMPERATURE => {
+        // get sensors
+        val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.TEMPERATURE)
+        // get GPS logs
+        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime)
+        em.getTransaction.begin
+        for {
+          gl <- gLogs
+          sensor <- sensors
+          tl <- getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id, em)
+        } {
+          // add position in temperaturelog table
+          updateGeoPos[TemperatureLog](tl.getId.longValue(), gl.getGeoPos, em)
+          // create mapping gpslog <-> temperaturelog
+          MapGpsTemperature(gl.getId, tl.getId).save(em)
+        }
+        em.getTransaction.commit
+      }
+      case DataImporter.Types.WIND => {
+        // get sensors
+        val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.WIND)
+        // get GPS logs
+        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime)
+        em.getTransaction.begin
+        for {
+          gl <- gLogs
+          sensor <- sensors
+          wl <- getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id, em)
+        } {
+          // add position in windlog table
+          updateGeoPos[WindLog](wl.getId.longValue(), gl.getGeoPos, em)
+          // create mapping gpslog <-> windlog
+          MapGpsWind(gl.getId, wl.getId).save(em)
+        }
+        em.getTransaction.commit
+      }
+      /*case DataImporter.Types.RADIOMETER => {
+        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, Some(em))
+        gLogs.foreach(gl => {
+          val clOpt = getClosestLog[RadiometerLog](gl.getTimestamp, MARGIN_IN_SEC, em)
+          clOpt.map(cl => {
+            MapGpsRadiometer(gl.getId, cl.getId).save(em)
+          })
+        })
+      }*/
+      case _ =>
+    }
+    val diff = (new Date).getTime - start.getTime
+    println("GPS mapping [Stop] - time: "+ diff +"ms")
   }
 
   /**
@@ -61,26 +164,62 @@ object DataLogManager {
    * @tparam T The type of data log to get
    * @return A list of the logs in the specified time interval
    */
-  def getByTimeInterval[T: ClassTag](startTime: Date, endTime: Date): List[T] = {
-    val em = JPAUtil.createEntityManager()
+  def getByTimeInterval[T: ClassTag](startTime: Date, endTime: Date, emOpt: Option[EntityManager] = None): List[T] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
-      em.getTransaction().begin()
+      if (emOpt.isEmpty) em.getTransaction().begin()
       val clazz = classTag[T].runtimeClass
       // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
       val queryStr = "from "+ clazz.getName +" " +
-        "where timestamp between :start and :end"
+        "WHERE timestamp BETWEEN :start and :end " +
+        "ORDER BY timestamp"
       //println(queryStr)
       val q = em.createQuery(queryStr)
       q.setParameter("start", startTime, TemporalType.TIMESTAMP)
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
       //println(q.getResultList)
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList
-      em.getTransaction().commit()
-      em.close()
+      if (emOpt.isEmpty) em.getTransaction().commit()
       logs
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      if (emOpt.isEmpty) em.close()
+    }
+  }
+
+  /**
+   * Get the data logs of a type between a time interval
+   * @param startTime The start time of the interval
+   * @param endTime The end time of the interval
+   * @tparam T The type of data log to get
+   * @tparam M The type of the mapping table
+   * @return A list of the logs in the specified time interval
+   */
+  def getByTimeIntervalWithJoin[T: ClassTag, M: ClassTag](startTime: Date, endTime: Date, emOpt: Option[EntityManager] = None): List[T] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
+    try {
+      if (emOpt.isEmpty) em.getTransaction().begin()
+      val clazz = classTag[T].runtimeClass
+      val clazzMapping = classTag[M].runtimeClass
+      // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
+      val queryStr = "SELECT lt FROM "+ clazz.getName +" lt, " + clazzMapping.getName +" map "+
+        "WHERE lt.timestamp BETWEEN :start and :end AND lt.id = map.datalog_id " +
+        "ORDER BY lt.timestamp"
+      //println(queryStr)
+      val q = em.createQuery(queryStr)
+      q.setParameter("start", startTime, TemporalType.TIMESTAMP)
+      q.setParameter("end", endTime, TemporalType.TIMESTAMP)
+      //println(q.getResultList)
+      val logs = q.getResultList.map(_.asInstanceOf[T]).toList
+      if (emOpt.isEmpty) em.getTransaction().commit()
+      logs
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      if (emOpt.isEmpty) em.close()
     }
   }
 
@@ -91,27 +230,64 @@ object DataLogManager {
    * @tparam T The type of data log to get
    * @return A list of the logs in the specified time interval
    */
-  def getByTimeIntervalAndSensor[T: ClassTag](startTime: Date, endTime: Date, sensorId: String): List[T] = {
-    val em = JPAUtil.createEntityManager()
+  def getByTimeIntervalAndSensor[T: ClassTag](startTime: Date, endTime: Date, sensorId: Option[Long], emOpt: Option[EntityManager] = None): List[T] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
-      em.getTransaction().begin()
+      if (emOpt.isEmpty) em.getTransaction().begin()
       val clazz = classTag[T].runtimeClass
       // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
-      val queryStr = "from "+ clazz.getName +" " +
-        "where timestamp BETWEEN :start AND :end AND sensor_id = :sid"
+      val sensorCondition = if (sensorId.isDefined) "AND sensor_id = :sid " else ""
+      val queryStr = "from "+ clazz.getName +" WHERE timestamp BETWEEN :start AND :end "+ sensorCondition +"ORDER BY timestamp"
       //println(queryStr)
       val q = em.createQuery(queryStr)
       q.setParameter("start", startTime, TemporalType.TIMESTAMP)
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
-      q.setParameter("sid", sensorId.toLong)
+      if (sensorId.isDefined) q.setParameter("sid", sensorId.get)
       //println(q.getResultList)
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList
-      em.getTransaction().commit()
-      em.close()
+      if (emOpt.isEmpty) em.getTransaction().commit()
       logs
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      if (emOpt.isEmpty) em.close()
+    }
+  }
+
+  /**
+   * Get the data logs of a type between a time interval, filtered by sensor id
+   * @param startTime The start time of the interval
+   * @param endTime The end time of the interval
+   * @tparam T The type of data log to get
+   * @return A list of the logs in the specified time interval
+   */
+  def getByTimeIntervalAndSensorWithJoin[T: ClassTag, M: ClassTag](startTime: Date, endTime: Date, sensorId: Option[Long], emOpt: Option[EntityManager] = None): List[T] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
+    try {
+      if (emOpt.isEmpty) em.getTransaction().begin()
+      val clazz = classTag[T].runtimeClass
+      val clazzMapping = classTag[M].runtimeClass
+      // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
+      //val queryStr = "from "+ clazz.getName +" WHERE timestamp BETWEEN :start AND :end AND sensor_id = :sid ORDER BY timestamp"
+      val sensorCondition = if (sensorId.isDefined) "AND sensor_id = :sid " else ""
+      val queryStr = "SELECT lt FROM "+ clazz.getName +" lt, " + clazzMapping.getName +" map "+
+        "WHERE lt.timestamp BETWEEN :start and :end AND lt.id = map.datalog_id " + sensorCondition +
+        "ORDER BY lt.timestamp"
+      //println(queryStr)
+      val q = em.createQuery(queryStr)
+      q.setParameter("start", startTime, TemporalType.TIMESTAMP)
+      q.setParameter("end", endTime, TemporalType.TIMESTAMP)
+      if (sensorId.isDefined) q.setParameter("sid", sensorId.get)
+      //println(q.getResultList)
+      val logs = q.getResultList.map(_.asInstanceOf[T]).toList
+      if (emOpt.isEmpty) em.getTransaction().commit()
+      logs
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      if (emOpt.isEmpty) em.close()
     }
   }
 
@@ -134,13 +310,16 @@ object DataLogManager {
    * @param dataType The type of data to handle
    * @return The number of successes, the number of failures
    */
-  def spatialize(dataType: String): (Int, Int) = {
+  def spatialize(dataType: String, dateStr: String): (Int, Int) = {
+    //println("Spatializing [Start]")
+    val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
+    val start = new Date
     val MARGIN_IN_SEC = 1
-    dataType match {
-      case DataImporter.Types.COMPASS => {
-        val logs = getNotGeolocated[CompassLog]
+    val res = dataType match {
+      /*case DataImporter.Types.COMPASS => {
+        val logs = getNotGeolocated[CompassLog](em)
         val successes = logs.map(log => {
-          val geo_pos = getClosestGPSPoint(log.getTimestamp, MARGIN_IN_SEC)
+          val geo_pos = getClosestLog[GpsLog](log.getTimestamp, MARGIN_IN_SEC)
           if (geo_pos.isDefined) {
             updateGeoPos[CompassLog](log.getId.longValue(), geo_pos.get.getGeoPos)
           } else {
@@ -148,45 +327,68 @@ object DataLogManager {
           }
         }).filter(b => b)
         (successes.length, logs.length - successes.length)
-      }
+      }*/
       case DataImporter.Types.TEMPERATURE => {
-        val logs = getNotGeolocated[TemperatureLog]
+        val logs = getByDate[TemperatureLog](date)
+        val em: EntityManager = JPAUtil.createEntityManager
+        try {
+
+          //val diff = (new Date).getTime - start.getTime
+          //println("Spatializing [Stop] - in: "+ diff +"ms")
+
+
+          // link each GPS log to one temperature log
+          linkGpsLogToSensorLog(dataType, logs, em)
+
+          // return successes and failures
+          //(successes.length, logs.length - successes.length)
+          (0, 0)
+        } catch {
+          case ex: Exception => (0, 0)
+        } finally {
+          em.close
+        }
+      }
+      /*case DataImporter.Types.RADIOMETER => {
+        val logs = getNotGeolocated[RadiometerLog](em)
         val successes = logs.map(log => {
-          val geo_pos = getClosestGPSPoint(log.getTimestamp, MARGIN_IN_SEC)
+          val geo_pos = getClosestLog[GpsLog](log.getTimestamp, MARGIN_IN_SEC, em)
           if (geo_pos.isDefined) {
-            updateGeoPos[TemperatureLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+            updateGeoPos[RadiometerLog](log.getId.longValue(), geo_pos.get.getGeoPos, em)
           } else {
             false
           }
         }).filter(b => b)
         (successes.length, logs.length - successes.length)
-      }
-      case DataImporter.Types.RADIOMETER => {
-        val logs = getNotGeolocated[RadiometerLog]
-        val successes = logs.map(log => {
-          val geo_pos = getClosestGPSPoint(log.getTimestamp, MARGIN_IN_SEC)
-          if (geo_pos.isDefined) {
-            updateGeoPos[RadiometerLog](log.getId.longValue(), geo_pos.get.getGeoPos)
-          } else {
-            false
-          }
-        }).filter(b => b)
-        (successes.length, logs.length - successes.length)
-      }
+      }*/
       case DataImporter.Types.WIND => {
-        val logs = getNotGeolocated[WindLog]
-        val successes = logs.map(log => {
-          val geo_pos = getClosestGPSPoint(log.getTimestamp, MARGIN_IN_SEC)
+        val logs = getByDate[WindLog](date)
+        val em: EntityManager = JPAUtil.createEntityManager
+        try {
+          // link each GPS log to one temperature log
+          linkGpsLogToSensorLog(dataType, logs, em)
+
+          // return successes and failures
+          //(successes.length, logs.length - successes.length)
+          (0, 0)
+        } catch {
+          case ex: Exception => (0, 0)
+        } finally {
+          em.close
+        }
+        /*val successes = logs.map(log => {
+          val geo_pos = getClosestLog[GpsLog](log.getTimestamp, MARGIN_IN_SEC, em)
           if (geo_pos.isDefined) {
-            updateGeoPos[WindLog](log.getId.longValue(), geo_pos.get.getGeoPos)
+            updateGeoPos[WindLog](log.getId.longValue(), geo_pos.get.getGeoPos, em)
           } else {
             false
           }
         }).filter(b => b)
-        (successes.length, logs.length - successes.length)
+        (successes.length, logs.length - successes.length)*/
       }
       case _ => (0, 0)
     }
+    res
   }
 
   def getDates: List[String] = {
@@ -222,54 +424,83 @@ object DataLogManager {
   }
 
   /**
-   * Get the closest GPS log from a specific timestamp
+   * Get the closest data log from a specific timestamp
    * @param ts The target timestamp
    * @param marginInSeconds The nb of seconds to search before and after the timestamp
+   * @param sensorId
+   * @param em
    * @return An option with the closest GPS point
    */
-  private def getClosestGPSPoint(ts: Date, marginInSeconds: Int): Option[GpsLog] = {
+  /*private def getClosestLogFromDB[T: ClassTag](ts: Date, marginInSeconds: Int, sensorId: Long, em: EntityManager): Option[T] = {
     val beforeDate = Calendar.getInstance()
     beforeDate.setTime(ts)
     beforeDate.add(Calendar.SECOND, -marginInSeconds)
     val afterDate = Calendar.getInstance()
     afterDate.setTime(ts)
     afterDate.add(Calendar.SECOND, marginInSeconds)
-    val closeGpsLogs = getByTimeInterval[GpsLog](beforeDate.getTime, afterDate.getTime)
-    if (closeGpsLogs.nonEmpty) {
-      val (closestPoint, diff) = closeGpsLogs.map(gl => {
-        val timeDiff = math.abs(gl.getTimestamp.getTime - ts.getTime)
-        (gl, timeDiff)
+    val closeLogs = getByTimeIntervalAndSensor[T](beforeDate.getTime, afterDate.getTime, sensorId, Some(em))
+    if (closeLogs.nonEmpty) {
+      val (closestPoint, diff) = closeLogs.map(cl => {
+        val timeDiff = math.abs(cl.asInstanceOf[SensorLog].getTimestamp.getTime - ts.getTime)
+        (cl, timeDiff)
       }).minBy(_._2)
       Some(closestPoint)
     } else {
       println("[WARNING] No close GPS point for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
       None
     }
+  }*/
+
+  private def getClosestLog(logs: List[SensorLog], ts: Date, marginInSeconds: Int, sensorId: Long, em: EntityManager): Option[SensorLog] = {
+    val beforeDate = Calendar.getInstance()
+    beforeDate.setTime(ts)
+    beforeDate.add(Calendar.SECOND, -marginInSeconds)
+    val afterDate = Calendar.getInstance()
+    afterDate.setTime(ts)
+    afterDate.add(Calendar.SECOND, marginInSeconds)
+    //val closeLogs = getByTimeIntervalAndSensor[T](beforeDate.getTime, afterDate.getTime, sensorId, Some(em))
+    val closeLogs = logs.filter(log =>
+      (log.getTimestamp.getTime > beforeDate.getTime.getTime &&
+        log.getTimestamp.getTime < afterDate.getTime.getTime &&
+        log.getSensorId == sensorId)
+    )
+    if (closeLogs.nonEmpty) {
+      val (closestPoint, diff) = closeLogs.map(cl => {
+        val timeDiff = math.abs(cl.getTimestamp.getTime - ts.getTime)
+        (cl, timeDiff)
+      }).minBy(_._2)
+      Some(closestPoint)
+    } else {
+      println("[WARNING] No close log for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
+      None
+    }
   }
 
   /**
    * Update the geo position
+   * @param dataLogId The id of the log to update
    * @param pos The new geo position
    * @return true if success
    */
-  private def updateGeoPos[T: ClassTag](dataLogId: Long, pos: Point): Boolean = {
-    val em: EntityManager = JPAUtil.createEntityManager
+  private def updateGeoPos[T: ClassTag](dataLogId: Long, pos: Point, em: EntityManager): Boolean = {
+    //val em: EntityManager = JPAUtil.createEntityManager
     try {
-      em.getTransaction.begin
-      val queryStr: String = "UPDATE " + classTag[T].runtimeClass.getName + " SET geo_pos = ST_GeomFromText('POINT(" + pos.getX + " " + pos.getY + ")', 4326) WHERE id=" + dataLogId
+      //em.getTransaction.begin
+      val queryStr: String = "UPDATE " + classTag[T].runtimeClass.getName + " " +
+        "SET geo_pos = ST_GeomFromText('POINT(" + pos.getX + " " + pos.getY + ")', 4326) " +
+        "WHERE id=" + dataLogId
       val q: Query = em.createQuery(queryStr)
       q.executeUpdate
-      em.getTransaction.commit
+      println("updateGeoPos() - ["+ dataLogId +"]")
+      //em.getTransaction.commit
       true
     }
     catch {
-      case ex: Exception => {
-        false
-      }
+      case ex: Exception => false
     }
-    finally {
+    /*finally {
       em.close
-    }
+    }*/
   }
 
 }

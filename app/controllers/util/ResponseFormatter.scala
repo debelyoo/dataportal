@@ -9,8 +9,23 @@ import com.sun.org.apache.xalan.internal.xsltc.trax.DOM2SAX
 import scala.xml.parsing.NoBindingFactoryAdapter
 import javax.xml.transform.sax.SAXResult
 import javax.xml.transform.dom.DOMSource
+import play.api.mvc.Results.Ok
 
 trait ResponseFormatter {
+
+  val JSON_FORMAT = "json"
+  val KML_FORMAT = "xml"
+  val GML_FORMAT = "gml"
+
+  def formatResponse(format: String, logList: List[WebSerializable]) = {
+    format match {
+      case JSON_FORMAT => Ok(logsAsJson(logList))
+      case KML_FORMAT => Ok(logsAsKml(logList))
+      case GML_FORMAT => Ok(logsAsGml(logList))
+      case _ => Ok(logsAsJson(logList))
+    }
+  }
+
   def logsAsJson(logList: List[JsonSerializable]): JsValue = {
     val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
     // build return JSON obj with array and count
