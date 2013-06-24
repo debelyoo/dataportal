@@ -21,7 +21,7 @@ case class MapGpsTemperature(gpslog_id: Long, datalog_id: Long) {
   def save(em: EntityManager): Boolean = {
     //val mappingInDb = MapGpsTemperature.getByIds(this.gpslog_id, this.temperaturelog_id, em) // remove check, to gain some speed
     //if (mappingInDb.isEmpty) {
-      println("[MapGpsTemperature] save() - "+ this.toString)
+      //println("[MapGpsTemperature] save() - "+ this.toString)
       //val em: EntityManager = JPAUtil.createEntityManager
       try {
         //em.getTransaction.begin

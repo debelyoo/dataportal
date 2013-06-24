@@ -3,13 +3,14 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index
-GET     /test                       controllers.database.PostgresConnector.insert
-GET     /importForm                 controllers.Application.importForm
-GET     /importResult/*success/*nb  controllers.Application.importResult(success, nb)
-GET     /spatializeForm             controllers.Application.spatializeForm
-GET     /spatializeResult/*nbSuccess/*nbFailure  controllers.Application.spatializeResult(nbSuccess, nbFailure)
-GET     /contact                    controllers.Application.contact
+GET     /                               controllers.Application.index
+GET     /test                           controllers.database.PostgresConnector.insert
+GET     /importForm                     controllers.Application.importForm
+GET     /importResult/*success/*nb      controllers.Application.importResult(success, nb)
+GET     /spatializeForm                 controllers.Application.spatializeForm
+GET     /spatializeResult/*batchId      controllers.Application.spatializeResult(batchId)
+GET     /spatialize/progress/*batchId   controllers.Application.spatializationProgress(batchId)
+GET     /contact                        controllers.Application.contact
 
 POST     /import                    controllers.Application.importData
 POST     /spatialize                controllers.Application.spatializeData

@@ -3,17 +3,30 @@ package models.spatial
 import controllers.util._
 import javax.persistence.{Query, EntityManager, TemporalType, NoResultException}
 import scala.reflect.{ClassTag, classTag}
-import java.util.{Calendar, Date}
+import java.util.{UUID, Calendar, Date}
 import scala.collection.JavaConversions._
-import org.hibernate.`type`.StringType
 import models.mapping.{MapGpsRadiometer, MapGpsWind, MapGpsCompass, MapGpsTemperature}
 import models.Sensor
 import scala.Some
+import controllers.database.{SpatializationBatchWorker, SpatializationWorker}
+import play.libs.Akka
+import akka.actor.{ActorSystem, Props}
+import akka.util.Timeout
+import scala.concurrent.duration._
+import akka.pattern.ask
+import scala.concurrent.{Promise, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 //import scala.Predef.String
 import com.vividsolutions.jts.geom.Point
 
 object DataLogManager {
+
+  val spatializationWorker = Akka.system.actorOf(Props[SpatializationWorker].withDispatcher("akka.actor.prio-dispatcher"), name = "spatializationWorker")
+  val spatializationBatchWorker = Akka.system.actorOf(Props[SpatializationBatchWorker].withDispatcher("akka.actor.prio-dispatcher"), name = "spatializationBatchWorker")
+  val TIMEOUT = 5 seconds
+  implicit val timeout = Timeout(TIMEOUT) // needed for `?` below
+
   /**
    * Get a data log by Id (give log type in parameter using scala 2.10 ClassTag - https://wiki.scala-lang.org/display/SW/2.10+Reflection+and+Manifest+Migration+Notes)
    * @param sId The log id
@@ -63,7 +76,7 @@ object DataLogManager {
    * @tparam T The type of data to get
    * @return A list with the logs
    */
-  private def getByDate[T:ClassTag](date: Date, emOpt: Option[EntityManager] = None): List[T] = {
+  def getByDate[T:ClassTag](date: Date, emOpt: Option[EntityManager] = None): List[T] = {
     val afterDate = Calendar.getInstance()
     afterDate.setTime(date)
     afterDate.add(Calendar.DAY_OF_YEAR, 1)
@@ -90,13 +103,13 @@ object DataLogManager {
    * @param dataType The type of data to link
    * @param logs The sensor logs to spatialize
    */
-  private def linkGpsLogToSensorLog(dataType: String, logs: List[SensorLog], em: EntityManager) {
+  def linkGpsLogToSensorLog(dataType: String, logs: List[SensorLog], em: EntityManager): String = {
     println("GPS mapping [Start]")
     val firstTime = logs.head.getTimestamp
     val lastTime = logs.last.getTimestamp
     val MARGIN_IN_SEC = 1
     val start = new Date
-    dataType match {
+    val batchId = dataType match {
       /*case DataImporter.Types.COMPASS => {
         val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, Some(em))
         gLogs.foreach(gl => {
@@ -111,20 +124,22 @@ object DataLogManager {
         val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.TEMPERATURE)
         // get GPS logs
         val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime)
-        em.getTransaction.begin
-        for {
+        //val batchId = UUID.randomUUID().toString
+        val batchId = "1234"
+        spatializationWorker ! Message.SetSpatializationBatch(batchId, gLogs, sensors, logs)
+        //em.getTransaction.begin
+        /*for {
           gl <- gLogs
           sensor <- sensors
-          tl <- getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id, em)
+          tl <- getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id)
         } {
-          // add position in temperaturelog table
-          updateGeoPos[TemperatureLog](tl.getId.longValue(), gl.getGeoPos, em)
-          // create mapping gpslog <-> temperaturelog
-          MapGpsTemperature(gl.getId, tl.getId).save(em)
-        }
-        em.getTransaction.commit
+          //spatializationWorker ! Message.SpatializeTemperatureLog(batchId, gl, tl)
+          spatializationWorker ! Message.Test(batchId, gl, tl)
+        }*/
+        batchId
+        //em.getTransaction.commit
       }
-      case DataImporter.Types.WIND => {
+      /*case DataImporter.Types.WIND => {
         // get sensors
         val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.WIND)
         // get GPS logs
@@ -133,7 +148,7 @@ object DataLogManager {
         for {
           gl <- gLogs
           sensor <- sensors
-          wl <- getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id, em)
+          wl <- getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id)
         } {
           // add position in windlog table
           updateGeoPos[WindLog](wl.getId.longValue(), gl.getGeoPos, em)
@@ -142,7 +157,7 @@ object DataLogManager {
         }
         em.getTransaction.commit
       }
-      /*case DataImporter.Types.RADIOMETER => {
+      case DataImporter.Types.RADIOMETER => {
         val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, Some(em))
         gLogs.foreach(gl => {
           val clOpt = getClosestLog[RadiometerLog](gl.getTimestamp, MARGIN_IN_SEC, em)
@@ -151,10 +166,11 @@ object DataLogManager {
           })
         })
       }*/
-      case _ =>
+      case _ => ""
     }
     val diff = (new Date).getTime - start.getTime
     println("GPS mapping [Stop] - time: "+ diff +"ms")
+    batchId
   }
 
   /**
@@ -310,7 +326,7 @@ object DataLogManager {
    * @param dataType The type of data to handle
    * @return The number of successes, the number of failures
    */
-  def spatialize(dataType: String, dateStr: String): (Int, Int) = {
+  def spatialize(dataType: String, dateStr: String): String = {
     //println("Spatializing [Start]")
     val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
     val start = new Date
@@ -332,19 +348,10 @@ object DataLogManager {
         val logs = getByDate[TemperatureLog](date)
         val em: EntityManager = JPAUtil.createEntityManager
         try {
-
-          //val diff = (new Date).getTime - start.getTime
-          //println("Spatializing [Stop] - in: "+ diff +"ms")
-
-
-          // link each GPS log to one temperature log
+          // link each GPS log to one sensor log
           linkGpsLogToSensorLog(dataType, logs, em)
-
-          // return successes and failures
-          //(successes.length, logs.length - successes.length)
-          (0, 0)
         } catch {
-          case ex: Exception => (0, 0)
+          case ex: Exception => ""
         } finally {
           em.close
         }
@@ -367,12 +374,8 @@ object DataLogManager {
         try {
           // link each GPS log to one temperature log
           linkGpsLogToSensorLog(dataType, logs, em)
-
-          // return successes and failures
-          //(successes.length, logs.length - successes.length)
-          (0, 0)
         } catch {
-          case ex: Exception => (0, 0)
+          case ex: Exception => ""
         } finally {
           em.close
         }
@@ -386,7 +389,7 @@ object DataLogManager {
         }).filter(b => b)
         (successes.length, logs.length - successes.length)*/
       }
-      case _ => (0, 0)
+      case _ => ""
     }
     res
   }
@@ -451,7 +454,7 @@ object DataLogManager {
     }
   }*/
 
-  private def getClosestLog(logs: List[SensorLog], ts: Date, marginInSeconds: Int, sensorId: Long, em: EntityManager): Option[SensorLog] = {
+  def getClosestLog(logs: List[SensorLog], ts: Date, marginInSeconds: Int, sensorId: Long): Option[SensorLog] = {
     val beforeDate = Calendar.getInstance()
     beforeDate.setTime(ts)
     beforeDate.add(Calendar.SECOND, -marginInSeconds)
@@ -482,7 +485,7 @@ object DataLogManager {
    * @param pos The new geo position
    * @return true if success
    */
-  private def updateGeoPos[T: ClassTag](dataLogId: Long, pos: Point, em: EntityManager): Boolean = {
+  def updateGeoPos[T: ClassTag](dataLogId: Long, pos: Point, em: EntityManager): Boolean = {
     //val em: EntityManager = JPAUtil.createEntityManager
     try {
       //em.getTransaction.begin
@@ -491,7 +494,7 @@ object DataLogManager {
         "WHERE id=" + dataLogId
       val q: Query = em.createQuery(queryStr)
       q.executeUpdate
-      println("updateGeoPos() - ["+ dataLogId +"]")
+      //println("updateGeoPos() - ["+ dataLogId +"]")
       //em.getTransaction.commit
       true
     }
@@ -501,6 +504,15 @@ object DataLogManager {
     /*finally {
       em.close
     }*/
+  }
+
+  def spatializationProgress(batchId: String): Future[Either[Long, String]] = {
+    try {
+      val f_prog = spatializationWorker ? Message.GetSpatializationProgress(batchId)
+      f_prog.map(_.asInstanceOf[Option[Long]].map(Left(_)).getOrElse(Right("unknown batch id")))
+    } catch {
+      case ex: Exception => Future { Right("timeout") }
+    }
   }
 
 }

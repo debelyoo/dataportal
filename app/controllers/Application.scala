@@ -3,12 +3,10 @@ package controllers
 import play.api._
 import play.api.mvc._
 import controllers.util.{DateFormatHelper, DataImporter}
-import models.Sensor
 import models.spatial.{TemperatureLog, CompassLog, DataLogManager, GpsLog}
 import play.api.libs.json.{JsValue, Json}
 import com.google.gson.{JsonArray, JsonObject, JsonElement}
-import controllers.util.json.JsonSerializable
-import scala.reflect.ClassTag
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Application extends Controller with GetApi {
   
@@ -24,8 +22,8 @@ object Application extends Controller with GetApi {
     Ok(views.html.importResult(success.toBoolean, nbImportedData.toInt))
   }
 
-  def spatializeResult(nbSuccess: String = "0", nbFailures: String = "0") = Action {
-    Ok(views.html.spatializeResult(nbSuccess.toInt, nbFailures.toInt))
+  def spatializeResult(batchId: String = "") = Action {
+    Ok(views.html.spatializeResult(batchId))
   }
 
   def spatializeForm = Action {
@@ -63,9 +61,26 @@ object Application extends Controller with GetApi {
     val dataType = request.body.dataParts("dataType").mkString(",").toLowerCase
     val date = request.body.dataParts("date").mkString(",").toLowerCase
     println("Spatialization process [START] ...")
-    val (successes, failures) = DataLogManager.spatialize(dataType, date)
+    val res = DataLogManager.spatialize(dataType, date)
     println("Spatialization process [END]")
-    Redirect(routes.Application.spatializeResult(successes.toString, failures.toString))
+    Redirect(routes.Application.spatializeResult(res.toString))
+  }
+
+  def spatializationProgress(batchId: String) = Action {
+    val f_prog = DataLogManager.spatializationProgress(batchId)
+    Async {
+      f_prog.map(p => {
+        if (p.isLeft) {
+          Ok(Json.toJson(Map("progress" -> Json.toJson(p.left.get))))
+        } else {
+          if (p.right.get == "timeout") {
+            RequestTimeout
+          } else {
+            NotFound
+          }
+        }
+      })
+    }
   }
 
 }
