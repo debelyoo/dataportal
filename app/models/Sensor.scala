@@ -143,6 +143,7 @@ object Sensor {
         "AND timestamp BETWEEN :start AND :end", classOf[Sensor])
       q2.setParameter("start", from, TemporalType.TIMESTAMP)
       q2.setParameter("end", to, TemporalType.TIMESTAMP)
+
       val sensors = q.getResultList.toList ++ q2.getResultList.toList
 
       em.getTransaction().commit()

@@ -253,7 +253,10 @@ object DataLogManager {
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
       if (sensorId.isDefined) q.setParameter("sid", sensorId.get)
       //println(q.getResultList)
+      val start = new Date
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList
+      val diff = (new Date).getTime - start.getTime
+      println("Nb of logs queried: "+logs.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
       logs
     } catch {
@@ -288,8 +291,10 @@ object DataLogManager {
       q.setParameter("start", startTime, TemporalType.TIMESTAMP)
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
       if (sensorId.isDefined) q.setParameter("sid", sensorId.get)
-      //println(q.getResultList)
+      val start = new Date
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList
+      val diff = (new Date).getTime - start.getTime
+      println("Nb of logs queried (Join): "+logs.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
       logs
     } catch {

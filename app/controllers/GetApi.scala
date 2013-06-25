@@ -60,18 +60,19 @@ trait GetApi extends ResponseFormatter {
     //val logList = DataLogManager.getByTimeInterval[WindLog](startDate, endDate)
     val logList = DataLogManager.getByTimeIntervalWithJoin[WindLog, MapGpsWind](startDate, endDate) // Request with JOIN seems to be faster
     val diff = (new Date).getTime - start.getTime
-    println("Time: "+ diff +"ms")
+    //println("Time: "+ diff +"ms")
     formatResponse(format, logList)
   }
 
   /**
-   * Handle data request with query params
+   * Handle data request with query params  (ex: /api/data?data_type=temperature&from_date=20130613-150000&to_date=20130613-170000&sensor_id=4&geo_only=true)
    * @return
    */
   def getData = Action {
     implicit request =>
       try {
         val map = request.queryString.map { case (k,v) => k -> v.mkString }
+        //println(map)
         assert(map.contains("data_type"), {println("Missing data_type parameter")})
         assert(map.contains("from_date"), {println("Missing from_date parameter")})
         assert(map.contains("to_date"), {println("Missing to_date parameter")})
