@@ -8,7 +8,7 @@ import scala.collection.JavaConversions._
 import models.mapping.{MapGpsRadiometer, MapGpsWind, MapGpsCompass, MapGpsTemperature}
 import models.Sensor
 import scala.Some
-import controllers.database.{SpatializationBatchWorker, SpatializationWorker}
+import controllers.database.{SpatializationBatchManager, SpatializationBatchWorker, SpatializationWorker}
 import play.libs.Akka
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
@@ -104,7 +104,7 @@ object DataLogManager {
    * @param logs The sensor logs to spatialize
    */
   def linkGpsLogToSensorLog(dataType: String, logs: List[SensorLog], em: EntityManager): String = {
-    println("GPS mapping [Start]")
+    //println("GPS mapping [Start]")
     val firstTime = logs.head.getTimestamp
     val lastTime = logs.last.getTimestamp
     val MARGIN_IN_SEC = 1
@@ -124,28 +124,20 @@ object DataLogManager {
         val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.TEMPERATURE)
         // get GPS logs
         val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime)
-        //val batchId = UUID.randomUUID().toString
-        val batchId = "1234"
+        val batchId = UUID.randomUUID().toString
+        //val batchId = "1234"
         spatializationWorker ! Message.SetSpatializationBatch(batchId, gLogs, sensors, logs)
-        //em.getTransaction.begin
-        /*for {
-          gl <- gLogs
-          sensor <- sensors
-          tl <- getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id)
-        } {
-          //spatializationWorker ! Message.SpatializeTemperatureLog(batchId, gl, tl)
-          spatializationWorker ! Message.Test(batchId, gl, tl)
-        }*/
         batchId
-        //em.getTransaction.commit
       }
-      /*case DataImporter.Types.WIND => {
+      case DataImporter.Types.WIND => {
         // get sensors
         val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.WIND)
         // get GPS logs
         val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime)
-        em.getTransaction.begin
-        for {
+        val batchId = UUID.randomUUID().toString
+        spatializationWorker ! Message.SetSpatializationBatch(batchId, gLogs, sensors, logs)
+        batchId
+        /*for {
           gl <- gLogs
           sensor <- sensors
           wl <- getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id)
@@ -156,8 +148,9 @@ object DataLogManager {
           MapGpsWind(gl.getId, wl.getId).save(em)
         }
         em.getTransaction.commit
+        */
       }
-      case DataImporter.Types.RADIOMETER => {
+      /*case DataImporter.Types.RADIOMETER => {
         val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, Some(em))
         gLogs.foreach(gl => {
           val clOpt = getClosestLog[RadiometerLog](gl.getTimestamp, MARGIN_IN_SEC, em)
@@ -168,8 +161,8 @@ object DataLogManager {
       }*/
       case _ => ""
     }
-    val diff = (new Date).getTime - start.getTime
-    println("GPS mapping [Stop] - time: "+ diff +"ms")
+    //val diff = (new Date).getTime - start.getTime
+    //println("GPS mapping [Stop] - time: "+ diff +"ms")
     batchId
   }
 
@@ -506,13 +499,18 @@ object DataLogManager {
     }*/
   }
 
-  def spatializationProgress(batchId: String): Future[Either[Long, String]] = {
-    try {
+  //def spatializationProgress(batchId: String): Future[Either[Long, String]] = {
+  def spatializationProgress(batchId: String): Option[Long] = {
+    /*try {
       val f_prog = spatializationWorker ? Message.GetSpatializationProgress(batchId)
       f_prog.map(_.asInstanceOf[Option[Long]].map(Left(_)).getOrElse(Right("unknown batch id")))
     } catch {
       case ex: Exception => Future { Right("timeout") }
+    }*/
+    val percentage = SpatializationBatchManager.batchProgress.get(batchId).map {
+      case (nbTot, nbDone) => math.round((nbDone.toDouble / nbTot.toDouble) * 100)
     }
+    percentage
   }
 
 }

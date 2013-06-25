@@ -2,10 +2,14 @@
 
 @main("spatialize result - ECOL") {
     @if(batchId != "") {
-        <h2>Spatialization started ...</h2>
-        <p>Progress: </p>
+        <h2><span id="statusPlaceholder">Spatialization started ...</span></h2>
+        <p>Progress: <span id="progressPlaceholder"></span></p>
     } else {
         <h2>Spatialization failed !</h2>
         <!--<p>Nb spatialized measures: nbSuccess (But nbFailures failures)</p>-->
     }
+    <script src="@routes.Assets.at("javascripts/spatialize.js")" type="text/javascript"></script>
+    <script type="text/javascript">
+        $(document).ready(getProgress('@batchId'))
+    </script>
 }

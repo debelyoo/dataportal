@@ -2,10 +2,10 @@ package controllers.database
 
 import akka.actor.{Actor, ActorSystem}
 import controllers.util.{SensorLog, JPAUtil, Message}
-import models.spatial.{DataLogManager, GpsLog, TemperatureLog}
+import models.spatial._
 import models.spatial.DataLogManager._
 import javax.persistence.EntityManager
-import models.mapping.MapGpsTemperature
+import models.mapping.{MapGpsRadiometer, MapGpsWind, MapGpsTemperature}
 import SpatializationBatchManager._
 
 class SpatializationWorker extends Actor {
@@ -14,7 +14,8 @@ class SpatializationWorker extends Actor {
     case Message.SetSpatializationBatch(batchId, gpsLogs, sensors, sensorLogs) => {
       batches(batchId) = (gpsLogs, sensors, sensorLogs)
       batchProgress(batchId) = (gpsLogs.length * sensors.length, 0)
-      DataLogManager.spatializationBatchWorker ! Message.Work(batchId)
+      val dataType = sensors.head.datatype
+      DataLogManager.spatializationBatchWorker ! Message.Work(batchId, dataType)
     }
 
     case Message.GetSpatializationProgress(batchId) => {
@@ -36,6 +37,47 @@ class SpatializationWorker extends Actor {
           MapGpsTemperature(gpsLog.getId, sensorLog.getId).save(em)
           em.getTransaction.commit()
           batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
+          if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
+        }
+      } catch {
+        case ex: Exception =>
+      } finally {
+        em.close()
+      }
+    }
+    case Message.SpatializeWindLog(batchId, gpsLog, sensorLog) => {
+      val em: EntityManager = JPAUtil.createEntityManager
+      try {
+        val batchNumbers = batchProgress.get(batchId)
+        if (batchNumbers.isDefined) {
+          em.getTransaction.begin()
+          // add position in windlog table
+          updateGeoPos[WindLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
+          // create mapping gpslog <-> windlog
+          MapGpsWind(gpsLog.getId, sensorLog.getId).save(em)
+          em.getTransaction.commit()
+          batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
+          if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
+        }
+      } catch {
+        case ex: Exception =>
+      } finally {
+        em.close()
+      }
+    }
+    case Message.SpatializeRadiometerLog(batchId, gpsLog, sensorLog) => {
+      val em: EntityManager = JPAUtil.createEntityManager
+      try {
+        val batchNumbers = batchProgress.get(batchId)
+        if (batchNumbers.isDefined) {
+          em.getTransaction.begin()
+          // add position in radiometerlog table
+          updateGeoPos[RadiometerLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
+          // create mapping gpslog <-> radiometerlog
+          MapGpsRadiometer(gpsLog.getId, sensorLog.getId).save(em)
+          em.getTransaction.commit()
+          batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
+          if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
         }
       } catch {
         case ex: Exception =>

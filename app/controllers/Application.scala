@@ -60,14 +60,16 @@ object Application extends Controller with GetApi {
   def spatializeData = Action(parse.multipartFormData) { request =>
     val dataType = request.body.dataParts("dataType").mkString(",").toLowerCase
     val date = request.body.dataParts("date").mkString(",").toLowerCase
-    println("Spatialization process [START] ...")
+    //println("Spatialization process [START] ...")
     val res = DataLogManager.spatialize(dataType, date)
-    println("Spatialization process [END]")
+    //println("Spatialization process [END]")
     Redirect(routes.Application.spatializeResult(res.toString))
   }
 
   def spatializationProgress(batchId: String) = Action {
-    val f_prog = DataLogManager.spatializationProgress(batchId)
+    val prog = DataLogManager.spatializationProgress(batchId)
+    prog.map(p => Ok(Json.toJson(Map("progress" -> Json.toJson(p))))).getOrElse(NotFound)
+    /*val f_prog = DataLogManager.spatializationProgress(batchId)
     Async {
       f_prog.map(p => {
         if (p.isLeft) {
@@ -80,7 +82,7 @@ object Application extends Controller with GetApi {
           }
         }
       })
-    }
+    }*/
   }
 
 }
