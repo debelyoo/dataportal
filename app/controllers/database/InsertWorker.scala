@@ -83,15 +83,16 @@ class InsertWorker extends Actor {
         case ae: AssertionError => None
       }
     }
-    case Message.InsertGpsLog(ts, sensor, north, east) => {
+    //case Message.InsertGpsLog(ts, sensor, north, east) => {
+    case Message.InsertGpsLog(ts, sensor, latitude, longitude) => {
       try {
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
         val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
         val res = if (!logCache.contains(uniqueString)) {
-          val arr = ApproxSwissProj.LV03toWGS84(east, north, 0L).toList
-          val latitude = arr(0)
-          val longitude = arr(1)
+          //val arr = ApproxSwissProj.LV03toWGS84(east, north, 0L).toList
+          //val latitude = arr(0)
+          //val longitude = arr(1)
           //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
           val geom = CoordinateHelper.wktToGeometry("POINT("+ longitude +" "+ latitude +")")
           val gl = new GpsLog()

@@ -411,10 +411,17 @@ object DataLogManager {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
-      val q = em.createQuery("SELECT MIN(cast(timestamp as time)), MAX(cast(timestamp as time)) FROM "+ classOf[GpsLog].getName)
+      val afterDate = Calendar.getInstance()
+      afterDate.setTime(date)
+      afterDate.add(Calendar.DAY_OF_YEAR, 1)
+      val q = em.createQuery("SELECT MIN(cast(timestamp as time)), MAX(cast(timestamp as time)) " +
+        "FROM "+ classOf[GpsLog].getName + " WHERE timestamp BETWEEN :start AND :end")
+      q.setParameter("start", date, TemporalType.DATE)
+      q.setParameter("end", afterDate.getTime, TemporalType.DATE)
       val res = q.getSingleResult.asInstanceOf[Array[Object]]
       val firstTime = res(0).asInstanceOf[Date]
       val lastTime = res(1).asInstanceOf[Date]
+      println(firstTime +" - "+ lastTime)
       em.getTransaction().commit()
       em.close()
       (DateFormatHelper.selectTimeFormatter.format(firstTime), DateFormatHelper.selectTimeFormatter.format(lastTime))
