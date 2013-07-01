@@ -60,7 +60,7 @@ class SpatializationWorker extends Actor {
           if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
         }
       } catch {
-        case ex: Exception =>
+        case ex: Exception => ex.printStackTrace()
       } finally {
         em.close()
       }
@@ -83,6 +83,13 @@ class SpatializationWorker extends Actor {
         case ex: Exception =>
       } finally {
         em.close()
+      }
+    }
+    case Message.NoCloseLog(batchId) => {
+      val batchNumbers = batchProgress.get(batchId)
+      if (batchNumbers.isDefined) {
+        batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
+        if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
       }
     }
 

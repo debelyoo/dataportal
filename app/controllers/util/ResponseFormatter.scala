@@ -17,22 +17,32 @@ trait ResponseFormatter {
   val KML_FORMAT = "xml"
   val GML_FORMAT = "gml"
 
-  def formatResponse(format: String, logList: List[WebSerializable]) = {
+  /**
+   * Format the logs list in the right format, depending on what has been requested in the REST query
+   * @param format The desired format
+   * @param logMap The list of logs (by sensor)
+   * @return A HTTP response
+   */
+  def formatResponse(format: String, logMap: Map[String, List[WebSerializable]]) = {
     format match {
-      case JSON_FORMAT => Ok(logsAsJson(logList))
-      case KML_FORMAT => Ok(logsAsKml(logList))
-      case GML_FORMAT => Ok(logsAsGml(logList))
-      case _ => Ok(logsAsJson(logList))
+      case JSON_FORMAT => Ok(logsAsJson(logMap))
+      //case KML_FORMAT => Ok(logsAsKml(logMap))
+      case GML_FORMAT => Ok(logsAsGml(logMap))
+      case _ => Ok(logsAsJson(logMap))
     }
   }
 
-  def logsAsJson(logList: List[JsonSerializable]): JsValue = {
-    val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
-    // build return JSON obj with array and count
-    Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length)))
+  private def logsAsJson(logMap: Map[String, List[JsonSerializable]]): JsValue = {
+    val jsObjectList = logMap.map { case (sensorName, logList) => {
+      val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
+      val sensorAndValues = Json.toJson(Map("sensor" -> Json.toJson(sensorName), "values" -> jsList, "count" -> Json.toJson(logList.length)))
+      sensorAndValues
+    }}
+    // build return JSON obj with array
+    Json.toJson(Map("logs" -> Json.toJson(jsObjectList)))
   }
 
-  def logsAsKml(logList: List[KmlSerializable]): NodeSeq = {
+  /*private def logsAsKml(logList: List[KmlSerializable]): NodeSeq = {
     val xmlList = logList.map(log => log.toKml)
     val kmlStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><xml xmlns=\"http://www.opengis.net/xml/2.2\">"+ xmlList.mkString("") +"</xml>"
     val xmlDoc = XML.fromString(kmlStr)
@@ -41,15 +51,16 @@ trait ResponseFormatter {
 
     asXml(xmlDoc)
     //kmlStr
-
-  }
+  }*/
 
   /**
    * Create a GML document with a list of data logs
-   * @param logList The list of logs to put in the GML document
+   * @param logMap The list of logs to put in the GML document
    * @return An XML document
    */
-  def logsAsGml(logList: List[GmlSerializable]): NodeSeq = {
+  private def logsAsGml(logMap: Map[String, List[GmlSerializable]]): NodeSeq = {
+    if (logMap.size > 1) println("[WARNING] logsAsGml() - logMap contains more than one log serie")
+    val logList = logMap.head._2 // If multiple sensors are sent, take only the first serie
     val xmlList = logList.map(log => log.toGml)
     val gmlStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
       "<wfs:FeatureCollection xmlns=\"http://www.opengis.net/wfs\" xmlns:wfs=\"http://www.opengis.net/wfs\" xmlns:gml=\"http://www.opengis.net/gml\" xmlns:ecol=\"http://ecol.epfl.ch\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">" +

@@ -20,22 +20,20 @@ case class MapGpsWind(gpslog_id: Long, datalog_id: Long) {
    * @return
    */
   def save(em: EntityManager): Boolean = {
-    //val mappingInDb = MapGpsWind.getByIds(this.gpslog_id, this.windlog_id, em)
-    //if (mappingInDb.isEmpty) {
-      println("[MapGpsWind] save() - "+ this.toString)
-      //val em: EntityManager = JPAUtil.createEntityManager
-      try {
-        //em.getTransaction.begin
-        em.persist(this)
-        //em.getTransaction.commit
-        true
-      } catch {
-        case ex: Exception => false
-      } /*finally {
-        em.close
-      }*/
-    /*} else {
+    println("[MapGpsWind] save() - "+ this.toString)
+    //val em: EntityManager = JPAUtil.createEntityManager
+    try {
+      //em.getTransaction.begin
+      em.persist(this)
+      //em.getTransaction.commit
       true
+    } catch {
+      case ex: Exception => {
+        ex.printStackTrace()
+        false
+      }
+    } /*finally {
+      em.close
     }*/
   }
 }
@@ -52,7 +50,6 @@ object MapGpsWind {
       //em.getTransaction().commit()
       Some(map)
     } catch {
-      case nre: NoResultException => None
       case ex: Exception => ex.printStackTrace; None
     } /*finally {
       em.close()

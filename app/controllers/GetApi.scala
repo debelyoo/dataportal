@@ -1,7 +1,7 @@
 package controllers
 
 import controllers.util.json.JsonSerializable
-import controllers.util.{DataImporter, JPAUtil, ResponseFormatter, DateFormatHelper}
+import controllers.util._
 import models.spatial._
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
@@ -27,7 +27,7 @@ trait GetApi extends ResponseFormatter {
     Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
   }
 
-  def getCompassLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
+  /*def getCompassLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
     val logList = DataLogManager.getByTimeInterval[CompassLog](startDate, endDate)
@@ -39,8 +39,8 @@ trait GetApi extends ResponseFormatter {
       val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
       val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
       val sensorId = sensorIdStr.toLong
-      val logList = DataLogManager.getByTimeIntervalAndSensorWithJoin[TemperatureLog, MapGpsTemperature](startDate, endDate, Some(sensorId))
-      formatResponse(format, logList)
+      val logMap = DataLogManager.getByTimeIntervalAndSensorWithJoin[TemperatureLog, MapGpsTemperature](startDate, endDate, List(sensorId))
+      formatResponse(format, logMap)
     } catch {
       case ex: Exception => BadRequest
     }
@@ -62,7 +62,7 @@ trait GetApi extends ResponseFormatter {
     val diff = (new Date).getTime - start.getTime
     //println("Time: "+ diff +"ms")
     formatResponse(format, logList)
-  }
+  } */
 
   /**
    * Handle data request with query params  (ex: /api/data?data_type=temperature&from_date=20130613-150000&to_date=20130613-170000&sensor_id=4&geo_only=true)
@@ -70,6 +70,7 @@ trait GetApi extends ResponseFormatter {
    */
   def getData = Action {
     implicit request =>
+      println("[GetApi] getData()")
       try {
         val map = request.queryString.map { case (k,v) => k -> v.mkString }
         //println(map)
@@ -80,43 +81,43 @@ trait GetApi extends ResponseFormatter {
         val startDate = DateFormatHelper.dateTimeFormatter.parse(map.get("from_date").get)
         val endDate = DateFormatHelper.dateTimeFormatter.parse(map.get("to_date").get)
         val geoOnly = map.get("geo_only").getOrElse("true").toBoolean
-        val sensorId = map.get("sensor_id").map(_.toLong)
-        val logList = map.get("data_type").get match {
+        val sensorIdList = map.get("sensor_id").map(_.toLong).toList
+        val logMap = map.get("data_type").get match {
           case DataImporter.Types.TEMPERATURE => {
-            println("GET data - "+DataImporter.Types.TEMPERATURE)
+            //println("GET data - "+DataImporter.Types.TEMPERATURE)
             if (geoOnly) {
-              DataLogManager.getByTimeIntervalAndSensorWithJoin[TemperatureLog, MapGpsTemperature](startDate, endDate, sensorId) // only geo-referenced points (Request with JOIN seems to be faster)
+              DataLogManager.getByTimeIntervalAndSensorWithJoin[TemperatureLog, MapGpsTemperature](startDate, endDate, sensorIdList) // only geo-referenced points (Request with JOIN seems to be faster)
             } else {
-              DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, sensorId) // all data points
+              DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, sensorIdList) // all data points
             }
           }
           case DataImporter.Types.WIND => {
             if (geoOnly) {
-              DataLogManager.getByTimeIntervalAndSensorWithJoin[WindLog, MapGpsWind](startDate, endDate, sensorId)
+              DataLogManager.getByTimeIntervalAndSensorWithJoin[WindLog, MapGpsWind](startDate, endDate, sensorIdList)
             } else {
-              DataLogManager.getByTimeIntervalAndSensor[WindLog](startDate, endDate, sensorId)
+              DataLogManager.getByTimeIntervalAndSensor[WindLog](startDate, endDate, sensorIdList)
             }
           }
           case DataImporter.Types.COMPASS => {
             if (geoOnly) {
-              DataLogManager.getByTimeIntervalAndSensorWithJoin[CompassLog, MapGpsCompass](startDate, endDate, sensorId)
+              DataLogManager.getByTimeIntervalAndSensorWithJoin[CompassLog, MapGpsCompass](startDate, endDate, sensorIdList)
             } else {
-              DataLogManager.getByTimeIntervalAndSensor[CompassLog](startDate, endDate, sensorId)
+              DataLogManager.getByTimeIntervalAndSensor[CompassLog](startDate, endDate, sensorIdList)
             }
           }
           case DataImporter.Types.RADIOMETER => {
             if (geoOnly) {
-              DataLogManager.getByTimeIntervalAndSensorWithJoin[RadiometerLog, MapGpsRadiometer](startDate, endDate, sensorId)
+              DataLogManager.getByTimeIntervalAndSensorWithJoin[RadiometerLog, MapGpsRadiometer](startDate, endDate, sensorIdList)
             } else {
-              DataLogManager.getByTimeIntervalAndSensor[RadiometerLog](startDate, endDate, sensorId)
+              DataLogManager.getByTimeIntervalAndSensor[RadiometerLog](startDate, endDate, sensorIdList)
             }
           }
           case _ => {
             println("GET data - Unknown data type")
-            List()
+            Map[String, List[WebSerializable]]()
           }
         }
-        formatResponse(format, logList)
+        formatResponse(format, logMap)
       } catch {
         case ae: AssertionError => BadRequest
         case ex: Exception => BadRequest
@@ -139,8 +140,8 @@ trait GetApi extends ResponseFormatter {
   Get details of a particular log (used mainly for tests)
    */
   def getSensorById(sId: String) = Action {
-    val sensorOpt = Sensor.getById(sId.toLong)
-    sensorOpt.map(s => Ok(Json.toJson(s.toJson))).getOrElse(NotFound) // return Not Found if no sensor with id 'sId' exists
+    val sensorMap = Sensor.getById(List(sId.toLong), None)
+    sensorMap.get(sId.toLong).map(s => Ok(Json.toJson(s.toJson))).getOrElse(NotFound) // return Not Found if no sensor with id 'sId' exists
   }
 
   def getSensorByDatetime(startTime: String, endTime: String) = Action {

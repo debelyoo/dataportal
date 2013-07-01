@@ -103,7 +103,7 @@ object DataLogManager {
    * @param dataType The type of data to link
    * @param logs The sensor logs to spatialize
    */
-  def linkGpsLogToSensorLog(dataType: String, logs: List[SensorLog], em: EntityManager): String = {
+  def linkGpsLogToSensorLog(dataType: String, logs: List[SensorLog]): String = {
     //println("GPS mapping [Start]")
     val firstTime = logs.head.getTimestamp
     val lastTime = logs.last.getTimestamp
@@ -236,32 +236,40 @@ object DataLogManager {
    * Get the data logs of a type between a time interval, filtered by sensor id
    * @param startTime The start time of the interval
    * @param endTime The end time of the interval
+   * @param sensorIdList The list of sensor we are interested in
+   * @param emOpt The optional entityManager
    * @tparam T The type of data log to get
    * @return A list of the logs in the specified time interval
    */
-  def getByTimeIntervalAndSensor[T: ClassTag](startTime: Date, endTime: Date, sensorId: Option[Long], emOpt: Option[EntityManager] = None): List[T] = {
+  def getByTimeIntervalAndSensor[T: ClassTag](
+                                               startTime: Date,
+                                               endTime: Date,
+                                               sensorIdList: List[Long],
+                                               emOpt: Option[EntityManager] = None): Map[String, List[T]] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
+      val sensors = Sensor.getById(sensorIdList, emOpt)
       val clazz = classTag[T].runtimeClass
       // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
-      val sensorCondition = if (sensorId.isDefined) "AND sensor_id = :sid " else ""
+      val sensorCondition = if (sensorIdList.nonEmpty) "AND sensor_id IN (:sid) " else ""
       val queryStr = "from "+ clazz.getName +" WHERE timestamp BETWEEN :start AND :end "+ sensorCondition +"ORDER BY timestamp"
       //println(queryStr)
       val q = em.createQuery(queryStr)
       q.setParameter("start", startTime, TemporalType.TIMESTAMP)
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
-      if (sensorId.isDefined) q.setParameter("sid", sensorId.get)
+      if (sensorIdList.nonEmpty) q.setParameter("sid", sensorIdList.mkString(","))
       //println(q.getResultList)
       val start = new Date
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList
       val diff = (new Date).getTime - start.getTime
       println("Nb of logs queried: "+logs.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
-      logs
+      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getSensorId)
+      logsMapBySensorId.map { case (sId, logs) => (sensors.get(sId).get.name, logs.map(_.asInstanceOf[T])) }
     } catch {
-      case nre: NoResultException => List()
-      case ex: Exception => ex.printStackTrace; List()
+      case nre: NoResultException => Map()
+      case ex: Exception => ex.printStackTrace; Map()
     } finally {
       if (emOpt.isEmpty) em.close()
     }
@@ -271,35 +279,43 @@ object DataLogManager {
    * Get the data logs of a type between a time interval, filtered by sensor id
    * @param startTime The start time of the interval
    * @param endTime The end time of the interval
+   * @param sensorIdList The list of sensor we are interested in
+   * @param emOpt The optional entityManager
    * @tparam T The type of data log to get
-   * @return A list of the logs in the specified time interval
+   * @return A list of the logs in the specified time interval, formatted as a map 'sensorName -> logs'
    */
-  def getByTimeIntervalAndSensorWithJoin[T: ClassTag, M: ClassTag](startTime: Date, endTime: Date, sensorId: Option[Long], emOpt: Option[EntityManager] = None): List[T] = {
+  def getByTimeIntervalAndSensorWithJoin[T: ClassTag, M: ClassTag](
+                                                                    startTime: Date,
+                                                                    endTime: Date,
+                                                                    sensorIdList: List[Long],
+                                                                    emOpt: Option[EntityManager] = None): Map[String, List[T]] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
+      val sensors = Sensor.getById(sensorIdList, emOpt)
       val clazz = classTag[T].runtimeClass
       val clazzMapping = classTag[M].runtimeClass
       // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
       //val queryStr = "from "+ clazz.getName +" WHERE timestamp BETWEEN :start AND :end AND sensor_id = :sid ORDER BY timestamp"
-      val sensorCondition = if (sensorId.isDefined) "AND sensor_id = :sid " else ""
+      val sensorCondition = if (sensorIdList.nonEmpty) "AND sensor_id IN ("+ sensorIdList.mkString(",") +") " else ""
       val queryStr = "SELECT lt FROM "+ clazz.getName +" lt, " + clazzMapping.getName +" map "+
-        "WHERE lt.timestamp BETWEEN :start and :end AND lt.id = map.datalog_id " + sensorCondition +
+        "WHERE lt.timestamp BETWEEN :start AND :end AND lt.id = map.datalog_id " + sensorCondition +
         "ORDER BY lt.timestamp"
       //println(queryStr)
+      //println("Params: "+startTime+", "+endTime)
       val q = em.createQuery(queryStr)
       q.setParameter("start", startTime, TemporalType.TIMESTAMP)
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
-      if (sensorId.isDefined) q.setParameter("sid", sensorId.get)
       val start = new Date
-      val logs = q.getResultList.map(_.asInstanceOf[T]).toList
+      val logs = q.getResultList.map(_.asInstanceOf[T]).toList.distinct // Need to use distinct here, because using "SELECT DISTINCT lt.* FROM ..." is buggy
       val diff = (new Date).getTime - start.getTime
       println("Nb of logs queried (Join): "+logs.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
-      logs
+      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getSensorId)
+      logsMapBySensorId.map { case (sId, logs) => (sensors.get(sId).get.name, logs.map(_.asInstanceOf[T])) }
     } catch {
-      case nre: NoResultException => List()
-      case ex: Exception => ex.printStackTrace; List()
+      case nre: NoResultException => Map()
+      case ex: Exception => ex.printStackTrace; Map()
     } finally {
       if (emOpt.isEmpty) em.close()
     }
@@ -344,14 +360,11 @@ object DataLogManager {
       }*/
       case DataImporter.Types.TEMPERATURE => {
         val logs = getByDate[TemperatureLog](date)
-        val em: EntityManager = JPAUtil.createEntityManager
         try {
           // link each GPS log to one sensor log
-          linkGpsLogToSensorLog(dataType, logs, em)
+          linkGpsLogToSensorLog(dataType, logs)
         } catch {
-          case ex: Exception => ""
-        } finally {
-          em.close
+          case ex: Exception => ex.printStackTrace(); ""
         }
       }
       /*case DataImporter.Types.RADIOMETER => {
@@ -368,14 +381,11 @@ object DataLogManager {
       }*/
       case DataImporter.Types.WIND => {
         val logs = getByDate[WindLog](date)
-        val em: EntityManager = JPAUtil.createEntityManager
         try {
           // link each GPS log to one temperature log
-          linkGpsLogToSensorLog(dataType, logs, em)
+          linkGpsLogToSensorLog(dataType, logs)
         } catch {
-          case ex: Exception => ""
-        } finally {
-          em.close
+          case ex: Exception => ex.printStackTrace(); ""
         }
         /*val successes = logs.map(log => {
           val geo_pos = getClosestLog[GpsLog](log.getTimestamp, MARGIN_IN_SEC, em)
@@ -421,7 +431,7 @@ object DataLogManager {
       val res = q.getSingleResult.asInstanceOf[Array[Object]]
       val firstTime = res(0).asInstanceOf[Date]
       val lastTime = res(1).asInstanceOf[Date]
-      println(firstTime +" - "+ lastTime)
+      //println(firstTime +" - "+ lastTime)
       em.getTransaction().commit()
       em.close()
       (DateFormatHelper.selectTimeFormatter.format(firstTime), DateFormatHelper.selectTimeFormatter.format(lastTime))
@@ -504,7 +514,10 @@ object DataLogManager {
       true
     }
     catch {
-      case ex: Exception => false
+      case ex: Exception => {
+        ex.printStackTrace()
+        false
+      }
     }
     /*finally {
       em.close

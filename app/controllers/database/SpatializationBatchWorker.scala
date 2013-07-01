@@ -15,17 +15,18 @@ class SpatializationBatchWorker extends Actor {
         for {
           gl <- gLogs
           sensor <- sensors
-          tl <- DataLogManager.getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id)
         } {
-          dataType match {
-            case DataImporter.Types.TEMPERATURE => DataLogManager.spatializationWorker ! Message.SpatializeTemperatureLog(batchId, gl, tl)
-            case DataImporter.Types.WIND => DataLogManager.spatializationWorker ! Message.SpatializeWindLog(batchId, gl, tl)
-            case DataImporter.Types.RADIOMETER => DataLogManager.spatializationWorker ! Message.SpatializeRadiometerLog(batchId, gl, tl)
+          val tl = DataLogManager.getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id)
+          if (tl.isDefined) {
+            dataType match {
+              case DataImporter.Types.TEMPERATURE => DataLogManager.spatializationWorker ! Message.SpatializeTemperatureLog(batchId, gl, tl.get)
+              case DataImporter.Types.WIND => DataLogManager.spatializationWorker ! Message.SpatializeWindLog(batchId, gl, tl.get)
+              case DataImporter.Types.RADIOMETER => DataLogManager.spatializationWorker ! Message.SpatializeRadiometerLog(batchId, gl, tl.get)
+            }
+          } else {
+            // if no close log has been found, increment the progress counter anyway (log has been processed)
+            DataLogManager.spatializationWorker ! Message.NoCloseLog(batchId)
           }
-          /*val batchNumbers = batchProgress.get(batchId)
-          batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
-          if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
-          */
         }
       }
     }

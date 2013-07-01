@@ -16,6 +16,7 @@ object Message {
   case class SpatializeTemperatureLog (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)
   case class SpatializeWindLog (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)
   case class SpatializeRadiometerLog (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)
+  case class NoCloseLog (batchId: String)
   case class Work (batchId: String, dataType: String)
   //case class Test (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)
   case class GetSpatializationProgress (batchId: String)

@@ -80,22 +80,24 @@ case class Sensor(name: String, address: String, datatype: String) {
 object Sensor {
   /**
    * Get a sensor by Id
-   * @param sId The sensor id
+   * @param sIdList A list of sensor Ids
    * @return The sensor
    */
-  def getById(sId: Long): Option[Sensor] = {
-    val em = JPAUtil.createEntityManager()
+  def getById(sIdList: List[Long], emOpt: Option[EntityManager]): Map[Long, Sensor] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
-      em.getTransaction().begin()
-      val q = em.createQuery("from "+ classOf[Sensor].getName +" where id = "+sId)
+      if (emOpt.isEmpty) em.getTransaction().begin()
+      val q = em.createQuery("from "+ classOf[Sensor].getName +" WHERE id IN ("+ sIdList.mkString(",") +")")
       //q.setParameter("id",sId)
-      val sensor = q.getSingleResult.asInstanceOf[Sensor]
-      em.getTransaction().commit()
-      em.close()
-      Some(sensor)
+      val sensors = q.getResultList.map(_.asInstanceOf[Sensor]).map(s => (s.id, s)).toMap
+      if (emOpt.isEmpty) em.getTransaction().commit()
+      sensors
+      //Some(sensor)
     } catch {
-      case nre: NoResultException => None
-      case ex: Exception => ex.printStackTrace; None
+      case nre: NoResultException => Map()
+      case ex: Exception => ex.printStackTrace; Map()
+    } finally {
+      if (emOpt.isEmpty) em.close()
     }
   }
 
