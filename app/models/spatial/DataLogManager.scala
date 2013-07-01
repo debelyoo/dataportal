@@ -8,7 +8,7 @@ import scala.collection.JavaConversions._
 import models.mapping.{MapGpsRadiometer, MapGpsWind, MapGpsCompass, MapGpsTemperature}
 import models.Sensor
 import scala.Some
-import controllers.database.{SpatializationBatchManager, SpatializationBatchWorker, SpatializationWorker}
+import controllers.database._
 import play.libs.Akka
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
@@ -16,12 +16,15 @@ import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.concurrent.{Promise, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.Some
 
 //import scala.Predef.String
 import com.vividsolutions.jts.geom.Point
 
 object DataLogManager {
 
+  val insertionWorker = Akka.system.actorOf(Props[InsertionWorker], name = "insertionWorker")
+  val insertionBatchWorker = Akka.system.actorOf(Props[InsertionBatchWorker], name = "insertionBatchWorker")
   val spatializationWorker = Akka.system.actorOf(Props[SpatializationWorker].withDispatcher("akka.actor.prio-dispatcher"), name = "spatializationWorker")
   val spatializationBatchWorker = Akka.system.actorOf(Props[SpatializationBatchWorker].withDispatcher("akka.actor.prio-dispatcher"), name = "spatializationBatchWorker")
   val TIMEOUT = 5 seconds
@@ -346,18 +349,15 @@ object DataLogManager {
     val start = new Date
     val MARGIN_IN_SEC = 1
     val res = dataType match {
-      /*case DataImporter.Types.COMPASS => {
-        val logs = getNotGeolocated[CompassLog](em)
-        val successes = logs.map(log => {
-          val geo_pos = getClosestLog[GpsLog](log.getTimestamp, MARGIN_IN_SEC)
-          if (geo_pos.isDefined) {
-            updateGeoPos[CompassLog](log.getId.longValue(), geo_pos.get.getGeoPos)
-          } else {
-            false
-          }
-        }).filter(b => b)
-        (successes.length, logs.length - successes.length)
-      }*/
+      case DataImporter.Types.COMPASS => {
+        val logs = getByDate[CompassLog](date)
+        try {
+          // link each GPS log to one compass log
+          linkGpsLogToSensorLog(dataType, logs)
+        } catch {
+          case ex: Exception => ex.printStackTrace(); ""
+        }
+      }
       case DataImporter.Types.TEMPERATURE => {
         val logs = getByDate[TemperatureLog](date)
         try {
@@ -367,35 +367,23 @@ object DataLogManager {
           case ex: Exception => ex.printStackTrace(); ""
         }
       }
-      /*case DataImporter.Types.RADIOMETER => {
-        val logs = getNotGeolocated[RadiometerLog](em)
-        val successes = logs.map(log => {
-          val geo_pos = getClosestLog[GpsLog](log.getTimestamp, MARGIN_IN_SEC, em)
-          if (geo_pos.isDefined) {
-            updateGeoPos[RadiometerLog](log.getId.longValue(), geo_pos.get.getGeoPos, em)
-          } else {
-            false
-          }
-        }).filter(b => b)
-        (successes.length, logs.length - successes.length)
-      }*/
-      case DataImporter.Types.WIND => {
-        val logs = getByDate[WindLog](date)
+      case DataImporter.Types.RADIOMETER => {
+        val logs = getByDate[RadiometerLog](date)
         try {
-          // link each GPS log to one temperature log
+          // link each GPS log to one radiometer log
           linkGpsLogToSensorLog(dataType, logs)
         } catch {
           case ex: Exception => ex.printStackTrace(); ""
         }
-        /*val successes = logs.map(log => {
-          val geo_pos = getClosestLog[GpsLog](log.getTimestamp, MARGIN_IN_SEC, em)
-          if (geo_pos.isDefined) {
-            updateGeoPos[WindLog](log.getId.longValue(), geo_pos.get.getGeoPos, em)
-          } else {
-            false
-          }
-        }).filter(b => b)
-        (successes.length, logs.length - successes.length)*/
+      }
+      case DataImporter.Types.WIND => {
+        val logs = getByDate[WindLog](date)
+        try {
+          // link each GPS log to one wind log
+          linkGpsLogToSensorLog(dataType, logs)
+        } catch {
+          case ex: Exception => ex.printStackTrace(); ""
+        }
       }
       case _ => ""
     }
@@ -407,7 +395,7 @@ object DataLogManager {
     try {
       em.getTransaction().begin()
       val q = em.createQuery("SELECT DISTINCT cast(timestamp as date) FROM "+ classOf[GpsLog].getName)
-      val dates = q.getResultList.map(_.asInstanceOf[Date]).toList.map(ts => DateFormatHelper.selectYearFormatter.format(ts))
+      val dates = q.getResultList.map(_.asInstanceOf[Date]).toList.reverse.map(ts => DateFormatHelper.selectYearFormatter.format(ts)) // use reverse to get the most recent date on top
       em.getTransaction().commit()
       em.close()
       dates
@@ -532,7 +520,7 @@ object DataLogManager {
     } catch {
       case ex: Exception => Future { Right("timeout") }
     }*/
-    val percentage = SpatializationBatchManager.batchProgress.get(batchId).map {
+    val percentage = BatchManager.batchProgress.get(batchId).map {
       case (nbTot, nbDone) => math.round((nbDone.toDouble / nbTot.toDouble) * 100)
     }
     percentage

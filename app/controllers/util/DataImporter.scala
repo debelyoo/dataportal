@@ -20,20 +20,20 @@ object DataImporter {
    * @param dataFile The text file containing the data
    * @return The number of imported values
    */
-  def importFromFile(dataType: String, addressFile: File, dataFile: File): Option[Int] = {
+  def importFromFile(dataType: String, addressFile: File, dataFile: File): String = {
     try {
       assert(dataFile.exists(), {println("File ["+ dataFile.getAbsolutePath +"] does not exist")})
       assert(addressFile.exists(), {println("File ["+ addressFile.getAbsolutePath +"] does not exist")})
       val sensors = FileParser.parseAddressFile(addressFile)
       assert(sensors.isDefined, {println("Wrong format in address file (2nb parameter)")})
       println("Importing... ")
-      val count = FileParser.parseDataFile(dataType, dataFile, sensors.get)
-      assert(count.isDefined, {println("Parsing of data file failed !")})
+      val batchId = FileParser.parseDataFile(dataType, dataFile, sensors.get)
+      assert(batchId.isDefined, {println("Parsing of data file failed !")})
       println("Import Successful !")
-      count
+      batchId.get
     } catch {
-      case ae: AssertionError => None
-      case ex: Exception => ex.printStackTrace; None
+      case ae: AssertionError => ""
+      case ex: Exception => ex.printStackTrace; ""
     }
   }
 

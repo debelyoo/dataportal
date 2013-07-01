@@ -6,8 +6,10 @@ import models.spatial._
 import models.Sensor
 import com.vividsolutions.jts.geom.Point
 import scala.collection.immutable.Queue
+import controllers.database.BatchManager._
+import scala.Some
 
-class InsertWorker extends Actor {
+class InsertionWorker extends Actor {
   implicit def queue2finitequeue[A](q: Queue[A]) = new FiniteQueue[A](q)
   var logCache = Queue[String]()
   val LOG_CACHE_MAX_SIZE = 20
@@ -15,14 +17,27 @@ class InsertWorker extends Actor {
   def createUniqueString(str1: String, str2: String) = str1+":"+str2
 
   def receive = {
-    case Message.InsertTemperatureLog(ts, sensor, temperatureValue) => {
+    case Message.SetInsertionBatch(batchId, dataType, lines, sensors) => {
+      insertionBatches(batchId) = (lines, sensors)
+      batchProgress(batchId) = (lines.length, 0)
+      //val dataType = sensors.head.datatype
+      DataLogManager.insertionBatchWorker ! Message.Work(batchId, dataType)
+    }
+
+    case Message.GetSpatializationProgress(batchId) => {
+      val percentage = batchProgress.get(batchId).map {
+        case (nbTot, nbDone) => math.round((nbDone.toDouble / nbTot.toDouble) * 100)
+      }
+      sender ! percentage
+    }
+    case Message.InsertTemperatureLog(batchId, ts, sensor, temperatureValue) => {
       try {
         // fetch the sensor in DB, to get its id
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertTemperatureLog] Sensor is not in Database !")})
         //println("[RCV message] - insert temperature log: "+temperatureValue+", "+ sensorInDb.get)
         val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
-        val res = if (!logCache.contains(uniqueString)) {
+        if (!logCache.contains(uniqueString)) {
           // insert log in cache only if cache does not contain unique string (address-timestamp)
           val tl = new TemperatureLog()
           tl.setSensorId(sensorInDb.get.id)
@@ -34,12 +49,13 @@ class InsertWorker extends Actor {
             Some(true)
           } else None
         } else Some(false)
-        sender ! res // return Option(true) if all ok, Option(false) if entry is already in DB, None if an error occurred
+        BatchManager.updateBatchProgress(batchId, "Insertion")
+        //sender ! res // return Option(true) if all ok, Option(false) if entry is already in DB, None if an error occurred
       } catch {
         case ae: AssertionError => None
       }
     }
-    case Message.InsertCompassLog(ts, sensor, compassValue) => {
+    case Message.InsertCompassLog(batchId, ts, sensor, compassValue) => {
       try {
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertCompassLog] Sensor is not in Database !")})
@@ -56,12 +72,13 @@ class InsertWorker extends Actor {
             Some(true)
           } else None
         } else Some(false)
-        sender ! res
+        BatchManager.updateBatchProgress(batchId, "Insertion")
+        //sender ! res
       } catch {
         case ae: AssertionError => None
       }
     }
-    case Message.InsertWindLog(ts, sensor, windValue) => {
+    case Message.InsertWindLog(batchId, ts, sensor, windValue) => {
       try {
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertWindLog] Sensor is not in Database !")})
@@ -78,13 +95,14 @@ class InsertWorker extends Actor {
             Some(true)
           } else None
         } else Some(false)
-        sender ! res
+        BatchManager.updateBatchProgress(batchId, "Insertion")
+        //sender ! res
       } catch {
         case ae: AssertionError => None
       }
     }
     //case Message.InsertGpsLog(ts, sensor, north, east) => {
-    case Message.InsertGpsLog(ts, sensor, latitude, longitude) => {
+    case Message.InsertGpsLog(batchId, ts, sensor, latitude, longitude) => {
       try {
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
@@ -105,12 +123,13 @@ class InsertWorker extends Actor {
             Some(true)
           } else None
         } else Some(false)
-        sender ! res
+        BatchManager.updateBatchProgress(batchId, "Insertion")
+        //sender ! res
       } catch {
         case ae: AssertionError => None
       }
     }
-    case Message.InsertRadiometerLog(ts, sensor, radiometerValue) => {
+    case Message.InsertRadiometerLog(batchId, ts, sensor, radiometerValue) => {
       try {
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertRadiometerLog] Sensor is not in Database !")})
@@ -146,7 +165,8 @@ class InsertWorker extends Actor {
             } else None
           }
         } else Some(false)
-        sender ! res
+        BatchManager.updateBatchProgress(batchId, "Insertion")
+        //sender ! res
       } catch {
         case ae: AssertionError => sender ! None
       }

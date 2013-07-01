@@ -1,13 +1,10 @@
 package controllers
 
-import controllers.util.json.JsonSerializable
 import controllers.util._
 import models.spatial._
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
-import javax.persistence.EntityManager
 import models.mapping.{MapGpsRadiometer, MapGpsCompass, MapGpsTemperature, MapGpsWind}
-import java.util.Date
 
 //import scala.reflect.{ClassTag, classTag}
 import models.Sensor

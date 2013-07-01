@@ -2,7 +2,7 @@ package controllers.database
 
 import akka.actor.Actor
 import controllers.util.{DataImporter, Message}
-import controllers.database.SpatializationBatchManager._
+import controllers.database.BatchManager._
 import models.spatial.DataLogManager
 
 
@@ -11,7 +11,7 @@ class SpatializationBatchWorker extends Actor {
 
   def receive = {
     case Message.Work(batchId, dataType) => {
-      batches.get(batchId).map { case (gLogs, sensors, logs) =>
+      spatializationBatches.get(batchId).map { case (gLogs, sensors, logs) =>
         for {
           gl <- gLogs
           sensor <- sensors

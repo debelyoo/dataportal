@@ -20,7 +20,7 @@ case class MapGpsWind(gpslog_id: Long, datalog_id: Long) {
    * @return
    */
   def save(em: EntityManager): Boolean = {
-    println("[MapGpsWind] save() - "+ this.toString)
+    //println("[MapGpsWind] save() - "+ this.toString)
     //val em: EntityManager = JPAUtil.createEntityManager
     try {
       //em.getTransaction.begin

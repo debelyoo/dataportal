@@ -18,8 +18,8 @@ object Application extends Controller with GetApi {
     Ok(views.html.importSensorData())
   }
 
-  def importResult(success: String = "false", nbImportedData: String = "0") = Action {
-    Ok(views.html.importResult(success.toBoolean, nbImportedData.toInt))
+  def importResult(batchId: String = "") = Action {
+    Ok(views.html.importResult(batchId))
   }
 
   def spatializeResult(batchId: String = "") = Action {
@@ -40,13 +40,8 @@ object Application extends Controller with GetApi {
   def importData = Action(parse.multipartFormData) { request =>
     val (addressFile, dataFile, dataType) = DataImporter.uploadFiles(request)
     if (addressFile.isDefined && dataFile.isDefined) {
-      val count = DataImporter.importFromFile(dataType, addressFile.get, dataFile.get)
-      if (count.isDefined) {
-        Redirect(routes.Application.importResult("true", count.get.toString))
-        //Ok("File imported successfully ["+ dataFile.get.getAbsolutePath +"]")
-      } else {
-        Redirect(routes.Application.importResult("false", "0"))
-      }
+      val batchId = DataImporter.importFromFile(dataType, addressFile.get, dataFile.get)
+      Redirect(routes.Application.importResult(batchId))
     } else {
       Redirect(routes.Application.index).flashing(
         "error" -> "Missing file"
@@ -63,7 +58,7 @@ object Application extends Controller with GetApi {
     //println("Spatialization process [START] ...")
     val res = DataLogManager.spatialize(dataType, date)
     //println("Spatialization process [END]")
-    Redirect(routes.Application.spatializeResult(res.toString))
+    Redirect(routes.Application.spatializeResult(res))
   }
 
   def spatializationProgress(batchId: String) = Action {

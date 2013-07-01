@@ -6,10 +6,10 @@
 GET     /                               controllers.Application.index
 GET     /test                           controllers.database.PostgresConnector.insert
 GET     /importForm                     controllers.Application.importForm
-GET     /importResult/*success/*nb      controllers.Application.importResult(success, nb)
+GET     /importResult/*batchId          controllers.Application.importResult(batchId)
 GET     /spatializeForm                 controllers.Application.spatializeForm
 GET     /spatializeResult/*batchId      controllers.Application.spatializeResult(batchId)
-GET     /spatialize/progress/*batchId   controllers.Application.spatializationProgress(batchId)
+GET     /batch/progress/*batchId        controllers.Application.spatializationProgress(batchId)
 GET     /contact                        controllers.Application.contact
 
 POST     /import                    controllers.Application.importData
