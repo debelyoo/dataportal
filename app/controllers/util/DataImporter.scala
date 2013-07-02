@@ -29,7 +29,7 @@ object DataImporter {
       println("Importing... ")
       val batchId = FileParser.parseDataFile(dataType, dataFile, sensors.get)
       assert(batchId.isDefined, {println("Parsing of data file failed !")})
-      println("Import Successful !")
+      //println("Import Successful !")
       batchId.get
     } catch {
       case ae: AssertionError => ""
