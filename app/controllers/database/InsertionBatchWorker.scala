@@ -47,6 +47,8 @@ class InsertionBatchWorker extends Actor {
                     DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, date, sensor, chunksOnLine(2).toDouble, chunksOnLine(3).toDouble)
                     //val glResOpt = Await.result(f_glInsertion, TIMEOUT).asInstanceOf[Option[Boolean]] // Blocking call - necessary to show on web page if errors occurred
                     //updateCounters(glResOpt)
+                  } else {
+                    DataLogManager.insertionWorker ! Message.SkipLog(batchId) // necessary to update batch progress correctly (when GPS error logs qre skipped)
                   }
                 }
                 case DataImporter.Types.RADIOMETER  => {

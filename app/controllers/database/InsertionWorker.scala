@@ -175,5 +175,12 @@ class InsertionWorker extends Actor {
       //println("[RCV message] - insert sensor: "+sensor)
       sender ! sensor.save
     }
+    case Message.SkipLog(batchId) => {
+      val batchNumbers = batchProgress.get(batchId)
+      if (batchNumbers.isDefined) {
+        batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
+        if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Import batch ["+ batchId +"]: 100%")
+      }
+    }
   }
 }
