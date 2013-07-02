@@ -405,6 +405,11 @@ object DataLogManager {
     }
   }
 
+  /**
+   * Get the first and last log time for a specific date
+   * @param date The date
+   * @return The first and last log time
+   */
   def getTimesForDate(date: Date): (String, String)= {
     val em = JPAUtil.createEntityManager()
     try {

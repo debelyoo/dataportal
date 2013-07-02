@@ -67,9 +67,9 @@ trait GetApi extends ResponseFormatter {
    */
   def getData = Action {
     implicit request =>
-      println("[GetApi] getData()")
       try {
         val map = request.queryString.map { case (k,v) => k -> v.mkString }
+        println("[GetApi] getData() - "+ map.get("data_type").get)
         //println(map)
         assert(map.contains("data_type"), {println("Missing data_type parameter")})
         assert(map.contains("from_date"), {println("Missing from_date parameter")})
