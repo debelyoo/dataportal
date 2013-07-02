@@ -69,12 +69,12 @@ trait GetApi extends ResponseFormatter {
     implicit request =>
       try {
         val map = request.queryString.map { case (k,v) => k -> v.mkString }
-        println("[GetApi] getData() - "+ map.get("data_type").get)
+        val format = map.get("format").getOrElse(JSON_FORMAT) // default format is Json
+        println("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
         //println(map)
         assert(map.contains("data_type"), {println("Missing data_type parameter")})
         assert(map.contains("from_date"), {println("Missing from_date parameter")})
         assert(map.contains("to_date"), {println("Missing to_date parameter")})
-        val format = map.get("format").getOrElse(JSON_FORMAT) // default format is Json
         val startDate = DateFormatHelper.dateTimeFormatter.parse(map.get("from_date").get)
         val endDate = DateFormatHelper.dateTimeFormatter.parse(map.get("to_date").get)
         val geoOnly = map.get("geo_only").getOrElse("true").toBoolean

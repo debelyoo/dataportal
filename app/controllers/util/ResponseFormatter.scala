@@ -10,6 +10,7 @@ import scala.xml.parsing.NoBindingFactoryAdapter
 import javax.xml.transform.sax.SAXResult
 import javax.xml.transform.dom.DOMSource
 import play.api.mvc.Results.Ok
+import java.util.Date
 
 trait ResponseFormatter {
 
@@ -59,6 +60,7 @@ trait ResponseFormatter {
    * @return An XML document
    */
   private def logsAsGml(logMap: Map[String, List[GmlSerializable]]): NodeSeq = {
+    val start = new Date
     if (logMap.size > 1) println("[WARNING] logsAsGml() - logMap contains more than one log serie")
     val logList = logMap.head._2 // If multiple sensors are sent, take only the first serie
     val xmlList = logList.map(log => log.toGml)
@@ -68,7 +70,8 @@ trait ResponseFormatter {
       "" + xmlList.mkString("") +
       "</wfs:FeatureCollection>"
     val xmlDoc = XML.fromString(gmlStr)
-
+    val diff = (new Date).getTime - start.getTime
+    println("logsAsGml() - GML formatting done ! ["+ diff +"ms]")
     asXml(xmlDoc)
   }
 
