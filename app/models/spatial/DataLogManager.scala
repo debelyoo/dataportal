@@ -311,7 +311,7 @@ object DataLogManager {
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
       val start = new Date
       //val logs = q.getResultList.map(_.asInstanceOf[T]).toList.distinct // Need to use distinct here, because using "SELECT DISTINCT lt.* FROM ..." is buggy
-      val logs = q.getResultList.map(_.asInstanceOf[T]).toList.distinct.take(1500) // TODO - test
+      val logs = q.getResultList.map(_.asInstanceOf[T]).toList.distinct.take(1000) // TODO - test
       val diff = (new Date).getTime - start.getTime
       println("Nb of logs queried (Join): "+logs.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
