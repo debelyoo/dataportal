@@ -24,12 +24,12 @@ class InsertionWorker extends Actor {
       DataLogManager.insertionBatchWorker ! Message.Work(batchId, dataType)
     }
 
-    case Message.GetSpatializationProgress(batchId) => {
+    /*case Message.GetSpatializationProgress(batchId) => {
       val percentage = batchProgress.get(batchId).map {
         case (nbTot, nbDone) => math.round((nbDone.toDouble / nbTot.toDouble) * 100)
       }
       sender ! percentage
-    }
+    }*/
     case Message.InsertTemperatureLog(batchId, ts, sensor, temperatureValue) => {
       try {
         // fetch the sensor in DB, to get its id

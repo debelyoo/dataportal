@@ -13,17 +13,15 @@ import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.Some
-import java.lang
-
-//import scala.Predef.String
-import com.vividsolutions.jts.geom.Point
 
 object DataLogManager {
 
   val insertionWorker = Akka.system.actorOf(Props[InsertionWorker], name = "insertionWorker")
   val insertionBatchWorker = Akka.system.actorOf(Props[InsertionBatchWorker], name = "insertionBatchWorker")
-  val spatializationWorker = Akka.system.actorOf(Props[SpatializationWorker].withDispatcher("akka.actor.prio-dispatcher"), name = "spatializationWorker")
-  val spatializationBatchWorker = Akka.system.actorOf(Props[SpatializationBatchWorker].withDispatcher("akka.actor.prio-dispatcher"), name = "spatializationBatchWorker")
+  //val spatializationWorker = Akka.system.actorOf(Props[SpatializationWorker].withDispatcher("akka.actor.prio-dispatcher"), name = "spatializationWorker")
+  //val spatializationBatchWorker = Akka.system.actorOf(Props[SpatializationBatchWorker].withDispatcher("akka.actor.prio-dispatcher"), name = "spatializationBatchWorker")
+  val spatializationWorker = Akka.system.actorOf(Props[SpatializationWorker], name = "spatializationWorker")
+  val spatializationBatchWorker = Akka.system.actorOf(Props[SpatializationBatchWorker], name = "spatializationBatchWorker")
   val TIMEOUT = 5 seconds
   implicit val timeout = Timeout(TIMEOUT) // needed for `?` below
 
@@ -99,74 +97,6 @@ object DataLogManager {
   }
 
   /**
-   * Link each GPS log to one sensor log (of a specific datatype)
-   * @param dataType The type of data to link
-   * @param logs The sensor logs to spatialize
-   */
-  /*def linkGpsLogToSensorLog(dataType: String, logs: List[SensorLog]): String = {
-    //println("GPS mapping [Start]")
-    val firstTime = logs.head.getTimestamp
-    val lastTime = logs.last.getTimestamp
-    val MARGIN_IN_SEC = 1
-    val start = new Date
-    val batchId = dataType match {
-      /*case DataImporter.Types.COMPASS => {
-        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, Some(em))
-        gLogs.foreach(gl => {
-          val clOpt = getClosestLog[CompassLog](gl.getTimestamp, MARGIN_IN_SEC, em)
-          clOpt.map(cl => {
-            MapGpsCompass(gl.getId, cl.getId).save(em)
-          })
-        })
-      }*/
-      case DataImporter.Types.TEMPERATURE => {
-        // get sensors
-        val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.TEMPERATURE)
-        // get GPS logs
-        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
-        val batchId = UUID.randomUUID().toString
-        //val batchId = "1234"
-        spatializationWorker ! Message.SetSpatializationBatch(batchId, gLogs, sensors, logs)
-        batchId
-      }
-      case DataImporter.Types.WIND => {
-        // get sensors
-        val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.WIND)
-        // get GPS logs
-        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
-        val batchId = UUID.randomUUID().toString
-        spatializationWorker ! Message.SetSpatializationBatch(batchId, gLogs, sensors, logs)
-        batchId
-        /*for {
-          gl <- gLogs
-          sensor <- sensors
-          wl <- getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id)
-        } {
-          // add position in windlog table
-          updateGeoPos[WindLog](wl.getId.longValue(), gl.getGeoPos, em)
-          // create mapping gpslog <-> windlog
-          MapGpsWind(gl.getId, wl.getId).save(em)
-        }
-        em.getTransaction.commit
-        */
-      }
-      /*case DataImporter.Types.RADIOMETER => {
-        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, Some(em))
-        gLogs.foreach(gl => {
-          val clOpt = getClosestLog[RadiometerLog](gl.getTimestamp, MARGIN_IN_SEC, em)
-          clOpt.map(cl => {
-            MapGpsRadiometer(gl.getId, cl.getId).save(em)
-          })
-        })
-      }*/
-      case _ => ""
-    }
-    //val diff = (new Date).getTime - start.getTime
-    //println("GPS mapping [Stop] - time: "+ diff +"ms")
-    batchId
-  }*/
-
-  /**
    * Get the data logs of a type between a time interval
    * @param startTime The start time of the interval
    * @param endTime The end time of the interval
@@ -209,7 +139,7 @@ object DataLogManager {
    * @tparam M The type of the mapping table
    * @return A list of the logs in the specified time interval
    */
-  def getByTimeIntervalWithJoin[T: ClassTag, M: ClassTag](startTime: Date, endTime: Date, emOpt: Option[EntityManager] = None): List[T] = {
+  /*def getByTimeIntervalWithJoin[T: ClassTag, M: ClassTag](startTime: Date, endTime: Date, emOpt: Option[EntityManager] = None): List[T] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
@@ -233,7 +163,7 @@ object DataLogManager {
     } finally {
       if (emOpt.isEmpty) em.close()
     }
-  }
+  }*/
 
   /**
    * Get the data logs of a type between a time interval, filtered by sensor id
@@ -265,8 +195,6 @@ object DataLogManager {
       val q = em.createQuery(queryStr)
       q.setParameter("start", startTime, TemporalType.TIMESTAMP)
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
-      //if (sensorIdList.nonEmpty) q.setParameter("sid", sensorIdList.mkString(","))
-      //if (sensorIdList.nonEmpty) q.setParameter("sid", sensorIdList.map(lang.Long.valueOf(_)))
       //println(q.getResultList)
       val start = new Date
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList
@@ -292,7 +220,7 @@ object DataLogManager {
    * @tparam T The type of data log to get
    * @return A list of the logs in the specified time interval, formatted as a map 'sensorName -> logs'
    */
-  def getByTimeIntervalAndSensorWithJoin[T: ClassTag, M: ClassTag](
+  /*def getByTimeIntervalAndSensorWithJoin[T: ClassTag, M: ClassTag](
                                                                     startTime: Date,
                                                                     endTime: Date,
                                                                     sensorIdList: List[Long],
@@ -328,7 +256,7 @@ object DataLogManager {
     } finally {
       if (emOpt.isEmpty) em.close()
     }
-  }
+  }*/
 
   /**
    * Converts a Double value to Int
@@ -571,14 +499,12 @@ object DataLogManager {
     }
   }
 
-  //def spatializationProgress(batchId: String): Future[Either[Long, String]] = {
+  /**
+   * Get the spatialization progress of a specific batch
+   * @param batchId The batch id
+   * @return The progress as a percentage
+   */
   def spatializationProgress(batchId: String): Option[Long] = {
-    /*try {
-      val f_prog = spatializationWorker ? Message.GetSpatializationProgress(batchId)
-      f_prog.map(_.asInstanceOf[Option[Long]].map(Left(_)).getOrElse(Right("unknown batch id")))
-    } catch {
-      case ex: Exception => Future { Right("timeout") }
-    }*/
     val percentage = BatchManager.batchProgress.get(batchId).map {
       case (nbTot, nbDone) => math.round((nbDone.toDouble / nbTot.toDouble) * 100)
     }
