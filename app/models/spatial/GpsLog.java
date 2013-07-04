@@ -6,6 +6,7 @@ import controllers.util.DateFormatHelper;
 import controllers.util.JPAUtil;
 import controllers.util.SensorLog;
 import controllers.util.json.JsonSerializable;
+import models.Sensor;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
@@ -21,8 +22,11 @@ public class GpsLog implements JsonSerializable, SensorLog {
     @GenericGenerator(name="increment", strategy = "increment")
     private Long id;
 
-    @Column(name="sensor_id")
-    private Long sensorId;
+    //@Column(name="sensor_id")
+    //private Long sensorId;
+    @OneToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="sensor_id")
+    private Sensor sensor;
 
     private Date timestamp;
 
@@ -42,13 +46,21 @@ public class GpsLog implements JsonSerializable, SensorLog {
         this.id = id;
     }
 
-    @Override
+    /*@Override
     public Long getSensorId() {
         return sensorId;
     }
 
     public void setSensorId(Long sId) {
         this.sensorId = sId;
+    }*/
+    @Override
+    public Sensor getSensor() {
+        return sensor;
+    }
+
+    public void setSensor(Sensor s) {
+        this.sensor = s;
     }
 
     @Override
@@ -86,7 +98,7 @@ public class GpsLog implements JsonSerializable, SensorLog {
             //JsonElement gpsLogJson = new Gson().toJsonTree(gpsLog);
             JsonElement gpsLogJson = new JsonObject();
             gpsLogJson.getAsJsonObject().addProperty("id", gpsLog.getId());
-            gpsLogJson.getAsJsonObject().addProperty("sensor_id", gpsLog.getSensorId());
+            gpsLogJson.getAsJsonObject().addProperty("sensor_id", gpsLog.getSensor().id());
             gpsLogJson.getAsJsonObject().addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(gpsLog.getTimestamp()));
             JsonObject point = new JsonObject();
             point.addProperty("x", gpsLog.getGeoPos().getX());

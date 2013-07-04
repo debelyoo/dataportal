@@ -4,7 +4,6 @@
 
 # Home page
 GET     /                               controllers.Application.index
-GET     /test                           controllers.database.PostgresConnector.insert
 GET     /importForm                     controllers.Application.importForm
 GET     /importResult/*batchId          controllers.Application.importResult(batchId)
 GET     /spatializeForm                 controllers.Application.spatializeForm

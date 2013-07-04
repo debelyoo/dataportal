@@ -11,11 +11,13 @@ class SpatializationBatchWorker extends Actor {
 
   def receive = {
     case Message.Work(batchId, dataType) => {
+      //println("receive Message.Work")
       spatializationBatches.get(batchId).map { case (gLogs, sensors, logs) =>
         for {
           gl <- gLogs
           sensor <- sensors
         } {
+          //println("gl: "+gl+", sensor: "+sensor)
           val tl = DataLogManager.getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id)
           if (tl.isDefined) {
             dataType match {

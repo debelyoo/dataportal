@@ -18,48 +18,11 @@ trait GetApi extends ResponseFormatter {
   def getGpsLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-    val logList = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate)
+    val logList = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false)
     val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
     // build return JSON obj with array and count
     Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
   }
-
-  /*def getCompassLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
-    val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
-    val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-    val logList = DataLogManager.getByTimeInterval[CompassLog](startDate, endDate)
-    formatResponse(format, logList)
-  }
-
-  def getTemperatureLogByTimeIntervalAndSensor(format: String, startTime: String, endTime: String, sensorIdStr: String) = Action {
-    try {
-      val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
-      val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-      val sensorId = sensorIdStr.toLong
-      val logMap = DataLogManager.getByTimeIntervalAndSensorWithJoin[TemperatureLog, MapGpsTemperature](startDate, endDate, List(sensorId))
-      formatResponse(format, logMap)
-    } catch {
-      case ex: Exception => BadRequest
-    }
-  }
-
-  def getRadiometerLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
-    val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
-    val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-    val logList = DataLogManager.getByTimeInterval[RadiometerLog](startDate, endDate)
-    formatResponse(format, logList)
-  }
-
-  def getWindLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
-    val start = new Date
-    val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
-    val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-    //val logList = DataLogManager.getByTimeInterval[WindLog](startDate, endDate)
-    val logList = DataLogManager.getByTimeIntervalWithJoin[WindLog, MapGpsWind](startDate, endDate) // Request with JOIN seems to be faster
-    val diff = (new Date).getTime - start.getTime
-    //println("Time: "+ diff +"ms")
-    formatResponse(format, logList)
-  } */
 
   /**
    * Handle data request with query params  (ex: /api/data?data_type=temperature&from_date=20130613-150000&to_date=20130613-170000&sensor_id=4&geo_only=true)
@@ -78,36 +41,40 @@ trait GetApi extends ResponseFormatter {
         val startDate = DateFormatHelper.dateTimeFormatter.parse(map.get("from_date").get)
         val endDate = DateFormatHelper.dateTimeFormatter.parse(map.get("to_date").get)
         val geoOnly = map.get("geo_only").getOrElse("true").toBoolean
-        val sensorIdList = map.get("sensor_id").map(_.toLong).toList
+        val sensorIdList = map.get("sensor_id").map(_.toLong).toList // TODO handle multi Ids (by parsing string)
         val logMap = map.get("data_type").get match {
           case DataImporter.Types.TEMPERATURE => {
             //println("GET data - "+DataImporter.Types.TEMPERATURE)
-            if (geoOnly) {
+            DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, geoOnly, sensorIdList) // all data points
+            /*if (geoOnly) {
               DataLogManager.getByTimeIntervalAndSensorWithJoin[TemperatureLog, MapGpsTemperature](startDate, endDate, sensorIdList) // only geo-referenced points (Request with JOIN seems to be faster)
             } else {
-              DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, sensorIdList) // all data points
-            }
+              DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, geoOnly, sensorIdList) // all data points
+            }*/
           }
           case DataImporter.Types.WIND => {
-            if (geoOnly) {
+            DataLogManager.getByTimeIntervalAndSensor[WindLog](startDate, endDate, geoOnly, sensorIdList)
+            /*if (geoOnly) {
               DataLogManager.getByTimeIntervalAndSensorWithJoin[WindLog, MapGpsWind](startDate, endDate, sensorIdList)
             } else {
               DataLogManager.getByTimeIntervalAndSensor[WindLog](startDate, endDate, sensorIdList)
-            }
+            }*/
           }
           case DataImporter.Types.COMPASS => {
-            if (geoOnly) {
+            DataLogManager.getByTimeIntervalAndSensor[CompassLog](startDate, endDate, geoOnly, sensorIdList)
+            /*if (geoOnly) {
               DataLogManager.getByTimeIntervalAndSensorWithJoin[CompassLog, MapGpsCompass](startDate, endDate, sensorIdList)
             } else {
               DataLogManager.getByTimeIntervalAndSensor[CompassLog](startDate, endDate, sensorIdList)
-            }
+            }*/
           }
           case DataImporter.Types.RADIOMETER => {
-            if (geoOnly) {
+            DataLogManager.getByTimeIntervalAndSensor[RadiometerLog](startDate, endDate, geoOnly, sensorIdList)
+            /*if (geoOnly) {
               DataLogManager.getByTimeIntervalAndSensorWithJoin[RadiometerLog, MapGpsRadiometer](startDate, endDate, sensorIdList)
             } else {
               DataLogManager.getByTimeIntervalAndSensor[RadiometerLog](startDate, endDate, sensorIdList)
-            }
+            }*/
           }
           case _ => {
             println("GET data - Unknown data type")
@@ -117,7 +84,7 @@ trait GetApi extends ResponseFormatter {
         formatResponse(format, logMap)
       } catch {
         case ae: AssertionError => BadRequest
-        case ex: Exception => BadRequest
+        case ex: Exception => ex.printStackTrace(); BadRequest
       }
   }
 

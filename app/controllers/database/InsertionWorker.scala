@@ -40,7 +40,7 @@ class InsertionWorker extends Actor {
         if (!logCache.contains(uniqueString)) {
           // insert log in cache only if cache does not contain unique string (address-timestamp)
           val tl = new TemperatureLog()
-          tl.setSensorId(sensorInDb.get.id)
+          tl.setSensor(sensorInDb.get)
           tl.setTimestamp(ts)
           tl.setValue(temperatureValue)
           val persisted = tl.save() // persist in DB
@@ -63,7 +63,7 @@ class InsertionWorker extends Actor {
         val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
         val res = if (!logCache.contains(uniqueString)) {
           val cl = new CompassLog()
-          cl.setSensorId(sensorInDb.get.id)
+          cl.setSensor(sensorInDb.get)
           cl.setTimestamp(ts)
           cl.setValue(compassValue)
           val persisted = cl.save() // persist in DB
@@ -86,7 +86,7 @@ class InsertionWorker extends Actor {
         val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
         val res = if (!logCache.contains(uniqueString)) {
           val wl = new WindLog()
-          wl.setSensorId(sensorInDb.get.id)
+          wl.setSensor(sensorInDb.get)
           wl.setTimestamp(ts)
           wl.setValue(windValue)
           val persisted = wl.save() // persist in DB
@@ -120,7 +120,7 @@ class InsertionWorker extends Actor {
           //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
           val geom = CoordinateHelper.wktToGeometry("POINT("+ lon +" "+ lat +")")
           val gl = new GpsLog()
-          gl.setSensorId(sensorInDb.get.id)
+          gl.setSensor(sensorInDb.get)
           gl.setTimestamp(ts)
           gl.setGeoPos(geom.asInstanceOf[Point])
           val persisted = gl.save() // persist in DB
@@ -147,7 +147,7 @@ class InsertionWorker extends Actor {
           if (radiometerValue.isValidInt) {
             //println("[RCV message] - insert radiometer log: "+ radiometerValue.toInt +", "+ sensorInDb.get)
             val rl = new RadiometerLog()
-            rl.setSensorId(sensorInDb.get.id)
+            rl.setSensor(sensorInDb.get)
             rl.setTimestamp(ts)
             rl.setValue(radiometerValue.toInt)
             val persisted = rl.save() // persist in DB
@@ -161,7 +161,7 @@ class InsertionWorker extends Actor {
               sensorInDb.get.updateType("temperature") // update the type of the sensor (the PT100 of the radiometer)
             }
             val tl = new TemperatureLog()
-            tl.setSensorId(sensorInDb.get.id)
+            tl.setSensor(sensorInDb.get)
             tl.setTimestamp(ts)
             tl.setValue(radiometerValue)
             val persisted = tl.save() // persist in DB

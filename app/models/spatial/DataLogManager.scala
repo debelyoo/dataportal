@@ -7,16 +7,13 @@ import java.util.{UUID, Calendar, Date}
 import scala.collection.JavaConversions._
 import models.mapping.{MapGpsRadiometer, MapGpsWind, MapGpsCompass, MapGpsTemperature}
 import models.Sensor
-import scala.Some
 import controllers.database._
 import play.libs.Akka
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
 import scala.concurrent.duration._
-import akka.pattern.ask
-import scala.concurrent.{Promise, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.Some
+import java.lang
 
 //import scala.Predef.String
 import com.vividsolutions.jts.geom.Point
@@ -106,7 +103,7 @@ object DataLogManager {
    * @param dataType The type of data to link
    * @param logs The sensor logs to spatialize
    */
-  def linkGpsLogToSensorLog(dataType: String, logs: List[SensorLog]): String = {
+  /*def linkGpsLogToSensorLog(dataType: String, logs: List[SensorLog]): String = {
     //println("GPS mapping [Start]")
     val firstTime = logs.head.getTimestamp
     val lastTime = logs.last.getTimestamp
@@ -126,7 +123,7 @@ object DataLogManager {
         // get sensors
         val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.TEMPERATURE)
         // get GPS logs
-        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime)
+        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
         val batchId = UUID.randomUUID().toString
         //val batchId = "1234"
         spatializationWorker ! Message.SetSpatializationBatch(batchId, gLogs, sensors, logs)
@@ -136,7 +133,7 @@ object DataLogManager {
         // get sensors
         val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.WIND)
         // get GPS logs
-        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime)
+        val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
         val batchId = UUID.randomUUID().toString
         spatializationWorker ! Message.SetSpatializationBatch(batchId, gLogs, sensors, logs)
         batchId
@@ -167,25 +164,28 @@ object DataLogManager {
     //val diff = (new Date).getTime - start.getTime
     //println("GPS mapping [Stop] - time: "+ diff +"ms")
     batchId
-  }
+  }*/
 
   /**
    * Get the data logs of a type between a time interval
    * @param startTime The start time of the interval
    * @param endTime The end time of the interval
+   * @param geoOnly Indicates if we want only the logs mapped to a gps log
    * @tparam T The type of data log to get
    * @return A list of the logs in the specified time interval
    */
-  def getByTimeInterval[T: ClassTag](startTime: Date, endTime: Date, emOpt: Option[EntityManager] = None): List[T] = {
+  def getByTimeInterval[T: ClassTag](startTime: Date, endTime: Date, geoOnly: Boolean, emOpt: Option[EntityManager] = None): List[T] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
       val clazz = classTag[T].runtimeClass
+      val geoCondition = if (geoOnly) "AND log.gpsLog IS NOT NULL " else ""
       // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
-      val queryStr = "from "+ clazz.getName +" " +
-        "WHERE timestamp BETWEEN :start and :end " +
+      val queryStr = "from "+ clazz.getName +" log " +
+        "WHERE timestamp BETWEEN :start and :end " + geoCondition +
         "ORDER BY timestamp"
       //println(queryStr)
+
       val q = em.createQuery(queryStr)
       q.setParameter("start", startTime, TemporalType.TIMESTAMP)
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
@@ -239,6 +239,7 @@ object DataLogManager {
    * Get the data logs of a type between a time interval, filtered by sensor id
    * @param startTime The start time of the interval
    * @param endTime The end time of the interval
+   * @param geoOnly Indicates if we want only the logs mapped to a gps log
    * @param sensorIdList The list of sensor we are interested in
    * @param emOpt The optional entityManager
    * @tparam T The type of data log to get
@@ -247,6 +248,7 @@ object DataLogManager {
   def getByTimeIntervalAndSensor[T: ClassTag](
                                                startTime: Date,
                                                endTime: Date,
+                                               geoOnly: Boolean,
                                                sensorIdList: List[Long],
                                                emOpt: Option[EntityManager] = None): Map[String, List[T]] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
@@ -255,23 +257,26 @@ object DataLogManager {
       val sensors = Sensor.getById(sensorIdList, emOpt)
       val clazz = classTag[T].runtimeClass
       // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
-      val sensorCondition = if (sensorIdList.nonEmpty) "AND sensor_id IN (:sid) " else ""
-      val queryStr = "from "+ clazz.getName +" WHERE timestamp BETWEEN :start AND :end "+ sensorCondition +"ORDER BY timestamp"
+      val geoCondition = if (geoOnly) "AND log.gpsLog IS NOT NULL " else ""
+      val sensorCondition = if (sensorIdList.nonEmpty) "AND log.sensor.id IN ("+ sensorIdList.mkString(",") +") " else ""
+      val queryStr = "from "+ clazz.getName +" log WHERE timestamp BETWEEN :start AND :end "+ geoCondition + sensorCondition +
+        "ORDER BY timestamp"
       //println(queryStr)
       val q = em.createQuery(queryStr)
       q.setParameter("start", startTime, TemporalType.TIMESTAMP)
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
-      if (sensorIdList.nonEmpty) q.setParameter("sid", sensorIdList.mkString(","))
+      //if (sensorIdList.nonEmpty) q.setParameter("sid", sensorIdList.mkString(","))
+      //if (sensorIdList.nonEmpty) q.setParameter("sid", sensorIdList.map(lang.Long.valueOf(_)))
       //println(q.getResultList)
       val start = new Date
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList
       val diff = (new Date).getTime - start.getTime
       println("Nb of logs queried: "+logs.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
-      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getSensorId)
+      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getSensor.id)
       logsMapBySensorId.map { case (sId, logs) => (sensors.get(sId).get.name, logs.map(_.asInstanceOf[T])) }
     } catch {
-      case nre: NoResultException => Map()
+      case nre: NoResultException => println("No result !!"); Map()
       case ex: Exception => ex.printStackTrace; Map()
     } finally {
       if (emOpt.isEmpty) em.close()
@@ -315,7 +320,7 @@ object DataLogManager {
       val diff = (new Date).getTime - start.getTime
       println("Nb of logs queried (Join): "+logs.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
-      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getSensorId)
+      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getSensor.id)
       logsMapBySensorId.map { case (sId, logs) => (sensors.get(sId).get.name, logs.map(_.asInstanceOf[T])) }
     } catch {
       case nre: NoResultException => Map()
@@ -349,21 +354,40 @@ object DataLogManager {
     val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
     val start = new Date
     val MARGIN_IN_SEC = 1
-    val res = dataType match {
+    val batchId = dataType match {
       case DataImporter.Types.COMPASS => {
         val logs = getByDate[CompassLog](date)
         try {
           // link each GPS log to one compass log
-          linkGpsLogToSensorLog(dataType, logs)
+          //linkGpsLogToSensorLog(dataType, logs)
+          val firstTime = logs.head.getTimestamp
+          val lastTime = logs.last.getTimestamp
+          // get sensors
+          val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.COMPASS)
+          // get GPS logs
+          val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
+          val batchId = UUID.randomUUID().toString
+          spatializationWorker ! Message.SetSpatializationBatch(batchId, gLogs, sensors, logs)
+          batchId
         } catch {
           case ex: Exception => ex.printStackTrace(); ""
         }
       }
       case DataImporter.Types.TEMPERATURE => {
         val logs = getByDate[TemperatureLog](date)
+        println("XX - "+logs.head)
         try {
           // link each GPS log to one sensor log
-          linkGpsLogToSensorLog(dataType, logs)
+          //linkGpsLogToSensorLog(dataType, logs)
+          val firstTime = logs.head.getTimestamp
+          val lastTime = logs.last.getTimestamp
+          // get sensors
+          val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.TEMPERATURE)
+          // get GPS logs
+          val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
+          val batchId = UUID.randomUUID().toString
+          spatializationWorker ! Message.SetSpatializationBatch(batchId, gLogs, sensors, logs)
+          batchId
         } catch {
           case ex: Exception => ex.printStackTrace(); ""
         }
@@ -372,7 +396,17 @@ object DataLogManager {
         val logs = getByDate[RadiometerLog](date)
         try {
           // link each GPS log to one radiometer log
-          linkGpsLogToSensorLog(dataType, logs)
+          //linkGpsLogToSensorLog(dataType, logs)
+          val firstTime = logs.head.getTimestamp
+          val lastTime = logs.last.getTimestamp
+          // get sensors
+          val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.RADIOMETER)
+          // get GPS logs
+          val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
+          val batchId = UUID.randomUUID().toString
+          //val batchId = "1234"
+          spatializationWorker ! Message.SetSpatializationBatch(batchId, gLogs, sensors, logs)
+          batchId
         } catch {
           case ex: Exception => ex.printStackTrace(); ""
         }
@@ -381,14 +415,24 @@ object DataLogManager {
         val logs = getByDate[WindLog](date)
         try {
           // link each GPS log to one wind log
-          linkGpsLogToSensorLog(dataType, logs)
+          //linkGpsLogToSensorLog(dataType, logs)
+          val firstTime = logs.head.getTimestamp
+          val lastTime = logs.last.getTimestamp
+          // get sensors
+          val sensors = Sensor.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.WIND)
+          // get GPS logs
+          val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
+          val batchId = UUID.randomUUID().toString
+          //val batchId = "1234"
+          spatializationWorker ! Message.SetSpatializationBatch(batchId, gLogs, sensors, logs)
+          batchId
         } catch {
           case ex: Exception => ex.printStackTrace(); ""
         }
       }
       case _ => ""
     }
-    res
+    batchId
   }
 
   def getDates: List[String] = {
@@ -436,34 +480,15 @@ object DataLogManager {
   }
 
   /**
-   * Get the closest data log from a specific timestamp
-   * @param ts The target timestamp
-   * @param marginInSeconds The nb of seconds to search before and after the timestamp
-   * @param sensorId
-   * @param em
-   * @return An option with the closest GPS point
-   */
-  /*private def getClosestLogFromDB[T: ClassTag](ts: Date, marginInSeconds: Int, sensorId: Long, em: EntityManager): Option[T] = {
-    val beforeDate = Calendar.getInstance()
-    beforeDate.setTime(ts)
-    beforeDate.add(Calendar.SECOND, -marginInSeconds)
-    val afterDate = Calendar.getInstance()
-    afterDate.setTime(ts)
-    afterDate.add(Calendar.SECOND, marginInSeconds)
-    val closeLogs = getByTimeIntervalAndSensor[T](beforeDate.getTime, afterDate.getTime, sensorId, Some(em))
-    if (closeLogs.nonEmpty) {
-      val (closestPoint, diff) = closeLogs.map(cl => {
-        val timeDiff = math.abs(cl.asInstanceOf[SensorLog].getTimestamp.getTime - ts.getTime)
-        (cl, timeDiff)
-      }).minBy(_._2)
-      Some(closestPoint)
-    } else {
-      println("[WARNING] No close GPS point for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
-      None
-    }
-  }*/
-
+    * Get the closest log (of a sensor) to a specified timestamp
+    * @param logs The sensor logs to search in
+    * @param ts The timestamp to match
+    * @param marginInSeconds The margin +/- around the timestamp
+    * @param sensorId The id of the sensor of interest
+    * @return An option with the closest log we found
+    */
   def getClosestLog(logs: List[SensorLog], ts: Date, marginInSeconds: Int, sensorId: Long): Option[SensorLog] = {
+    //println("[DataLogManager] getClosestLog() - "+logs.head)
     val beforeDate = Calendar.getInstance()
     beforeDate.setTime(ts)
     beforeDate.add(Calendar.SECOND, -marginInSeconds)
@@ -474,7 +499,7 @@ object DataLogManager {
     val closeLogs = logs.filter(log =>
       (log.getTimestamp.getTime > beforeDate.getTime.getTime &&
         log.getTimestamp.getTime < afterDate.getTime.getTime &&
-        log.getSensorId == sensorId)
+        log.getSensor.id == sensorId)
     )
     if (closeLogs.nonEmpty) {
       val (closestPoint, diff) = closeLogs.map(cl => {
@@ -494,7 +519,7 @@ object DataLogManager {
    * @param pos The new geo position
    * @return true if success
    */
-  def updateGeoPos[T: ClassTag](dataLogId: Long, pos: Point, em: EntityManager): Boolean = {
+  /*def updateGeoPos[T: ClassTag](dataLogId: Long, pos: Point, em: EntityManager): Boolean = {
     //val em: EntityManager = JPAUtil.createEntityManager
     try {
       //em.getTransaction.begin
@@ -516,6 +541,34 @@ object DataLogManager {
     /*finally {
       em.close
     }*/
+  }*/
+
+  /**
+   * Link a sensor log to the corresponding gps log
+   * @param dataLogId The id of the sensor log
+   * @param gpsLogId The id of the GPS log
+   * @param em The entity manager
+   * @tparam T The type of sensor log to update
+   * @return true if success
+   */
+  def linkSensorLogToGpsLog[T: ClassTag](dataLogId: Long, gpsLogId: Long, em: EntityManager): Boolean = {
+    try {
+      //em.getTransaction.begin
+      val queryStr: String = "UPDATE " + classTag[T].runtimeClass.getName + " " +
+        "SET gps_log_id=" + gpsLogId + " " +
+        "WHERE id=" + dataLogId
+      val q: Query = em.createQuery(queryStr)
+      q.executeUpdate
+      //println("linkSensorLogToGpsLog() - ["+ dataLogId +"]")
+      //em.getTransaction.commit
+      true
+    }
+    catch {
+      case ex: Exception => {
+        ex.printStackTrace()
+        false
+      }
+    }
   }
 
   //def spatializationProgress(batchId: String): Future[Either[Long, String]] = {

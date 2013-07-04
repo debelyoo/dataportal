@@ -7,6 +7,7 @@ import controllers.util.JPAUtil;
 import controllers.util.SensorLog;
 import controllers.util.WebSerializable;
 import controllers.util.json.JsonSerializable;
+import models.Sensor;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
@@ -22,16 +23,22 @@ public class CompassLog implements WebSerializable, SensorLog {
     @GenericGenerator(name="increment", strategy = "increment")
     private Long id;
 
-    @Column(name="sensor_id")
-    private Long sensor_id;
+    //@Column(name="sensor_id")
+    //private Long sensor_id;
+    @OneToOne
+    @JoinColumn(name="sensor_id")
+    private Sensor sensor;
 
     private Date timestamp;
 
     private Double value;
 
-    @Column(name="geo_pos")
+    /*@Column(name="geo_pos")
     @Type(type="org.hibernate.spatial.GeometryType")
-    private Point geoPos;
+    private Point geoPos;*/
+    @OneToOne
+    @JoinColumn(name="gps_log_id")
+    private GpsLog gpsLog;
 
     public CompassLog() {
     }
@@ -46,12 +53,12 @@ public class CompassLog implements WebSerializable, SensorLog {
     }
 
     @Override
-    public Long getSensorId() {
-        return sensor_id;
+    public Sensor getSensor() {
+        return sensor;
     }
 
-    public void setSensorId(Long sId) {
-        this.sensor_id = sId;
+    public void setSensor(Sensor s) {
+        this.sensor = s;
     }
 
     @Override
@@ -71,12 +78,12 @@ public class CompassLog implements WebSerializable, SensorLog {
         this.value = v;
     }
 
-    public Point getGeoPos() {
-        return this.geoPos;
+    public GpsLog getGpsLog() {
+        return this.gpsLog;
     }
 
-    public void setGeoPos(Point pos) {
-        this.geoPos = pos;
+    public void setGpsLog(GpsLog gLog) {
+        this.gpsLog = gLog;
     }
 
     public String toString() {
@@ -96,13 +103,13 @@ public class CompassLog implements WebSerializable, SensorLog {
         public JsonElement serialize(CompassLog compassLog, java.lang.reflect.Type type, JsonSerializationContext context) {
             JsonElement logJson = new JsonObject();
             logJson.getAsJsonObject().addProperty("id", compassLog.getId());
-            logJson.getAsJsonObject().addProperty("sensor_id", compassLog.getSensorId());
+            logJson.getAsJsonObject().addProperty("sensor_id", compassLog.getSensor().id());
             logJson.getAsJsonObject().addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(compassLog.getTimestamp()));
             logJson.getAsJsonObject().addProperty("value", compassLog.getValue());
-            if(compassLog.getGeoPos() != null) {
+            if(compassLog.getGpsLog() != null) {
                 JsonObject point = new JsonObject();
-                point.addProperty("x", compassLog.getGeoPos().getX());
-                point.addProperty("y", compassLog.getGeoPos().getY());
+                point.addProperty("x", compassLog.getGpsLog().getGeoPos().getX());
+                point.addProperty("y", compassLog.getGpsLog().getGeoPos().getY());
                 logJson.getAsJsonObject().add("geo_pos", point);
             }
             return logJson;
@@ -115,9 +122,9 @@ public class CompassLog implements WebSerializable, SensorLog {
         kmlStr += "<Placemark>";
         kmlStr += "<name>temperaturelog"+ this.id +"</name>";
         kmlStr += "<description>The temperature measured in one point</description>";
-        if (this.geoPos != null) {
+        if (this.gpsLog != null) {
             kmlStr += "<Point>";
-            kmlStr += "<coordinates>"+ this.geoPos.getX()+","+ this.geoPos.getY() +"</coordinates>";
+            kmlStr += "<coordinates>"+ this.gpsLog.getGeoPos().getX()+","+ this.gpsLog.getGeoPos().getY() +"</coordinates>";
             kmlStr += "</Point>";
         }
         kmlStr += "</Placemark>";
@@ -130,13 +137,13 @@ public class CompassLog implements WebSerializable, SensorLog {
         gmlStr += "<gml:featureMember>";
         gmlStr += "<ecol:restRequest fid=\"temperaturelog"+ this.id +"\">";
         gmlStr += "<ecol:id>"+ this.id +"</ecol:id>";
-        gmlStr += "<ecol:sensor_id>"+ this.sensor_id +"</ecol:sensor_id>";
+        gmlStr += "<ecol:sensor_id>"+ this.sensor.id() +"</ecol:sensor_id>";
         gmlStr += "<ecol:timestamp>"+ this.timestamp.toString() +"</ecol:timestamp>";
         gmlStr += "<ecol:value>"+ this.value +"</ecol:value>";
-        if (this.geoPos != null) {
+        if (this.gpsLog != null) {
             gmlStr += "<ecol:geo_pos>";
             gmlStr += "<gml:Point srsName=\"http://www.opengis.net/gml/srs/epsg.xml#4326\">";
-            gmlStr += "<gml:coordinates xmlns:gml=\"http://www.opengis.net/gml\" decimal=\".\" cs=\",\" ts=\" \">"+ this.geoPos.getX() +","+ this.geoPos.getY() +"</gml:coordinates>";
+            gmlStr += "<gml:coordinates xmlns:gml=\"http://www.opengis.net/gml\" decimal=\".\" cs=\",\" ts=\" \">"+ this.gpsLog.getGeoPos().getX() +","+ this.gpsLog.getGeoPos().getY() +"</gml:coordinates>";
             gmlStr += "</gml:Point>";
             gmlStr += "</ecol:geo_pos>";
         }

@@ -32,9 +32,10 @@ class SpatializationWorker extends Actor {
         if (batchNumbers.isDefined) {
           em.getTransaction.begin()
           // add position in temperaturelog table
-          updateGeoPos[TemperatureLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
+          //updateGeoPos[TemperatureLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
           // create mapping gpslog <-> temperaturelog
-          MapGpsTemperature(gpsLog.getId, sensorLog.getId).save(em)
+          //MapGpsTemperature(gpsLog.getId, sensorLog.getId).save(em)
+          linkSensorLogToGpsLog[TemperatureLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
           batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
           if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
@@ -52,9 +53,10 @@ class SpatializationWorker extends Actor {
         if (batchNumbers.isDefined) {
           em.getTransaction.begin()
           // add position in windlog table
-          updateGeoPos[WindLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
+          //updateGeoPos[WindLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
           // create mapping gpslog <-> windlog
-          MapGpsWind(gpsLog.getId, sensorLog.getId).save(em)
+          //MapGpsWind(gpsLog.getId, sensorLog.getId).save(em)
+          linkSensorLogToGpsLog[WindLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
           batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
           if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
@@ -72,9 +74,10 @@ class SpatializationWorker extends Actor {
         if (batchNumbers.isDefined) {
           em.getTransaction.begin()
           // add position in radiometerlog table
-          updateGeoPos[RadiometerLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
+          //updateGeoPos[RadiometerLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
           // create mapping gpslog <-> radiometerlog
-          MapGpsRadiometer(gpsLog.getId, sensorLog.getId).save(em)
+          //MapGpsRadiometer(gpsLog.getId, sensorLog.getId).save(em)
+          linkSensorLogToGpsLog[RadiometerLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
           batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
           if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
@@ -92,9 +95,10 @@ class SpatializationWorker extends Actor {
         if (batchNumbers.isDefined) {
           em.getTransaction.begin()
           // add position in compasslog table
-          updateGeoPos[CompassLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
+          //updateGeoPos[CompassLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
           // create mapping gpslog <-> compasslog
-          MapGpsRadiometer(gpsLog.getId, sensorLog.getId).save(em)
+          //MapGpsRadiometer(gpsLog.getId, sensorLog.getId).save(em)
+          linkSensorLogToGpsLog[CompassLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
           batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
           if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")

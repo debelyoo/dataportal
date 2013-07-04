@@ -4,10 +4,11 @@ import javax.persistence._
 import controllers.util.JPAUtil
 import org.hibernate.annotations.GenericGenerator
 import java.lang.Boolean
-import models.spatial.{WindLog, TemperatureLog, CompassLog}
+import models.spatial._
 import com.google.gson.Gson
 import java.util.Date
 import scala.collection.JavaConversions._
+import scala.Some
 
 @Entity
 @Table(name = "sensor")
@@ -134,22 +135,27 @@ object Sensor {
       AND '2013-06-13 16:31:25'::timestamp AND sensor_id = s.id AND s.name like 'PT%';*/
     val em = JPAUtil.createEntityManager()
     try {
-      em.getTransaction().begin()
-      val q = em.createQuery("SELECT DISTINCT s FROM "+ classOf[Sensor].getName +" s, " +
-        classOf[TemperatureLog].getName +" tl WHERE tl.sensor_id = s.id " +
+      //em.getTransaction().begin()
+      /*val q = em.createQuery("SELECT DISTINCT s FROM "+ classOf[Sensor].getName +" s, " +
+        classOf[TemperatureLog].getName +" tl WHERE tl.sensor = s " +
         "AND timestamp BETWEEN :start AND :end", classOf[Sensor])
       q.setParameter("start", from, TemporalType.TIMESTAMP)
       q.setParameter("end", to, TemporalType.TIMESTAMP)
       val q2 = em.createQuery("SELECT DISTINCT s FROM "+ classOf[Sensor].getName +" s, " +
-        classOf[WindLog].getName +" wl WHERE wl.sensor_id = s.id " +
+        classOf[WindLog].getName +" wl WHERE wl.sensor = s " +
         "AND timestamp BETWEEN :start AND :end", classOf[Sensor])
       q2.setParameter("start", from, TemporalType.TIMESTAMP)
       q2.setParameter("end", to, TemporalType.TIMESTAMP)
-
       val sensors = q.getResultList.toList ++ q2.getResultList.toList
+      */
+      val temperatureSensors = DataLogManager.getByTimeInterval[TemperatureLog](from, to, false, Some(em)).map(_.getSensor).distinct
+      val windSensors = DataLogManager.getByTimeInterval[WindLog](from, to, false, Some(em)).map(_.getSensor).distinct
+      val radiometerSensors = DataLogManager.getByTimeInterval[RadiometerLog](from, to, false, Some(em)).map(_.getSensor).distinct
+      val compassSensors = DataLogManager.getByTimeInterval[CompassLog](from, to, false, Some(em)).map(_.getSensor).distinct
+      val sensors = temperatureSensors ++ windSensors ++ radiometerSensors ++ compassSensors
 
-      em.getTransaction().commit()
-      sensors
+      //em.getTransaction().commit()
+      sensors.sortBy(_.name)
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()
