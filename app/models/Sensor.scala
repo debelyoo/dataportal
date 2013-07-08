@@ -9,6 +9,7 @@ import com.google.gson.Gson
 import java.util.Date
 import scala.collection.JavaConversions._
 import scala.Some
+import scala.reflect.{ClassTag, classTag}
 
 @Entity
 @Table(name = "sensor")
@@ -135,32 +136,54 @@ object Sensor {
       AND '2013-06-13 16:31:25'::timestamp AND sensor_id = s.id AND s.name like 'PT%';*/
     val em = JPAUtil.createEntityManager()
     try {
-      //em.getTransaction().begin()
-      /*val q = em.createQuery("SELECT DISTINCT s FROM "+ classOf[Sensor].getName +" s, " +
-        classOf[TemperatureLog].getName +" tl WHERE tl.sensor = s " +
-        "AND timestamp BETWEEN :start AND :end", classOf[Sensor])
-      q.setParameter("start", from, TemporalType.TIMESTAMP)
-      q.setParameter("end", to, TemporalType.TIMESTAMP)
-      val q2 = em.createQuery("SELECT DISTINCT s FROM "+ classOf[Sensor].getName +" s, " +
-        classOf[WindLog].getName +" wl WHERE wl.sensor = s " +
-        "AND timestamp BETWEEN :start AND :end", classOf[Sensor])
-      q2.setParameter("start", from, TemporalType.TIMESTAMP)
-      q2.setParameter("end", to, TemporalType.TIMESTAMP)
-      val sensors = q.getResultList.toList ++ q2.getResultList.toList
-      */
-      val temperatureSensors = DataLogManager.getByTimeInterval[TemperatureLog](from, to, false, Some(em)).map(_.getSensor).distinct
-      val windSensors = DataLogManager.getByTimeInterval[WindLog](from, to, false, Some(em)).map(_.getSensor).distinct
-      val radiometerSensors = DataLogManager.getByTimeInterval[RadiometerLog](from, to, false, Some(em)).map(_.getSensor).distinct
-      val compassSensors = DataLogManager.getByTimeInterval[CompassLog](from, to, false, Some(em)).map(_.getSensor).distinct
+      em.getTransaction().begin()
+      //val temperatureSensors = getActiveSensorByTimeInterval[TemperatureLog](from, to, false, Some(em)).map(_.getSensor).distinct
+      val temperatureSensors = getActiveSensorByTimeInterval[TemperatureLog](from, to, false, Some(em))
+      val windSensors = getActiveSensorByTimeInterval[WindLog](from, to, false, Some(em))
+      val radiometerSensors = getActiveSensorByTimeInterval[RadiometerLog](from, to, false, Some(em))
+      val compassSensors = getActiveSensorByTimeInterval[CompassLog](from, to, false, Some(em))
       val sensors = temperatureSensors ++ windSensors ++ radiometerSensors ++ compassSensors
 
-      //em.getTransaction().commit()
+      em.getTransaction().commit()
       sensors.sortBy(_.name)
+    } catch {
+      case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      em.close()
+    }
+  }
+
+  /**
+   * Get the data logs of a type between a time interval
+   * @param startTime The start time of the interval
+   * @param endTime The end time of the interval
+   * @param geoOnly Indicates if we want only the logs mapped to a gps log
+   * @tparam T The type of data log to get
+   * @return A list of the logs in the specified time interval
+   */
+  private def getActiveSensorByTimeInterval[T: ClassTag](startTime: Date, endTime: Date, geoOnly: Boolean, emOpt: Option[EntityManager] = None): List[Sensor] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
+    try {
+      if (emOpt.isEmpty) em.getTransaction().begin()
+      val clazz = classTag[T].runtimeClass
+      val geoCondition = if (geoOnly) "AND log.gpsLog IS NOT NULL " else ""
+      // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
+      val queryStr = "SELECT DISTINCT log.sensor from "+ clazz.getName +" log " +
+        "WHERE timestamp BETWEEN :start AND :end " + geoCondition
+      //println(queryStr)
+
+      val q = em.createQuery(queryStr)
+      q.setParameter("start", startTime, TemporalType.TIMESTAMP)
+      q.setParameter("end", endTime, TemporalType.TIMESTAMP)
+      //println(q.getResultList)
+      val sensors = q.getResultList.map(_.asInstanceOf[Sensor]).toList
+      if (emOpt.isEmpty) em.getTransaction().commit()
+      sensors
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()
     } finally {
-      em.close()
+      if (emOpt.isEmpty) em.close()
     }
   }
 }
