@@ -106,6 +106,7 @@ class InsertionWorker extends Actor {
       try {
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
+        // ALTERNATIVE - create unique string, use timestamp format with seconds (and not milli) --> import only one GPS point per second
         val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
         val res = if (!logCache.contains(uniqueString)) {
           val (lat, lon) = if (math.abs(latitude) > 90 || math.abs(longitude) > 180) {
