@@ -29,7 +29,8 @@ class SpatializationWorker extends Actor {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         val batchNumbers = batchProgress.get(batchId)
-        if (batchNumbers.isDefined) {
+        assert(batchNumbers.isDefined, {println("[ASSERTION] batchId is not in batch map")})
+        if (sensorLog.asInstanceOf[TemperatureLog].getGpsLog == null) {
           em.getTransaction.begin()
           // add position in temperaturelog table
           //updateGeoPos[TemperatureLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
@@ -37,11 +38,12 @@ class SpatializationWorker extends Actor {
           //MapGpsTemperature(gpsLog.getId, sensorLog.getId).save(em)
           linkSensorLogToGpsLog[TemperatureLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
-          batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
-          if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
         }
+        // update batch progress, even if sensor log is already linked to a GPS point
+        BatchManager.updateBatchProgress(batchId, "Spatialization")
       } catch {
-        case ex: Exception =>
+        case ae: AssertionError =>
+        case ex: Exception => ex.printStackTrace()
       } finally {
         em.close()
       }
@@ -50,7 +52,8 @@ class SpatializationWorker extends Actor {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         val batchNumbers = batchProgress.get(batchId)
-        if (batchNumbers.isDefined) {
+        assert(batchNumbers.isDefined, {println("[ASSERTION] batchId is not in batch map")})
+        if (sensorLog.asInstanceOf[WindLog].getGpsLog == null) {
           em.getTransaction.begin()
           // add position in windlog table
           //updateGeoPos[WindLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
@@ -58,10 +61,10 @@ class SpatializationWorker extends Actor {
           //MapGpsWind(gpsLog.getId, sensorLog.getId).save(em)
           linkSensorLogToGpsLog[WindLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
-          batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
-          if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
         }
+        BatchManager.updateBatchProgress(batchId, "Spatialization")
       } catch {
+        case ae: AssertionError =>
         case ex: Exception => ex.printStackTrace()
       } finally {
         em.close()
@@ -71,7 +74,8 @@ class SpatializationWorker extends Actor {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         val batchNumbers = batchProgress.get(batchId)
-        if (batchNumbers.isDefined) {
+        assert(batchNumbers.isDefined, {println("[ASSERTION] batchId is not in batch map")})
+        if (sensorLog.asInstanceOf[RadiometerLog].getGpsLog == null) {
           em.getTransaction.begin()
           // add position in radiometerlog table
           //updateGeoPos[RadiometerLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
@@ -79,10 +83,10 @@ class SpatializationWorker extends Actor {
           //MapGpsRadiometer(gpsLog.getId, sensorLog.getId).save(em)
           linkSensorLogToGpsLog[RadiometerLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
-          batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
-          if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
         }
+        BatchManager.updateBatchProgress(batchId, "Spatialization")
       } catch {
+        case ae: AssertionError =>
         case ex: Exception =>
       } finally {
         em.close()
@@ -92,7 +96,8 @@ class SpatializationWorker extends Actor {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         val batchNumbers = batchProgress.get(batchId)
-        if (batchNumbers.isDefined) {
+        assert(batchNumbers.isDefined, {println("[ASSERTION] batchId is not in batch map")})
+        if (sensorLog.asInstanceOf[CompassLog].getGpsLog == null) {
           em.getTransaction.begin()
           // add position in compasslog table
           //updateGeoPos[CompassLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
@@ -100,10 +105,10 @@ class SpatializationWorker extends Actor {
           //MapGpsRadiometer(gpsLog.getId, sensorLog.getId).save(em)
           linkSensorLogToGpsLog[CompassLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
-          batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
-          if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
         }
+        BatchManager.updateBatchProgress(batchId, "Spatialization")
       } catch {
+        case ae: AssertionError =>
         case ex: Exception =>
       } finally {
         em.close()
@@ -112,8 +117,7 @@ class SpatializationWorker extends Actor {
     case Message.NoCloseLog(batchId) => {
       val batchNumbers = batchProgress.get(batchId)
       if (batchNumbers.isDefined) {
-        batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
-        if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Spatialization batch ["+ batchId +"]: 100%")
+        BatchManager.updateBatchProgress(batchId, "Spatialization")
       }
     }
 

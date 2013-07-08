@@ -42,39 +42,20 @@ trait GetApi extends ResponseFormatter {
         val endDate = DateFormatHelper.dateTimeFormatter.parse(map.get("to_date").get)
         val geoOnly = map.get("geo_only").getOrElse("true").toBoolean
         val sensorIdList = map.get("sensor_id").map(_.toLong).toList // TODO handle multi Ids (by parsing string)
+        val maxNb = map.get("max_nb").map(_.toInt)
         val logMap = map.get("data_type").get match {
           case DataImporter.Types.TEMPERATURE => {
             //println("GET data - "+DataImporter.Types.TEMPERATURE)
-            DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, geoOnly, sensorIdList) // all data points
-            /*if (geoOnly) {
-              DataLogManager.getByTimeIntervalAndSensorWithJoin[TemperatureLog, MapGpsTemperature](startDate, endDate, sensorIdList) // only geo-referenced points (Request with JOIN seems to be faster)
-            } else {
-              DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, geoOnly, sensorIdList) // all data points
-            }*/
+            DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, geoOnly, sensorIdList, maxNb)
           }
           case DataImporter.Types.WIND => {
-            DataLogManager.getByTimeIntervalAndSensor[WindLog](startDate, endDate, geoOnly, sensorIdList)
-            /*if (geoOnly) {
-              DataLogManager.getByTimeIntervalAndSensorWithJoin[WindLog, MapGpsWind](startDate, endDate, sensorIdList)
-            } else {
-              DataLogManager.getByTimeIntervalAndSensor[WindLog](startDate, endDate, sensorIdList)
-            }*/
+            DataLogManager.getByTimeIntervalAndSensor[WindLog](startDate, endDate, geoOnly, sensorIdList, maxNb)
           }
           case DataImporter.Types.COMPASS => {
-            DataLogManager.getByTimeIntervalAndSensor[CompassLog](startDate, endDate, geoOnly, sensorIdList)
-            /*if (geoOnly) {
-              DataLogManager.getByTimeIntervalAndSensorWithJoin[CompassLog, MapGpsCompass](startDate, endDate, sensorIdList)
-            } else {
-              DataLogManager.getByTimeIntervalAndSensor[CompassLog](startDate, endDate, sensorIdList)
-            }*/
+            DataLogManager.getByTimeIntervalAndSensor[CompassLog](startDate, endDate, geoOnly, sensorIdList, maxNb)
           }
           case DataImporter.Types.RADIOMETER => {
-            DataLogManager.getByTimeIntervalAndSensor[RadiometerLog](startDate, endDate, geoOnly, sensorIdList)
-            /*if (geoOnly) {
-              DataLogManager.getByTimeIntervalAndSensorWithJoin[RadiometerLog, MapGpsRadiometer](startDate, endDate, sensorIdList)
-            } else {
-              DataLogManager.getByTimeIntervalAndSensor[RadiometerLog](startDate, endDate, sensorIdList)
-            }*/
+            DataLogManager.getByTimeIntervalAndSensor[RadiometerLog](startDate, endDate, geoOnly, sensorIdList, maxNb)
           }
           case _ => {
             println("GET data - Unknown data type")

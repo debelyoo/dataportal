@@ -112,7 +112,7 @@ object DataLogManager {
       val geoCondition = if (geoOnly) "AND log.gpsLog IS NOT NULL " else ""
       // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
       val queryStr = "from "+ clazz.getName +" log " +
-        "WHERE timestamp BETWEEN :start and :end " + geoCondition +
+        "WHERE timestamp BETWEEN :start AND :end " + geoCondition +
         "ORDER BY timestamp"
       //println(queryStr)
 
@@ -180,6 +180,7 @@ object DataLogManager {
                                                endTime: Date,
                                                geoOnly: Boolean,
                                                sensorIdList: List[Long],
+                                               maxNb: Option[Int],
                                                emOpt: Option[EntityManager] = None): Map[String, List[T]] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
@@ -202,7 +203,21 @@ object DataLogManager {
       println("Nb of logs queried: "+logs.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
       val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getSensor.id)
-      logsMapBySensorId.map { case (sId, logs) => (sensors.get(sId).get.name, logs.map(_.asInstanceOf[T])) }
+      logsMapBySensorId.map { case (sId, logs) => {
+          val reducedLogList = if (maxNb.isDefined && logs.length > maxNb.get) {
+            val moduloFactor = math.ceil(logs.length.toDouble / maxNb.get.toDouble).toInt
+            println("logs list reduced by factor: "+ moduloFactor)
+            for {
+              (sl, ind) <- logs.zipWithIndex
+              if (ind % moduloFactor == 0)
+            } yield {
+              sl
+            }
+          } else logs
+          println("Nb of logs returned: "+reducedLogList.length)
+          (sensors.get(sId).get.name, reducedLogList.map(_.asInstanceOf[T]))
+        }
+      }
     } catch {
       case nre: NoResultException => println("No result !!"); Map()
       case ex: Exception => ex.printStackTrace; Map()
