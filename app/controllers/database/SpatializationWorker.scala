@@ -27,8 +27,6 @@ class SpatializationWorker extends Actor {
           em.getTransaction.begin()
           // add position in temperaturelog table
           //updateGeoPos[TemperatureLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
-          // create mapping gpslog <-> temperaturelog
-          //MapGpsTemperature(gpsLog.getId, sensorLog.getId).save(em)
           linkSensorLogToGpsLog[TemperatureLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
         }
@@ -50,8 +48,6 @@ class SpatializationWorker extends Actor {
           em.getTransaction.begin()
           // add position in windlog table
           //updateGeoPos[WindLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
-          // create mapping gpslog <-> windlog
-          //MapGpsWind(gpsLog.getId, sensorLog.getId).save(em)
           linkSensorLogToGpsLog[WindLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
         }
@@ -72,8 +68,6 @@ class SpatializationWorker extends Actor {
           em.getTransaction.begin()
           // add position in radiometerlog table
           //updateGeoPos[RadiometerLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
-          // create mapping gpslog <-> radiometerlog
-          //MapGpsRadiometer(gpsLog.getId, sensorLog.getId).save(em)
           linkSensorLogToGpsLog[RadiometerLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
         }
@@ -94,8 +88,6 @@ class SpatializationWorker extends Actor {
           em.getTransaction.begin()
           // add position in compasslog table
           //updateGeoPos[CompassLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
-          // create mapping gpslog <-> compasslog
-          //MapGpsRadiometer(gpsLog.getId, sensorLog.getId).save(em)
           linkSensorLogToGpsLog[CompassLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
         }
