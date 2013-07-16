@@ -157,7 +157,7 @@ object DataLogManager {
       val sensorCondition = if (sensorIdList.nonEmpty) "AND log.sensor.id IN ("+ sensorIdList.mkString(",") +") " else ""
       val queryStr = "from "+ clazz.getName +" log WHERE timestamp BETWEEN :start AND :end "+ geoCondition + sensorCondition +
         "ORDER BY timestamp"
-      //println(queryStr)
+      println(queryStr)
       val q = em.createQuery(queryStr)
       q.setParameter("start", startTime, TemporalType.TIMESTAMP)
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)

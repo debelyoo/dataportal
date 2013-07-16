@@ -30,6 +30,10 @@ object Application extends Controller with GetApi {
     Ok(views.html.spatializeSensorData())
   }
 
+  def view = Action {
+    Ok(views.html.view())
+  }
+
   def contact = Action {
     Ok(views.html.contact())
   }

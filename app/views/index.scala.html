@@ -1,6 +1,7 @@
 @(message: String)
 
-@main("ECOL data portal") {
+@main("ECOL data portal", true) {
     <h1>Welcome on the ECOL data portal !</h1>
-    <p>some description</p>
+    <p>These pages enable you to import, spatialize and visualize the data that is collected by the Catamaran.</p>
+    <img id="image_cat" src="@routes.Assets.at("images/catamaran.jpg")"/>
 }

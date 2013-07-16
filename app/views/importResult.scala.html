@@ -3,7 +3,7 @@
 @import play.api.Play
 @import play.api.Play.current
 
-@main("import result - ECOL") {
+@main("import result - ECOL", true) {
     @if(batchId != "") {
         <h2><span id="statusPlaceholder">Import started ...</span></h2>
         <p>Progress: <span id="progressPlaceholder"></span></p>

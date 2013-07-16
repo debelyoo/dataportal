@@ -1,0 +1,12 @@
+.container_large {
+    height: 90%;
+}
+
+.spaced_top {
+    margin-top: 40px;
+}
+
+#image_cat {
+    width: 500px;
+    margin: 10px 50px;
+}

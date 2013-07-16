@@ -9,6 +9,7 @@ GET     /importResult/*batchId          controllers.Application.importResult(bat
 GET     /spatializeForm                 controllers.Application.spatializeForm
 GET     /spatializeResult/*batchId      controllers.Application.spatializeResult(batchId)
 GET     /batch/progress/*batchId        controllers.Application.spatializationProgress(batchId)
+GET     /view                           controllers.Application.view
 GET     /contact                        controllers.Application.contact
 
 POST     /import                    controllers.Application.importData

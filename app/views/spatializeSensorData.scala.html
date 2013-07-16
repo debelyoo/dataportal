@@ -1,6 +1,6 @@
 @import models.spatial.DataLogManager
 
-@main("spatialize - ECOL") {
+@main("spatialize - ECOL", true) {
 
 <h2>Spatialize sensor data</h2>
 @helper.form(action = routes.Application.spatializeData, 'enctype -> "multipart/form-data") {

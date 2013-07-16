@@ -3,7 +3,7 @@
 @import play.api.Play
 @import play.api.Play.current
 
-@main("spatialize result - ECOL") {
+@main("spatialize result - ECOL", true) {
     @if(batchId != "") {
         <h2><span id="statusPlaceholder">Spatialization started ...</span></h2>
         <p>Progress: <span id="progressPlaceholder"></span></p>
