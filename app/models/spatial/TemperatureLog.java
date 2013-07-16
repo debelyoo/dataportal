@@ -19,18 +19,13 @@ import java.util.Date;
 
 @Entity
 @Table(name = "temperaturelog", uniqueConstraints = @UniqueConstraint(columnNames = {"sensor_id", "timestamp"}))
-//@XmlRootElement
-//@XmlAccessorType(XmlAccessType.FIELD)
 public class TemperatureLog implements WebSerializable, SensorLog {
 
     @Id
     @GeneratedValue(generator="increment")
     @GenericGenerator(name="increment", strategy = "increment")
-    //@XmlElement(name="id")
     private Long id;
 
-    //@Column(name="sensor_id")
-    //private Long sensor_id;
     @OneToOne
     @JoinColumn(name="sensor_id")
     private Sensor sensor;
@@ -39,9 +34,6 @@ public class TemperatureLog implements WebSerializable, SensorLog {
 
     private Double value;
 
-    /*@Column(name="geo_pos")
-    @Type(type="org.hibernate.spatial.GeometryType")
-    private Point geoPos;*/
     @OneToOne
     @JoinColumn(name="gps_log_id")
     private GpsLog gpsLog;
@@ -58,14 +50,6 @@ public class TemperatureLog implements WebSerializable, SensorLog {
         this.id = id;
     }
 
-    /*@Override
-    public Long getSensorId() {
-        return sensor_id;
-    }
-
-    public void setSensorId(Long sId) {
-        this.sensor_id = sId;
-    }*/
     @Override
     public Sensor getSensor() {
         return sensor;
@@ -92,14 +76,6 @@ public class TemperatureLog implements WebSerializable, SensorLog {
         this.value = v;
     }
 
-    /*public Point getGeoPos() {
-        return this.geoPos;
-    }
-
-    public void setGeoPos(Point pos) {
-        this.geoPos = pos;
-    }*/
-
     public GpsLog getGpsLog() {
         return this.gpsLog;
     }
@@ -111,8 +87,6 @@ public class TemperatureLog implements WebSerializable, SensorLog {
     @Override
     public String toString() {
         String gpsStr = "";
-        //if (this.geoPos != null) {
-            //gpsStr = "GPS: ("+ this.geoPos.getX() + ","+ this.geoPos.getY() +")";
         if (this.gpsLog != null) {
             gpsStr = "GPS: ("+ this.gpsLog.getGeoPos().getX() + ","+ this.gpsLog.getGeoPos().getY() +")";
         } else {
@@ -180,12 +154,6 @@ public class TemperatureLog implements WebSerializable, SensorLog {
             logJson.getAsJsonObject().addProperty("sensor_id", temperatureLog.getSensor().id());
             logJson.getAsJsonObject().addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(temperatureLog.getTimestamp()));
             logJson.getAsJsonObject().addProperty("value", temperatureLog.getValue());
-            /*if(temperatureLog.getGeoPos() != null) {
-                JsonObject point = new JsonObject();
-                point.addProperty("x", temperatureLog.getGeoPos().getX());
-                point.addProperty("y", temperatureLog.getGeoPos().getY());
-                logJson.getAsJsonObject().add("geo_pos", point);
-            }*/
             if(temperatureLog.getGpsLog() != null) {
                 JsonObject point = new JsonObject();
                 point.addProperty("x", temperatureLog.getGpsLog().getGeoPos().getX());

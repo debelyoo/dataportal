@@ -131,40 +131,6 @@ object DataLogManager {
   }
 
   /**
-   * Get the data logs of a type between a time interval
-   * @param startTime The start time of the interval
-   * @param endTime The end time of the interval
-   * @tparam T The type of data log to get
-   * @tparam M The type of the mapping table
-   * @return A list of the logs in the specified time interval
-   */
-  /*def getByTimeIntervalWithJoin[T: ClassTag, M: ClassTag](startTime: Date, endTime: Date, emOpt: Option[EntityManager] = None): List[T] = {
-    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
-    try {
-      if (emOpt.isEmpty) em.getTransaction().begin()
-      val clazz = classTag[T].runtimeClass
-      val clazzMapping = classTag[M].runtimeClass
-      // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
-      val queryStr = "SELECT lt FROM "+ clazz.getName +" lt, " + clazzMapping.getName +" map "+
-        "WHERE lt.timestamp BETWEEN :start and :end AND lt.id = map.datalog_id " +
-        "ORDER BY lt.timestamp"
-      //println(queryStr)
-      val q = em.createQuery(queryStr)
-      q.setParameter("start", startTime, TemporalType.TIMESTAMP)
-      q.setParameter("end", endTime, TemporalType.TIMESTAMP)
-      //println(q.getResultList)
-      val logs = q.getResultList.map(_.asInstanceOf[T]).toList
-      if (emOpt.isEmpty) em.getTransaction().commit()
-      logs
-    } catch {
-      case nre: NoResultException => List()
-      case ex: Exception => ex.printStackTrace; List()
-    } finally {
-      if (emOpt.isEmpty) em.close()
-    }
-  }*/
-
-  /**
    * Get the data logs of a type between a time interval, filtered by sensor id
    * @param startTime The start time of the interval
    * @param endTime The end time of the interval
@@ -224,53 +190,6 @@ object DataLogManager {
       if (emOpt.isEmpty) em.close()
     }
   }
-
-  /**
-   * Get the data logs of a type between a time interval, filtered by sensor id
-   * @param startTime The start time of the interval
-   * @param endTime The end time of the interval
-   * @param sensorIdList The list of sensor we are interested in
-   * @param emOpt The optional entityManager
-   * @tparam T The type of data log to get
-   * @return A list of the logs in the specified time interval, formatted as a map 'sensorName -> logs'
-   */
-  /*def getByTimeIntervalAndSensorWithJoin[T: ClassTag, M: ClassTag](
-                                                                    startTime: Date,
-                                                                    endTime: Date,
-                                                                    sensorIdList: List[Long],
-                                                                    emOpt: Option[EntityManager] = None): Map[String, List[T]] = {
-    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
-    try {
-      if (emOpt.isEmpty) em.getTransaction().begin()
-      val sensors = Sensor.getById(sensorIdList, emOpt)
-      val clazz = classTag[T].runtimeClass
-      val clazzMapping = classTag[M].runtimeClass
-      // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
-      //val queryStr = "from "+ clazz.getName +" WHERE timestamp BETWEEN :start AND :end AND sensor_id = :sid ORDER BY timestamp"
-      val sensorCondition = if (sensorIdList.nonEmpty) "AND sensor_id IN ("+ sensorIdList.mkString(",") +") " else ""
-      val queryStr = "SELECT lt FROM "+ clazz.getName +" lt, " + clazzMapping.getName +" map "+
-        "WHERE lt.timestamp BETWEEN :start AND :end AND lt.id = map.datalog_id " + sensorCondition +
-        "ORDER BY lt.timestamp"
-      //println(queryStr)
-      //println("Params: "+startTime+", "+endTime)
-      val q = em.createQuery(queryStr)
-      q.setParameter("start", startTime, TemporalType.TIMESTAMP)
-      q.setParameter("end", endTime, TemporalType.TIMESTAMP)
-      val start = new Date
-      val logs = q.getResultList.map(_.asInstanceOf[T]).toList.distinct // Need to use distinct here, because using "SELECT DISTINCT lt.* FROM ..." is buggy
-      //val logs = q.getResultList.map(_.asInstanceOf[T]).toList.distinct.take(1000) // TODO - test
-      val diff = (new Date).getTime - start.getTime
-      println("Nb of logs queried (Join): "+logs.length + " ["+ diff +"ms]")
-      if (emOpt.isEmpty) em.getTransaction().commit()
-      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getSensor.id)
-      logsMapBySensorId.map { case (sId, logs) => (sensors.get(sId).get.name, logs.map(_.asInstanceOf[T])) }
-    } catch {
-      case nre: NoResultException => Map()
-      case ex: Exception => ex.printStackTrace; Map()
-    } finally {
-      if (emOpt.isEmpty) em.close()
-    }
-  }*/
 
   /**
    * Converts a Double value to Int
@@ -377,6 +296,10 @@ object DataLogManager {
     batchId
   }
 
+  /**
+   * Get the distinct dates for which there is logs
+   * @return A list of dates (as String)
+   */
   def getDates: List[String] = {
     val em = JPAUtil.createEntityManager()
     try {

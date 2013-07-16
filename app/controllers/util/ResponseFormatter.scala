@@ -33,6 +33,11 @@ trait ResponseFormatter {
     }
   }
 
+  /**
+   * Format the list of logs as JSON array
+   * @param logMap A map with the logs for each sensor
+   * @return A JSON object with the sensor logs
+   */
   private def logsAsJson(logMap: Map[String, List[JsonSerializable]]): JsValue = {
     val jsObjectList = logMap.map { case (sensorName, logList) => {
       val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
@@ -75,13 +80,12 @@ trait ResponseFormatter {
     asXml(xmlDoc)
   }
 
+  /**
+   * Convert W3C XML format to Scala XML
+   * @param dom The XML document in W3C XML format
+   * @return The document as Scala XML
+   */
   private def asXml(dom: org.w3c.dom.Node): Node = {
-    /*val dom2sax = new DOM2SAX(dom)
-    val adapter = new NoBindingFactoryAdapter
-    dom2sax.setContentHandler(adapter)
-    dom2sax.parse()
-    adapter.rootElem*/
-    //
     val transformerFactory = javax.xml.transform.TransformerFactory.newInstance()
     val source = new DOMSource(dom)
     val adapter = new NoBindingFactoryAdapter

@@ -23,8 +23,6 @@ public class CompassLog implements WebSerializable, SensorLog {
     @GenericGenerator(name="increment", strategy = "increment")
     private Long id;
 
-    //@Column(name="sensor_id")
-    //private Long sensor_id;
     @OneToOne
     @JoinColumn(name="sensor_id")
     private Sensor sensor;
@@ -33,9 +31,6 @@ public class CompassLog implements WebSerializable, SensorLog {
 
     private Double value;
 
-    /*@Column(name="geo_pos")
-    @Type(type="org.hibernate.spatial.GeometryType")
-    private Point geoPos;*/
     @OneToOne
     @JoinColumn(name="gps_log_id")
     private GpsLog gpsLog;

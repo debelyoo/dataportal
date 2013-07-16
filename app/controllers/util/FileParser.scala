@@ -61,12 +61,6 @@ object FileParser {
    * @return The nb of inserted values
    */
   def parseDataFile(dataType: String, file: File, sensors: Map[String, Sensor]): Option[String] = {
-    //var nbInserted, nbFailed = 0
-    /*def updateCounters(res: Option[Boolean]) {
-      if (res.isDefined) {
-        if (res.get) nbInserted += 1
-      } else nbFailed += 1
-    }*/
     try {
       val source = scala.io.Source.fromFile(file)
       val linesAsStr = source.mkString

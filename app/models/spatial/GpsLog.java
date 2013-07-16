@@ -22,8 +22,6 @@ public class GpsLog implements JsonSerializable, SensorLog {
     @GenericGenerator(name="increment", strategy = "increment")
     private Long id;
 
-    //@Column(name="sensor_id")
-    //private Long sensorId;
     @OneToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="sensor_id")
     private Sensor sensor;
@@ -46,14 +44,6 @@ public class GpsLog implements JsonSerializable, SensorLog {
         this.id = id;
     }
 
-    /*@Override
-    public Long getSensorId() {
-        return sensorId;
-    }
-
-    public void setSensorId(Long sId) {
-        this.sensorId = sId;
-    }*/
     @Override
     public Sensor getSensor() {
         return sensor;

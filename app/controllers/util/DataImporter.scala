@@ -30,6 +30,9 @@ object DataImporter {
       val batchId = FileParser.parseDataFile(dataType, dataFile, sensors.get)
       assert(batchId.isDefined, {println("Parsing of data file failed !")})
       //println("Import Successful !")
+      // delete the files from /tmp folder
+      addressFile.delete()
+      dataFile.delete()
       batchId.get
     } catch {
       case ae: AssertionError => ""
@@ -37,6 +40,11 @@ object DataImporter {
     }
   }
 
+  /**
+   * Get the files from the form data and save them in /tmp folder
+   * @param request The HTTP request
+   * @return The 2 uplaoded files and the type of the data to import
+   */
   def uploadFiles(request: Request[MultipartFormData[Files.TemporaryFile]]): (Option[File], Option[File], String) = {
     val addressFile = request.body.file("addressFile").map { file =>
       import java.io.File
