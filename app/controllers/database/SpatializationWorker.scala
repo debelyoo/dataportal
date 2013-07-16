@@ -18,13 +18,6 @@ class SpatializationWorker extends Actor {
       DataLogManager.spatializationBatchWorker ! Message.Work(batchId, dataType)
     }
 
-    /*case Message.GetSpatializationProgress(batchId) => {
-      val percentage = batchProgress.get(batchId).map {
-        case (nbTot, nbDone) => math.round((nbDone.toDouble / nbTot.toDouble) * 100)
-      }
-      sender ! percentage
-    }*/
-
     case Message.SpatializeTemperatureLog(batchId, gpsLog, sensorLog) => {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
