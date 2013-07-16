@@ -4,10 +4,12 @@ function getProgress(batchId, progressType, urlPrefix) {
     }).done(function( jsonData ) {
         var prog = jsonData['progress'];
         $("#progressPlaceholder").html(prog + "%");
+        $(".progress .bar").css({'width': prog + "%"});
         if (prog != 100) {
             setTimeout(function() {getProgress(batchId, progressType, urlPrefix)}, 1000)
         } else {
             $("#statusPlaceholder").html(progressType + " terminated !");
+            $(".progress").removeClass('active');
         }
     });
 }

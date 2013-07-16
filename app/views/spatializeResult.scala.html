@@ -7,6 +7,9 @@
     @if(batchId != "") {
         <h2><span id="statusPlaceholder">Spatialization started ...</span></h2>
         <p>Progress: <span id="progressPlaceholder"></span></p>
+        <div class="progress progress-striped active">
+            <div class="bar" style="width: 0%;"></div>
+        </div>
     } else {
         <h2>Spatialization failed !</h2>
         <!--<p>Nb spatialized measures: nbSuccess (But nbFailures failures)</p>-->
