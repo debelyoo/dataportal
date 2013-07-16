@@ -5,7 +5,6 @@ import javax.persistence.{Query, EntityManager, TemporalType, NoResultException}
 import scala.reflect.{ClassTag, classTag}
 import java.util.{UUID, Calendar, Date}
 import scala.collection.JavaConversions._
-import models.mapping.{MapGpsRadiometer, MapGpsWind, MapGpsCompass, MapGpsTemperature}
 import models.Sensor
 import controllers.database._
 import play.libs.Akka

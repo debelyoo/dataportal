@@ -5,7 +5,6 @@ import controllers.util.{SensorLog, JPAUtil, Message}
 import models.spatial._
 import models.spatial.DataLogManager._
 import javax.persistence.EntityManager
-import models.mapping.{MapGpsRadiometer, MapGpsWind, MapGpsTemperature}
 import BatchManager._
 
 class SpatializationWorker extends Actor {

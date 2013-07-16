@@ -4,7 +4,6 @@ import controllers.util._
 import models.spatial._
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
-import models.mapping.{MapGpsRadiometer, MapGpsCompass, MapGpsTemperature, MapGpsWind}
 
 //import scala.reflect.{ClassTag, classTag}
 import models.Sensor
