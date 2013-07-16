@@ -318,7 +318,7 @@ object DataLogManager {
       }
       case DataImporter.Types.TEMPERATURE => {
         val logs = getByDate[TemperatureLog](date)
-        println("XX - "+logs.head)
+        //println("XX - "+logs.head)
         try {
           // link each GPS log to one sensor log
           //linkGpsLogToSensorLog(dataType, logs)
@@ -521,7 +521,10 @@ object DataLogManager {
    */
   def spatializationProgress(batchId: String): Option[Long] = {
     val percentage = BatchManager.batchProgress.get(batchId).map {
-      case (nbTot, nbDone) => math.round((nbDone.toDouble / nbTot.toDouble) * 100)
+      case (nbTot, nbDone) => math.floor((nbDone.toDouble / nbTot.toDouble) * 100).toLong
+    }
+    if(percentage.isDefined && percentage.get == 100L) {
+      BatchManager.cleanCompletedBatch(batchId)
     }
     percentage
   }

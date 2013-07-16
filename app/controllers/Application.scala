@@ -61,23 +61,10 @@ object Application extends Controller with GetApi {
     Redirect(routes.Application.spatializeResult(res))
   }
 
+  // Get the progress of a spatialization batch
   def spatializationProgress(batchId: String) = Action {
     val prog = DataLogManager.spatializationProgress(batchId)
     prog.map(p => Ok(Json.toJson(Map("progress" -> Json.toJson(p))))).getOrElse(NotFound)
-    /*val f_prog = DataLogManager.spatializationProgress(batchId)
-    Async {
-      f_prog.map(p => {
-        if (p.isLeft) {
-          Ok(Json.toJson(Map("progress" -> Json.toJson(p.left.get))))
-        } else {
-          if (p.right.get == "timeout") {
-            RequestTimeout
-          } else {
-            NotFound
-          }
-        }
-      })
-    }*/
   }
 
 }

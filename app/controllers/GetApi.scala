@@ -12,21 +12,25 @@ import models.Sensor
 trait GetApi extends ResponseFormatter {
   this: Controller =>
 
-  /*
-  Get logs by time interval
+  /**
+   * Get logs by time interval
+   * @param format The
+   * @param startTime
+   * @param endTime
+   * @param sensorId
    */
-  def getGpsLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
+  /*def getGpsLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
     val logList = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false)
     val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
     // build return JSON obj with array and count
     Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
-  }
+  }*/
 
   /**
    * Handle data request with query params  (ex: /api/data?data_type=temperature&from_date=20130613-150000&to_date=20130613-170000&sensor_id=4&geo_only=true)
-   * @return
+   * @return AN HTTP response containing data (formatted as XML or JSON)
    */
   def getData = Action {
     implicit request =>
@@ -69,26 +73,20 @@ trait GetApi extends ResponseFormatter {
       }
   }
 
-  /* Does not work - because of mix between Scala and Java ? */
-  /*def getSensorLogByTimeInterval[T <: JsonSerializable with ClassTag](startTime: String, endTime: String): JsValue = {
-  //def getSensorLogByTimeInterval[T: ClassTag](startTime: String, endTime: String): JsValue = {
-    val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
-    val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-    val logList = DataLogManager.getByTimeInterval[T](startDate, endDate)
-    val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
-    //val jsList = Json.toJson("test")
-    // build return JSON obj with array and count
-    Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length)))
-  }*/
-
-  /*
-  Get details of a particular log (used mainly for tests)
+  /**
+   * Get details of a particular sensor (used mainly for tests)
    */
   def getSensorById(sId: String) = Action {
     val sensorMap = Sensor.getById(List(sId.toLong), None)
     sensorMap.get(sId.toLong).map(s => Ok(Json.toJson(s.toJson))).getOrElse(NotFound) // return Not Found if no sensor with id 'sId' exists
   }
 
+  /**
+   * Get the active sensors in a time interval
+   * @param startTime The start time of the interval
+   * @param endTime The end time of the interval
+   * @return A list of sensors (JSON)
+   */
   def getSensorByDatetime(startTime: String, endTime: String) = Action {
     //println("Start: "+startTime +", End: "+endTime)
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
@@ -99,11 +97,11 @@ trait GetApi extends ResponseFormatter {
     Ok(Json.toJson(Map("sensors" -> jsList, "count" -> Json.toJson(sensorList.length))))
   }
 
+  /// Getters for log details (used mainly for tests)
   def getGpsLogById(gId: String) = Action {
     val logOpt = DataLogManager.getById[GpsLog](gId.toLong)
     logOpt.map(gl => Ok(gl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'gId' exists
   }
-
   def getCompassLogById(cId: String) = Action {
     val logOpt = DataLogManager.getById[CompassLog](cId.toLong)
     logOpt.map(cl => Ok(cl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'cId' exists
@@ -123,13 +121,23 @@ trait GetApi extends ResponseFormatter {
     val logOpt = DataLogManager.getById[WindLog](wId.toLong)
     logOpt.map(wl => Ok(Json.toJson(Json.parse(wl.toJson)))).getOrElse(NotFound) // return Not Found if no log with id 'wId' exists
   }
+  ///
 
+  /**
+   * Get dates (year-month-day) of measures in DB
+   * @return A list of dates (JSON)
+   */
   def getLogDates = Action {
     val dateList = DataLogManager.getDates
     val jsList = Json.toJson(dateList.map(date => Json.toJson(date)))
     Ok(Json.toJson(Map("dates" -> jsList, "count" -> Json.toJson(dateList.length))))
   }
 
+  /**
+   * Get the first and last log time for a specific date
+   * @param dateStr The date to look for
+   * @return The first and last log time (JSON)
+   */
   def getLogTimesForDate(dateStr: String) = Action {
     val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
     val (firstTime, lastTime) = DataLogManager.getTimesForDate(date)
