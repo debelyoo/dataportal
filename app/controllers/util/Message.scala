@@ -9,7 +9,7 @@ object Message {
   case class InsertTemperatureLog (batchId: String, ts: Date, sensor: Sensor, tempVal: Double)
   case class InsertCompassLog (batchId: String, ts: Date, sensor: Sensor, compassVal: Double)
   case class InsertWindLog (batchId: String, ts: Date, sensor: Sensor, windVal: Double)
-  case class InsertGpsLog (batchId: String, ts: Date, sensor: Sensor, latitude: Double, longitude: Double)
+  case class InsertGpsLog (batchId: String, ts: Date, setNumber: Int, sensor: Sensor, latitude: Double, longitude: Double)
   case class InsertRadiometerLog (batchId: String, ts: Date, sensor: Sensor, radiometerVal: Double)
   case class InsertSensor (sensor: Sensor)
   case class SkipLog (batchId: String)

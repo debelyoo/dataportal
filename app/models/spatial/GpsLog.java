@@ -32,6 +32,9 @@ public class GpsLog implements JsonSerializable, SensorLog {
     @Type(type="org.hibernate.spatial.GeometryType")
     private Point geoPos;
 
+    @Column(name="set_number")
+    private int setNumber;
+
     public GpsLog() {
     }
 
@@ -68,6 +71,15 @@ public class GpsLog implements JsonSerializable, SensorLog {
 
     public void setGeoPos(Point pos) {
         this.geoPos = pos;
+    }
+
+    public void setSetNumber(int sn) {
+        this.setNumber = sn;
+    }
+
+    @Override
+    public int getSetNumber() {
+        return this.setNumber;
     }
 
     public String toString() {

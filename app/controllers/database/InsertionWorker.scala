@@ -95,7 +95,7 @@ class InsertionWorker extends Actor {
       }
     }
     //case Message.InsertGpsLog(ts, sensor, north, east) => {
-    case Message.InsertGpsLog(batchId, ts, sensor, latitude, longitude) => {
+    case Message.InsertGpsLog(batchId, ts, setNumber, sensor, latitude, longitude) => {
       try {
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
@@ -117,6 +117,7 @@ class InsertionWorker extends Actor {
           gl.setSensor(sensorInDb.get)
           gl.setTimestamp(ts)
           gl.setGeoPos(geom.asInstanceOf[Point])
+          gl.setSetNumber(setNumber)
           val persisted = gl.save() // persist in DB
           if (persisted) {
             logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)

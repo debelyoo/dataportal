@@ -30,7 +30,8 @@ GET     /api/data                                                               
 
 # Get misc
 GET     /api/dates                                          controllers.Application.getLogDates
-GET     /api/times/fordate/*date                            controllers.Application.getLogTimesForDate(date)
+GET     /api/times/fordate/*date/andset/*set                controllers.Application.getLogTimesForDateAndSet(date, set)
+GET     /api/sets/fordate/*date                             controllers.Application.getLogSetsForDate(date)
 GET     /api/sensors/from/*startDate/to/*endDate            controllers.Application.getSensorByDatetime(startDate, endDate)
 
 # Map static resources from the /public folder to the /assets URL path

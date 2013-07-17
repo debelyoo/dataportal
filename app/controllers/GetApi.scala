@@ -135,13 +135,25 @@ trait GetApi extends ResponseFormatter {
   }
 
   /**
-   * Get the first and last log time for a specific date
+   * Get the first and last log time for a specific date and set
    * @param dateStr The date to look for
    * @return The first and last log time (JSON)
    */
-  def getLogTimesForDate(dateStr: String) = Action {
+  def getLogTimesForDateAndSet(dateStr: String, setNumber: String) = Action {
     val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
-    val (firstTime, lastTime) = DataLogManager.getTimesForDate(date)
+    val setNumberOpt = setNumber match {
+      case "all" => None
+      case _ => Some(setNumber.toInt)
+    }
+    val (firstTime, lastTime) = DataLogManager.getTimesForDateAndSet(date, setNumberOpt)
     Ok(Json.toJson(Map("first_time" -> Json.toJson(firstTime), "last_time" -> Json.toJson(lastTime))))
+  }
+
+  def getLogSetsForDate(dateStr: String) = Action {
+    val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
+    val setList = DataLogManager.getLogSetsForDate(date)
+    //Logger.warn("sets: "+setList)
+    val jsList = Json.toJson(setList.map(sn => Json.toJson(sn)))
+    Ok(Json.toJson(Map("sets" -> jsList, "count" -> Json.toJson(setList.length))))
   }
 }

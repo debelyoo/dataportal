@@ -12,6 +12,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.Some
+import play.api.Logger
 
 object DataLogManager {
 
@@ -307,11 +308,12 @@ object DataLogManager {
       val q = em.createQuery("SELECT DISTINCT cast(timestamp as date) FROM "+ classOf[GpsLog].getName)
       val dates = q.getResultList.map(_.asInstanceOf[Date]).toList.reverse.map(ts => DateFormatHelper.selectYearFormatter.format(ts)) // use reverse to get the most recent date on top
       em.getTransaction().commit()
-      em.close()
       dates
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      em.close()
     }
   }
 
@@ -320,15 +322,16 @@ object DataLogManager {
    * @param date The date
    * @return The first and last log time
    */
-  def getTimesForDate(date: Date): (String, String)= {
+  def getTimesForDateAndSet(date: Date, setNumber: Option[Int]): (String, String) = {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
       val afterDate = Calendar.getInstance()
       afterDate.setTime(date)
       afterDate.add(Calendar.DAY_OF_YEAR, 1)
+      val setCondition = setNumber.map(sn => " AND set_number = "+sn).getOrElse("")
       val q = em.createQuery("SELECT MIN(cast(timestamp as time)), MAX(cast(timestamp as time)) " +
-        "FROM "+ classOf[GpsLog].getName + " WHERE timestamp BETWEEN :start AND :end")
+        "FROM "+ classOf[GpsLog].getName + " WHERE timestamp BETWEEN :start AND :end" + setCondition)
       q.setParameter("start", date, TemporalType.DATE)
       q.setParameter("end", afterDate.getTime, TemporalType.DATE)
       val res = q.getSingleResult.asInstanceOf[Array[Object]]
@@ -336,11 +339,33 @@ object DataLogManager {
       val lastTime = res(1).asInstanceOf[Date]
       //println(firstTime +" - "+ lastTime)
       em.getTransaction().commit()
-      em.close()
       (DateFormatHelper.selectTimeFormatter.format(firstTime), DateFormatHelper.selectTimeFormatter.format(lastTime))
     } catch {
       case nre: NoResultException => ("00:00:00", "00:00:00")
       case ex: Exception => ex.printStackTrace; ("00:00:00", "00:00:00")
+    } finally {
+      em.close()
+    }
+  }
+
+  /**
+   * Get the list of set numbers for a specific date
+   * @param date The date we want
+   * @return A list of set numbers
+   */
+  def getLogSetsForDate(date: Date): List[Int] = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val q = em.createQuery("SELECT DISTINCT log.setNumber FROM "+ classOf[GpsLog].getName+" log")
+      val setNumbers = q.getResultList.map(_.asInstanceOf[Int]).toList
+      em.getTransaction().commit()
+      setNumbers
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      em.close()
     }
   }
 
@@ -449,6 +474,44 @@ object DataLogManager {
       BatchManager.cleanCompletedBatch(batchId)
     }
     percentage
+  }
+
+  /**
+   * Get the next set number for data (multiple data sets can be collected on one day)
+   * @param date The date of the set
+   * @tparam T The type of data want
+   * @return An option with the next set number to use
+   */
+  def getNextSetNumber[T:ClassTag](date: Date): Option[Int] = {
+    val MAX_TIME_DIFF_BETWEEN_SETS = 1000 * 60 * 1 // 1 minute
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val afterDate = Calendar.getInstance()
+      afterDate.setTime(date)
+      afterDate.add(Calendar.DAY_OF_YEAR, 1)
+      val q = em.createQuery("FROM "+ classTag[T].runtimeClass.getName + " WHERE timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
+      q.setParameter("start", date, TemporalType.DATE)
+      q.setParameter("end", afterDate.getTime, TemporalType.DATE)
+      q.setMaxResults(1)
+      val lastLog = q.getSingleResult.asInstanceOf[T]
+      em.getTransaction().commit()
+      val diff = date.getTime - lastLog.asInstanceOf[SensorLog].getTimestamp.getTime
+      val newSetNumber = if (math.abs(diff) < MAX_TIME_DIFF_BETWEEN_SETS) {
+        // if diff is smaller than threshold, keep same set number
+        lastLog.asInstanceOf[SensorLog].getSetNumber
+      } else lastLog.asInstanceOf[SensorLog].getSetNumber + 1
+      Logger.warn("Previous logs exist for this date -> set number = "+ newSetNumber)
+      Some(newSetNumber)
+    } catch {
+      case nre: NoResultException => {
+        Logger.warn("No previous log for this date -> set number = 0")
+        Some(0)
+      }
+      case ex: Exception => ex.printStackTrace; None
+    } finally {
+      em.close()
+    }
   }
 
 }

@@ -34,6 +34,9 @@ public class WindLog implements WebSerializable, SensorLog {
     @JoinColumn(name="gps_log_id")
     private GpsLog gpsLog;
 
+    @Column(name="set_number")
+    private int setNumber;
+
     public WindLog() {
     }
 
@@ -78,6 +81,15 @@ public class WindLog implements WebSerializable, SensorLog {
 
     public void setGpsLog(GpsLog gLog) {
         this.gpsLog = gLog;
+    }
+
+    public void setSetNumber(int sn) {
+        this.setNumber = sn;
+    }
+
+    @Override
+    public int getSetNumber() {
+        return this.setNumber;
     }
 
     @Override
