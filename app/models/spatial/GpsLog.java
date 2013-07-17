@@ -77,7 +77,6 @@ public class GpsLog implements JsonSerializable, SensorLog {
         this.setNumber = sn;
     }
 
-    @Override
     public int getSetNumber() {
         return this.setNumber;
     }

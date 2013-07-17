@@ -37,7 +37,7 @@ class InsertionBatchWorker extends Actor {
               case DataImporter.Types.GPS  => {
                 if (chunksOnLine.length == 4) {
                   // address - timestamp - north value - east value
-                  if (ind == 0) setNumberOpt = DataLogManager.getNextSetNumber[GpsLog](date)
+                  if (ind == 0) setNumberOpt = DataLogManager.getNextSetNumber(date)
                   //val setNumberOpt = DataLogManager.getNextSetNumber[GpsLog](date)
                   setNumberOpt.foreach(setNumber => {
                     DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, date, setNumber, sensor, chunksOnLine(2).toDouble, chunksOnLine(3).toDouble)

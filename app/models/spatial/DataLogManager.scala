@@ -490,17 +490,17 @@ object DataLogManager {
       val afterDate = Calendar.getInstance()
       afterDate.setTime(date)
       afterDate.add(Calendar.DAY_OF_YEAR, 1)
-      val q = em.createQuery("FROM "+ classTag[T].runtimeClass.getName + " WHERE timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
+      val q = em.createQuery("FROM "+ classTag[GpsLog].runtimeClass.getName + " WHERE timestamp BETWEEN :start AND :end ORDER BY timestamp DESC", classOf[GpsLog])
       q.setParameter("start", date, TemporalType.DATE)
       q.setParameter("end", afterDate.getTime, TemporalType.DATE)
       q.setMaxResults(1)
-      val lastLog = q.getSingleResult.asInstanceOf[T]
+      val lastLog = q.getSingleResult
       em.getTransaction().commit()
       val diff = date.getTime - lastLog.asInstanceOf[SensorLog].getTimestamp.getTime
       val newSetNumber = if (math.abs(diff) < MAX_TIME_DIFF_BETWEEN_SETS) {
         // if diff is smaller than threshold, keep same set number
-        lastLog.asInstanceOf[SensorLog].getSetNumber
-      } else lastLog.asInstanceOf[SensorLog].getSetNumber + 1
+        lastLog.getSetNumber
+      } else lastLog.getSetNumber + 1
       Logger.warn("Previous logs exist for this date -> set number = "+ newSetNumber)
       Some(newSetNumber)
     } catch {

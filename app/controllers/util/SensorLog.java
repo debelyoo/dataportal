@@ -12,5 +12,4 @@ public interface SensorLog {
     Long getId();
     Sensor getSensor();
     Date getTimestamp();
-    int getSetNumber();
 }
