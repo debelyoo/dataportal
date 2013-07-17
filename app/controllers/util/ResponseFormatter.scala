@@ -11,6 +11,7 @@ import javax.xml.transform.sax.SAXResult
 import javax.xml.transform.dom.DOMSource
 import play.api.mvc.Results.Ok
 import java.util.Date
+import play.api.Logger
 
 trait ResponseFormatter {
 
@@ -66,7 +67,7 @@ trait ResponseFormatter {
    */
   private def logsAsGml(logMap: Map[String, List[GmlSerializable]]): NodeSeq = {
     val start = new Date
-    if (logMap.size > 1) println("[WARNING] logsAsGml() - logMap contains more than one log serie")
+    if (logMap.size > 1) Logger.warn("logsAsGml() - logMap contains more than one log serie")
     val logList = logMap.head._2 // If multiple sensors are sent, take only the first serie
     val xmlList = logList.map(log => log.toGml)
     val gmlStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
@@ -76,7 +77,7 @@ trait ResponseFormatter {
       "</wfs:FeatureCollection>"
     val xmlDoc = XML.fromString(gmlStr)
     val diff = (new Date).getTime - start.getTime
-    println("logsAsGml() - GML formatting done ! ["+ diff +"ms]")
+    //Logger.info("logsAsGml() - GML formatting done ! ["+ diff +"ms]")
     asXml(xmlDoc)
   }
 

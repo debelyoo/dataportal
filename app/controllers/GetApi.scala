@@ -4,6 +4,7 @@ import controllers.util._
 import models.spatial._
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
+import play.api.Logger
 
 //import scala.reflect.{ClassTag, classTag}
 import models.Sensor
@@ -36,7 +37,8 @@ trait GetApi extends ResponseFormatter {
       try {
         val map = request.queryString.map { case (k,v) => k -> v.mkString }
         val format = map.get("format").getOrElse(JSON_FORMAT) // default format is Json
-        println("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
+        //println("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
+        Logger.info("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
         //println(map)
         assert(map.contains("data_type"), {println("Missing data_type parameter")})
         assert(map.contains("from_date"), {println("Missing from_date parameter")})
