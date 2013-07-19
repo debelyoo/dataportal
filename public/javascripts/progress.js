@@ -6,6 +6,7 @@ function getProgress(batchId, progressType, urlPrefix) {
         $("#progressPlaceholder").html(prog + "%");
         $(".progress .bar").css({'width': prog + "%"});
         if (prog != 100) {
+            // update progress every 1 sec
             setTimeout(function() {getProgress(batchId, progressType, urlPrefix)}, 1000)
         } else {
             $("#statusPlaceholder").html(progressType + " terminated !");

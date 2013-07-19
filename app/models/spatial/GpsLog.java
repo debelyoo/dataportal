@@ -2,9 +2,7 @@ package models.spatial;
 
 import com.google.gson.*;
 import com.vividsolutions.jts.geom.Point;
-import controllers.util.DateFormatHelper;
-import controllers.util.JPAUtil;
-import controllers.util.SensorLog;
+import controllers.util.*;
 import controllers.util.json.JsonSerializable;
 import models.Sensor;
 import org.hibernate.annotations.GenericGenerator;
@@ -15,14 +13,14 @@ import java.util.Date;
 
 @Entity
 @Table(name = "gpslog")
-public class GpsLog implements JsonSerializable, SensorLog {
+public class GpsLog implements WebSerializable, SensorLog {
 
     @Id
     @GeneratedValue(generator="increment")
     @GenericGenerator(name="increment", strategy = "increment")
     private Long id;
 
-    @OneToOne(fetch=FetchType.LAZY)
+    @OneToOne
     @JoinColumn(name="sensor_id")
     private Sensor sensor;
 
@@ -108,6 +106,42 @@ public class GpsLog implements JsonSerializable, SensorLog {
             return gpsLogJson;
         }
     }
+
+    @Override
+    public String toKml() {
+        String kmlStr = "";
+        kmlStr += "<Placemark>";
+        kmlStr += "<name>gpslog"+ this.id +"</name>";
+        kmlStr += "<description>The gps point</description>";
+        if (this.geoPos != null) {
+            kmlStr += "<Point>";
+            kmlStr += "<coordinates>"+ this.geoPos.getX()+","+ this.geoPos.getY() +"</coordinates>";
+            kmlStr += "</Point>";
+        }
+        kmlStr += "</Placemark>";
+        return kmlStr;
+    }
+
+    @Override
+    public String toGml() {
+        String gmlStr = "";
+        gmlStr += "<gml:featureMember>";
+        gmlStr += "<ecol:restRequest fid=\"temperaturelog"+ this.id +"\">";
+        gmlStr += "<ecol:id>"+ this.id +"</ecol:id>";
+        gmlStr += "<ecol:sensor_id>"+ this.sensor.id() +"</ecol:sensor_id>";
+        gmlStr += "<ecol:timestamp>"+ this.timestamp.toString() +"</ecol:timestamp>";
+        if (this.geoPos != null) {
+            gmlStr += "<ecol:geo_pos>";
+            gmlStr += "<gml:Point srsName=\"http://www.opengis.net/gml/srs/epsg.xml#4326\">";
+            gmlStr += "<gml:coordinates xmlns:gml=\"http://www.opengis.net/gml\" decimal=\".\" cs=\",\" ts=\" \">"+ this.geoPos.getX() +","+ this.geoPos.getY() +"</gml:coordinates>";
+            gmlStr += "</gml:Point>";
+            gmlStr += "</ecol:geo_pos>";
+        }
+        gmlStr += "</ecol:restRequest>";
+        gmlStr += "</gml:featureMember>";
+        return gmlStr;
+    }
+
 
     /**
      * Save the GpsLog in Postgres database

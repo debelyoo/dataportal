@@ -2,10 +2,7 @@ package models.spatial;
 
 import com.google.gson.*;
 import com.vividsolutions.jts.geom.Point;
-import controllers.util.DateFormatHelper;
-import controllers.util.JPAUtil;
-import controllers.util.SensorLog;
-import controllers.util.WebSerializable;
+import controllers.util.*;
 import models.Sensor;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
@@ -128,8 +125,9 @@ public class TemperatureLog implements WebSerializable, SensorLog {
         gmlStr += "<ecol:sensor_id>"+ this.sensor.id() +"</ecol:sensor_id>";
         gmlStr += "<ecol:timestamp>"+ this.timestamp.toString() +"</ecol:timestamp>";
         gmlStr += "<ecol:value>"+ this.value +"</ecol:value>";
-        //if (this.geoPos != null) {
         if (this.gpsLog != null) {
+            double[] arr = ApproxSwissProj.WGS84toLV03(this.gpsLog.getGeoPos().getY(), this.gpsLog.getGeoPos().getX(), 0L); // get east, north, height
+            gmlStr += "<ecol:coordinate_swiss>"+ arr[0] +","+ arr[1] +"</ecol:coordinate_swiss>";
             gmlStr += "<ecol:geo_pos>";
             gmlStr += "<gml:Point srsName=\"http://www.opengis.net/gml/srs/epsg.xml#4326\">";
             //gmlStr += "<gml:coordinates xmlns:gml=\"http://www.opengis.net/gml\" decimal=\".\" cs=\",\" ts=\" \">"+ this.geoPos.getX() +","+ this.geoPos.getY() +"</gml:coordinates>";
@@ -155,6 +153,9 @@ public class TemperatureLog implements WebSerializable, SensorLog {
             logJson.getAsJsonObject().addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(temperatureLog.getTimestamp()));
             logJson.getAsJsonObject().addProperty("value", temperatureLog.getValue());
             if(temperatureLog.getGpsLog() != null) {
+                double[] arr = ApproxSwissProj.WGS84toLV03(temperatureLog.getGpsLog().getGeoPos().getY(), temperatureLog.getGpsLog().getGeoPos().getX(), 0L); // get east, north, height
+                logJson.getAsJsonObject().addProperty("coordinate_swiss", arr[0] +","+ arr[1]);
+                //gmlStr += "<ecol:coordinate_swiss>"+ arr[0] +","+ arr[1] +"</ecol:coordinate_swiss>";
                 JsonObject point = new JsonObject();
                 point.addProperty("x", temperatureLog.getGpsLog().getGeoPos().getX());
                 point.addProperty("y", temperatureLog.getGpsLog().getGeoPos().getY());

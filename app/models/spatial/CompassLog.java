@@ -2,10 +2,7 @@ package models.spatial;
 
 import com.google.gson.*;
 import com.vividsolutions.jts.geom.Point;
-import controllers.util.DateFormatHelper;
-import controllers.util.JPAUtil;
-import controllers.util.SensorLog;
-import controllers.util.WebSerializable;
+import controllers.util.*;
 import controllers.util.json.JsonSerializable;
 import models.Sensor;
 import org.hibernate.annotations.GenericGenerator;
@@ -102,6 +99,8 @@ public class CompassLog implements WebSerializable, SensorLog {
             logJson.getAsJsonObject().addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(compassLog.getTimestamp()));
             logJson.getAsJsonObject().addProperty("value", compassLog.getValue());
             if(compassLog.getGpsLog() != null) {
+                double[] arr = ApproxSwissProj.WGS84toLV03(compassLog.getGpsLog().getGeoPos().getY(), compassLog.getGpsLog().getGeoPos().getX(), 0L); // get east, north, height
+                logJson.getAsJsonObject().addProperty("coordinate_swiss", arr[0] +","+ arr[1]);
                 JsonObject point = new JsonObject();
                 point.addProperty("x", compassLog.getGpsLog().getGeoPos().getX());
                 point.addProperty("y", compassLog.getGpsLog().getGeoPos().getY());
@@ -136,6 +135,8 @@ public class CompassLog implements WebSerializable, SensorLog {
         gmlStr += "<ecol:timestamp>"+ this.timestamp.toString() +"</ecol:timestamp>";
         gmlStr += "<ecol:value>"+ this.value +"</ecol:value>";
         if (this.gpsLog != null) {
+            double[] arr = ApproxSwissProj.WGS84toLV03(this.gpsLog.getGeoPos().getY(), this.gpsLog.getGeoPos().getX(), 0L); // get east, north, height
+            gmlStr += "<ecol:coordinate_swiss>"+ arr[0] +","+ arr[1] +"</ecol:coordinate_swiss>";
             gmlStr += "<ecol:geo_pos>";
             gmlStr += "<gml:Point srsName=\"http://www.opengis.net/gml/srs/epsg.xml#4326\">";
             gmlStr += "<gml:coordinates xmlns:gml=\"http://www.opengis.net/gml\" decimal=\".\" cs=\",\" ts=\" \">"+ this.gpsLog.getGeoPos().getX() +","+ this.gpsLog.getGeoPos().getY() +"</gml:coordinates>";

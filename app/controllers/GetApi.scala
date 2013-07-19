@@ -5,6 +5,7 @@ import models.spatial._
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import play.api.Logger
+import com.vividsolutions.jts.geom.Point
 
 //import scala.reflect.{ClassTag, classTag}
 import models.Sensor
@@ -46,6 +47,7 @@ trait GetApi extends ResponseFormatter {
         val startDate = DateFormatHelper.dateTimeFormatter.parse(map.get("from_date").get)
         val endDate = DateFormatHelper.dateTimeFormatter.parse(map.get("to_date").get)
         val geoOnly = map.get("geo_only").getOrElse("true").toBoolean
+        val coordinateFormat = map.get("coordinate_format").getOrElse("gps")
         val sensorIdList = map.get("sensor_id").map(_.toLong).toList // TODO handle multi Ids (by parsing string)
         val maxNb = map.get("max_nb").map(_.toInt)
         val logMap = map.get("data_type").get match {
@@ -61,6 +63,18 @@ trait GetApi extends ResponseFormatter {
           }
           case DataImporter.Types.RADIOMETER => {
             DataLogManager.getByTimeIntervalAndSensor[RadiometerLog](startDate, endDate, geoOnly, sensorIdList, maxNb)
+          }
+          case DataImporter.Types.GPS => {
+            val gpsLogsNative = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false)
+            val gpsLogs = if (coordinateFormat == "swiss") {
+              gpsLogsNative.map(gl => {
+                val arr = ApproxSwissProj.WGS84toLV03(gl.getGeoPos.getY, gl.getGeoPos.getX, 0L).toList // get east, north, height
+                val geom = CoordinateHelper.wktToGeometry("POINT("+ arr(0) +" "+ arr(1) +")")
+                gl.setGeoPos(geom.asInstanceOf[Point])
+                gl
+              })
+            } else gpsLogsNative
+            Map("gps sensor" -> gpsLogs)
           }
           case _ => {
             println("GET data - Unknown data type")

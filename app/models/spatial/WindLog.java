@@ -2,10 +2,7 @@ package models.spatial;
 
 import com.google.gson.*;
 import com.vividsolutions.jts.geom.Point;
-import controllers.util.DateFormatHelper;
-import controllers.util.JPAUtil;
-import controllers.util.SensorLog;
-import controllers.util.WebSerializable;
+import controllers.util.*;
 import controllers.util.json.JsonSerializable;
 import models.Sensor;
 import org.hibernate.annotations.GenericGenerator;
@@ -98,6 +95,8 @@ public class WindLog implements WebSerializable, SensorLog {
             logJson.getAsJsonObject().addProperty("value", windLog.getValue());
             //System.out.println(windLog.getGeoPos().toString());
             if(windLog.getGpsLog() != null) {
+                double[] arr = ApproxSwissProj.WGS84toLV03(windLog.getGpsLog().getGeoPos().getY(), windLog.getGpsLog().getGeoPos().getX(), 0L); // get east, north, height
+                logJson.getAsJsonObject().addProperty("coordinate_swiss", arr[0] +","+ arr[1]);
                 JsonObject point = new JsonObject();
                 point.addProperty("x", windLog.getGpsLog().getGeoPos().getX());
                 point.addProperty("y", windLog.getGpsLog().getGeoPos().getY());
@@ -132,6 +131,8 @@ public class WindLog implements WebSerializable, SensorLog {
         gmlStr += "<ecol:timestamp>"+ this.timestamp.toString() +"</ecol:timestamp>";
         gmlStr += "<ecol:value>"+ this.value +"</ecol:value>";
         if (this.gpsLog != null) {
+            double[] arr = ApproxSwissProj.WGS84toLV03(this.gpsLog.getGeoPos().getY(), this.gpsLog.getGeoPos().getX(), 0L); // get east, north, height
+            gmlStr += "<ecol:coordinate_swiss>"+ arr[0] +","+ arr[1] +"</ecol:coordinate_swiss>";
             gmlStr += "<ecol:geo_pos>";
             gmlStr += "<gml:Point srsName=\"http://www.opengis.net/gml/srs/epsg.xml#4326\">";
             gmlStr += "<gml:coordinates xmlns:gml=\"http://www.opengis.net/gml\" decimal=\".\" cs=\",\" ts=\" \">"+ this.gpsLog.getGeoPos().getX() +","+ this.gpsLog.getGeoPos().getY() +"</gml:coordinates>";
