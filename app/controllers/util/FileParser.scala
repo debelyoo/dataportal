@@ -67,7 +67,7 @@ object FileParser {
       source.close()
       val lines = linesAsStr.split("\\r?\\n")
       val batchId = UUID.randomUUID().toString
-      DataLogManager.insertionWorker ! Message.SetInsertionBatch(batchId, file.getName,dataType, lines, sensors)
+      DataLogManager.insertionWorker ! Message.SetInsertionBatch(batchId, file.getName, dataType, lines, sensors)
       Some(batchId)
     } catch {
       case ex: Exception => ex.printStackTrace; None

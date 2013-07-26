@@ -30,7 +30,7 @@ public class RadiometerLog implements WebSerializable, SensorLog {
 
     private Date timestamp;
 
-    private Integer value;
+    private Double value;
 
     @OneToOne
     @JoinColumn(name="gps_log_id")
@@ -66,11 +66,11 @@ public class RadiometerLog implements WebSerializable, SensorLog {
         this.timestamp = ts;
     }
 
-    public Integer getValue() {
+    public Double getValue() {
         return value;
     }
 
-    public void setValue(Integer v) {
+    public void setValue(Double v) {
         this.value = v;
     }
 

@@ -71,10 +71,13 @@ object DataLogManager {
 
   /**
    * Get the sensor logs by date
+   * @param date
+   * @param geoLocated Filter logs according to the relation sensor log <-> gps log (Some(false) -> get only not geolocated logs, Some(true) -> get only geolocated logs)
+   * @param emOpt The entity manager to use (optional)
    * @tparam T The type of data to get
    * @return A list with the logs
    */
-  def getByDate[T:ClassTag](date: Date, emOpt: Option[EntityManager] = None): List[T] = {
+  def getByDate[T:ClassTag](date: Date, geoLocated: Option[Boolean] = None, emOpt: Option[EntityManager] = None): List[T] = {
     val afterDate = Calendar.getInstance()
     afterDate.setTime(date)
     afterDate.add(Calendar.DAY_OF_YEAR, 1)
@@ -82,7 +85,10 @@ object DataLogManager {
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
       val clazz = classTag[T].runtimeClass
-      val q = em.createQuery("from "+ clazz.getName +" WHERE timestamp BETWEEN :start AND :end ORDER BY timestamp")
+      val geoCondition = geoLocated.map(b => {
+        if(b) " AND sl.gpsLog IS NOT NULL" else " AND sl.gpsLog IS NULL"
+      }).getOrElse("")
+      val q = em.createQuery("from "+ clazz.getName +" sl WHERE timestamp BETWEEN :start AND :end" + geoCondition + " ORDER BY timestamp")
       q.setParameter("start", date, TemporalType.DATE)
       q.setParameter("end", afterDate.getTime, TemporalType.DATE)
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList
@@ -216,9 +222,10 @@ object DataLogManager {
     val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
     val start = new Date
     val MARGIN_IN_SEC = 1
+    val geoLocated = Some(false)
     val batchId = dataType match {
       case DataImporter.Types.COMPASS => {
-        val logs = getByDate[CompassLog](date)
+        val logs = getByDate[CompassLog](date, geoLocated)
         try {
           // link each GPS log to one compass log
           //linkGpsLogToSensorLog(dataType, logs)
@@ -236,7 +243,7 @@ object DataLogManager {
         }
       }
       case DataImporter.Types.TEMPERATURE => {
-        val logs = getByDate[TemperatureLog](date)
+        val logs = getByDate[TemperatureLog](date, geoLocated)
         //println("XX - "+logs.head)
         try {
           // link each GPS log to one sensor log
@@ -255,7 +262,7 @@ object DataLogManager {
         }
       }
       case DataImporter.Types.RADIOMETER => {
-        val logs = getByDate[RadiometerLog](date)
+        val logs = getByDate[RadiometerLog](date, geoLocated)
         try {
           // link each GPS log to one radiometer log
           //linkGpsLogToSensorLog(dataType, logs)
@@ -274,7 +281,7 @@ object DataLogManager {
         }
       }
       case DataImporter.Types.WIND => {
-        val logs = getByDate[WindLog](date)
+        val logs = getByDate[WindLog](date, geoLocated)
         try {
           // link each GPS log to one wind log
           //linkGpsLogToSensorLog(dataType, logs)
@@ -404,6 +411,38 @@ object DataLogManager {
       Some(closestPoint)
     } else {
       println("[WARNING] No close log for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
+      None
+    }
+  }
+
+  /**
+   * Get the closest GPS log to a specified timestamp
+   * @param gpsLogs The GPS logs to search in
+   * @param ts The timestamp to match
+   * @param marginInSeconds The margin +/- around the timestamp
+   * @return An option with the closest GPS log we found
+   */
+  def getClosestGpsLog(gpsLogs: List[GpsLog], ts: Date, marginInSeconds: Int): Option[GpsLog] = {
+    //println("[DataLogManager] getClosestLog() - "+logs.head)
+    val beforeDate = Calendar.getInstance()
+    beforeDate.setTime(ts)
+    beforeDate.add(Calendar.SECOND, -marginInSeconds)
+    val afterDate = Calendar.getInstance()
+    afterDate.setTime(ts)
+    afterDate.add(Calendar.SECOND, marginInSeconds)
+    //val closeLogs = getByTimeIntervalAndSensor[T](beforeDate.getTime, afterDate.getTime, sensorId, Some(em))
+    val closeLogs = gpsLogs.filter(log =>
+      (log.getTimestamp.getTime > beforeDate.getTime.getTime &&
+        log.getTimestamp.getTime < afterDate.getTime.getTime)
+    )
+    if (closeLogs.nonEmpty) {
+      val (closestPoint, diff) = closeLogs.map(cl => {
+        val timeDiff = math.abs(cl.getTimestamp.getTime - ts.getTime)
+        (cl, timeDiff)
+      }).minBy(_._2)
+      Some(closestPoint)
+    } else {
+      println("[WARNING] No close GPS log for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
       None
     }
   }

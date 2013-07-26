@@ -136,22 +136,21 @@ class InsertionWorker extends Actor {
         assert(sensorInDb.isDefined, {println("[Message.InsertRadiometerLog] Sensor is not in Database !")})
         //println("QUEUE -> "+logCache)
         val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
-        val res = if (!logCache.contains(uniqueString)) {
-          // if value is Int -> radiometer sensor, if Double -> temperature sensor
-          //val intVal = DataLogManager.doubleToInt(radiometerValue)
-          if (radiometerValue.isValidInt) {
-            //println("[RCV message] - insert radiometer log: "+ radiometerValue.toInt +", "+ sensorInDb.get)
+        if (!logCache.contains(uniqueString)) {
+          // if value > 50 -> radiometer sensor, else temperature sensor - TODO change this
+          if (sensorInDb.get.name.contains("Pyrgeometer") || sensorInDb.get.name.contains("Pyranometer")) {
+            //println("[RCV message] - insert radiometer log: "+ radiometerValue)
             val rl = new RadiometerLog()
             rl.setSensor(sensorInDb.get)
             rl.setTimestamp(ts)
-            rl.setValue(radiometerValue.toInt)
+            rl.setValue(radiometerValue)
             val persisted = rl.save() // persist in DB
             if (persisted) {
               logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
               Some(true)
             } else None
           } else {
-            //println("[RCV message] - insert temperature log: "+ intVal.get)
+            //println("[RCV message] - insert temperature log: "+ radiometerValue)
             if (sensorInDb.get.datatype != "temperature") {
               sensorInDb.get.updateType("temperature") // update the type of the sensor (the PT100 of the radiometer)
             }
@@ -165,7 +164,7 @@ class InsertionWorker extends Actor {
               Some(true)
             } else None
           }
-        } else Some(false)
+        }
         BatchManager.updateBatchProgress(batchId, "Insertion")
         //sender ! res
       } catch {

@@ -13,7 +13,8 @@ class SpatializationWorker extends Actor {
     case Message.SetSpatializationBatch(batchId, gpsLogs, sensors, sensorLogs) => {
       spatializationBatches(batchId) = (gpsLogs, sensors, sensorLogs)
       val dataType = sensors.head.datatype
-      batchProgress(batchId) = (dataType, gpsLogs.length * sensors.length, 0)
+      //batchProgress(batchId) = (dataType, gpsLogs.length * sensors.length, 0)
+      batchProgress(batchId) = (dataType, sensorLogs.length, 0)
       DataLogManager.spatializationBatchWorker ! Message.Work(batchId, dataType)
     }
 
