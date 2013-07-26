@@ -67,8 +67,8 @@ object Application extends Controller with GetApi {
 
   // Get the progress of a spatialization batch
   def spatializationProgress(batchId: String) = Action {
-    val prog = DataLogManager.spatializationProgress(batchId)
-    prog.map(p => Ok(Json.toJson(Map("progress" -> Json.toJson(p))))).getOrElse(NotFound)
+    val hintAndProgress = DataLogManager.spatializationProgress(batchId)
+    hintAndProgress.map { case (h, p) => Ok(Json.toJson(Map("progress" -> Json.toJson(p), "hint" -> Json.toJson(h))))}.getOrElse(NotFound)
   }
 
 }

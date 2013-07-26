@@ -17,9 +17,9 @@ class InsertionWorker extends Actor {
   def createUniqueString(str1: String, str2: String) = str1+":"+str2
 
   def receive = {
-    case Message.SetInsertionBatch(batchId, dataType, lines, sensors) => {
+    case Message.SetInsertionBatch(batchId, filename, dataType, lines, sensors) => {
       insertionBatches(batchId) = (lines, sensors)
-      batchProgress(batchId) = (lines.length, 0)
+      batchProgress(batchId) = (filename, lines.length, 0)
       //val dataType = sensors.head.datatype
       DataLogManager.insertionBatchWorker ! Message.Work(batchId, dataType)
     }
@@ -179,8 +179,8 @@ class InsertionWorker extends Actor {
     case Message.SkipLog(batchId) => {
       val batchNumbers = batchProgress.get(batchId)
       if (batchNumbers.isDefined) {
-        batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2 + 1)
-        if (batchNumbers.get._1 == batchNumbers.get._2 + 1) println("Import batch ["+ batchId +"]: 100%")
+        batchProgress(batchId) = (batchNumbers.get._1, batchNumbers.get._2, batchNumbers.get._3 + 1)
+        if (batchNumbers.get._2 == batchNumbers.get._3 + 1) println("Import batch ["+ batchId +"]: 100%")
       }
     }
   }

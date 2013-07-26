@@ -24,5 +24,5 @@ object Message {
   case class GetSpatializationProgress (batchId: String)
   case class SetSpatializationBatch (batchId: String, gpsLogs: List[GpsLog], sensors: List[Sensor],sensorLogs: List[SensorLog])
   case class GetInsertionProgress (batchId: String)
-  case class SetInsertionBatch (batchId: String, dataType: String, lines: Array[String], sensors: Map[String, Sensor])
+  case class SetInsertionBatch (batchId: String, filename: String, dataType: String, lines: Array[String], sensors: Map[String, Sensor])
 }

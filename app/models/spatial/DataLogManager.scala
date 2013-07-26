@@ -471,9 +471,9 @@ object DataLogManager {
    * @param batchId The batch id
    * @return The progress as a percentage
    */
-  def spatializationProgress(batchId: String): Option[Long] = {
+  def spatializationProgress(batchId: String): Option[(String, Long)] = {
     val percentage = BatchManager.batchProgress.get(batchId).map {
-      case (nbTot, nbDone) => math.floor((nbDone.toDouble / nbTot.toDouble) * 100).toLong
+      case (hint, nbTot, nbDone) => (hint, math.floor((nbDone.toDouble / nbTot.toDouble) * 100).toLong)
     }
     if(percentage.isDefined && percentage.get == 100L) {
       BatchManager.cleanCompletedBatch(batchId)
@@ -488,7 +488,7 @@ object DataLogManager {
    * @return An option with the next set number to use
    */
   def getNextSetNumber[T:ClassTag](date: Date): Option[Int] = {
-    val MAX_TIME_DIFF_BETWEEN_SETS = 1000 * 60 * 1 // 1 minute
+    val MAX_TIME_DIFF_BETWEEN_SETS = 1000 * 60 * 0.5 // 30 seconds
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
@@ -506,7 +506,7 @@ object DataLogManager {
         // if diff is smaller than threshold, keep same set number
         lastLog.getSetNumber
       } else lastLog.getSetNumber + 1
-      Logger.warn("Previous logs exist for this date -> set number = "+ newSetNumber)
+      Logger.warn("Previous logs exist for this date -> set number = "+ newSetNumber +" [diff: "+ diff +"ms]")
       Some(newSetNumber)
     } catch {
       case nre: NoResultException => {
