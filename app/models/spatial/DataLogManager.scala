@@ -370,7 +370,7 @@ object DataLogManager {
       val q = em.createQuery("SELECT DISTINCT log.setNumber FROM "+ classOf[GpsLog].getName+" log  WHERE timestamp BETWEEN :start AND :end")
       q.setParameter("start", date, TemporalType.DATE)
       q.setParameter("end", afterDate.getTime, TemporalType.DATE)
-      val setNumbers = q.getResultList.map(_.asInstanceOf[Int]).toList
+      val setNumbers = q.getResultList.map(_.asInstanceOf[Int]).toList.sorted
       em.getTransaction().commit()
       setNumbers
     } catch {
