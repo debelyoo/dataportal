@@ -514,7 +514,7 @@ object DataLogManager {
     val percentage = BatchManager.batchProgress.get(batchId).map {
       case (hint, nbTot, nbDone) => (hint, math.floor((nbDone.toDouble / nbTot.toDouble) * 100).toLong)
     }
-    if(percentage.isDefined && percentage.get == 100L) {
+    if(percentage.isDefined && percentage.get._2 == 100L) {
       BatchManager.cleanCompletedBatch(batchId)
     }
     percentage
