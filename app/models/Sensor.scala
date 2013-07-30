@@ -128,9 +128,10 @@ object Sensor {
    * Get active sensors by time range
    * @param from start time of range
    * @param to end time of range
+   * @param dataType type of the sensor
    * @return A list of sensors (active during specified time range)
    */
-  def getByDatetime(from: Date, to: Date): List[Sensor] = {
+  def getByDatetime(from: Date, to: Date, dataType: Option[String] = None): List[Sensor] = {
     /*SELECT DISTINCT s.id, s.name
     FROM temperaturelog tl, sensor s where timestamp BETWEEN '2013-06-13 16:20:00'::timestamp
       AND '2013-06-13 16:31:25'::timestamp AND sensor_id = s.id AND s.name like 'PT%';*/
@@ -142,10 +143,15 @@ object Sensor {
       val windSensors = getActiveSensorByTimeInterval[WindLog](from, to, false, Some(em))
       val radiometerSensors = getActiveSensorByTimeInterval[RadiometerLog](from, to, false, Some(em))
       val compassSensors = getActiveSensorByTimeInterval[CompassLog](from, to, false, Some(em))
-      val sensors = temperatureSensors ++ windSensors ++ radiometerSensors ++ compassSensors
+      val temperatureType = if (temperatureSensors.nonEmpty && dataType.isEmpty) {
+        val typeSensor = Sensor("temperature", "", "temperature")
+        List(typeSensor)
+      } else List()
+      val sensors = temperatureSensors ++ temperatureType ++ windSensors ++ radiometerSensors ++ compassSensors
 
       em.getTransaction().commit()
-      sensors.sortBy(_.name)
+      val filteredSensors = if (dataType.isDefined) sensors.filter(_.datatype == dataType.get) else sensors
+      filteredSensors.sortBy(_.name)
     } catch {
       case ex: Exception => ex.printStackTrace; List()
     } finally {

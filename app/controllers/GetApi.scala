@@ -42,13 +42,18 @@ trait GetApi extends ResponseFormatter {
         Logger.info("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
         //println(map)
         assert(map.contains("data_type"), {println("Missing data_type parameter")})
+        assert(map.contains("sensor_id"), {println("Missing sensor_id parameter")})
         assert(map.contains("from_date"), {println("Missing from_date parameter")})
         assert(map.contains("to_date"), {println("Missing to_date parameter")})
         val startDate = DateFormatHelper.dateTimeFormatter.parse(map.get("from_date").get)
         val endDate = DateFormatHelper.dateTimeFormatter.parse(map.get("to_date").get)
         val geoOnly = map.get("geo_only").getOrElse("true").toBoolean
         val coordinateFormat = map.get("coordinate_format").getOrElse("gps")
-        val sensorIdList = map.get("sensor_id").map(_.toLong).toList // TODO handle multi Ids (by parsing string)
+        //val sensorIdList = map.get("sensor_id").map(_.toLong).toList // TODO handle multi Ids (by parsing string)
+        val sensorIdList = map.get("sensor_id").map {
+          case "all" => Sensor.getByDatetime(startDate, endDate, map.get("data_type")).map(_.id)
+          case _ => List(map.get("sensor_id").get.toLong)
+        }.get
         val maxNb = map.get("max_nb").map(_.toInt)
         val logMap = map.get("data_type").get match {
           case DataImporter.Types.TEMPERATURE => {
@@ -100,13 +105,14 @@ trait GetApi extends ResponseFormatter {
    * Get the active sensors in a time interval
    * @param startTime The start time of the interval
    * @param endTime The end time of the interval
+   * @param dataType The type of the sensor to get
    * @return A list of sensors (JSON)
    */
-  def getSensorByDatetime(startTime: String, endTime: String) = Action {
+  def getSensorByDatetime(startTime: String, endTime: String, dataType: Option[String] = None) = Action {
     //println("Start: "+startTime +", End: "+endTime)
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-    val sensorList = Sensor.getByDatetime(startDate, endDate)
+    val sensorList = Sensor.getByDatetime(startDate, endDate, dataType)
     val jsList = Json.toJson(sensorList.map(s => Json.parse(s.toJson)))
     // build return JSON obj with array and count
     Ok(Json.toJson(Map("sensors" -> jsList, "count" -> Json.toJson(sensorList.length))))
