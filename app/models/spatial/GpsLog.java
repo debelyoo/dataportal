@@ -30,6 +30,9 @@ public class GpsLog implements WebSerializable, SensorLog {
     @Type(type="org.hibernate.spatial.GeometryType")
     private Point geoPos;
 
+    @Column(name="speed")
+    private Double speed;
+
     @Column(name="set_number")
     private int setNumber;
 
@@ -69,6 +72,14 @@ public class GpsLog implements WebSerializable, SensorLog {
 
     public void setGeoPos(Point pos) {
         this.geoPos = pos;
+    }
+
+    public Double getSpeed() {
+        return this.speed;
+    }
+
+    public void setSpeed(Double sp) {
+        this.speed = sp;
     }
 
     public void setSetNumber(int sn) {

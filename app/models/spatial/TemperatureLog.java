@@ -128,6 +128,7 @@ public class TemperatureLog implements WebSerializable, SensorLog {
         if (this.gpsLog != null) {
             double[] arr = ApproxSwissProj.WGS84toLV03(this.gpsLog.getGeoPos().getY(), this.gpsLog.getGeoPos().getX(), 0L); // get east, north, height
             gmlStr += "<ecol:coordinate_swiss>"+ arr[0] +","+ arr[1] +"</ecol:coordinate_swiss>";
+            gmlStr += "<ecol:speed>"+ this.getGpsLog().getSpeed() +"</ecol:speed>";
             gmlStr += "<ecol:geo_pos>";
             gmlStr += "<gml:Point srsName=\"http://www.opengis.net/gml/srs/epsg.xml#4326\">";
             //gmlStr += "<gml:coordinates xmlns:gml=\"http://www.opengis.net/gml\" decimal=\".\" cs=\",\" ts=\" \">"+ this.geoPos.getX() +","+ this.geoPos.getY() +"</gml:coordinates>";
@@ -155,6 +156,7 @@ public class TemperatureLog implements WebSerializable, SensorLog {
             if(temperatureLog.getGpsLog() != null) {
                 double[] arr = ApproxSwissProj.WGS84toLV03(temperatureLog.getGpsLog().getGeoPos().getY(), temperatureLog.getGpsLog().getGeoPos().getX(), 0L); // get east, north, height
                 logJson.getAsJsonObject().addProperty("coordinate_swiss", arr[0] +","+ arr[1]);
+                logJson.getAsJsonObject().addProperty("speed", temperatureLog.getGpsLog().getSpeed());
                 //gmlStr += "<ecol:coordinate_swiss>"+ arr[0] +","+ arr[1] +"</ecol:coordinate_swiss>";
                 JsonObject point = new JsonObject();
                 point.addProperty("x", temperatureLog.getGpsLog().getGeoPos().getX());

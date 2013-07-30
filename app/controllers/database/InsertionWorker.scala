@@ -4,14 +4,17 @@ import akka.actor.Actor
 import controllers.util.{DateFormatHelper, FiniteQueue, CoordinateHelper, Message, ApproxSwissProj}
 import models.spatial._
 import models.Sensor
-import com.vividsolutions.jts.geom.Point
+import com.vividsolutions.jts.geom.{Geometry, Point}
 import scala.collection.immutable.Queue
 import controllers.database.BatchManager._
 import scala.Some
+import java.util.Date
+import play.api.Logger
 
 class InsertionWorker extends Actor {
   implicit def queue2finitequeue[A](q: Queue[A]) = new FiniteQueue[A](q)
   var logCache = Queue[String]()
+  var lastSpeedPoint: Option[GpsLog] = None // most recent point for which the instantaneous speed has been calculated
   val LOG_CACHE_MAX_SIZE = 20
 
   def createUniqueString(str1: String, str2: String) = str1+":"+str2
@@ -113,10 +116,12 @@ class InsertionWorker extends Actor {
           }
           //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
           val geom = CoordinateHelper.wktToGeometry("POINT("+ lon +" "+ lat +")")
+          val speed = computeSpeed(ts, geom, setNumber)
           val gl = new GpsLog()
           gl.setSensor(sensorInDb.get)
           gl.setTimestamp(ts)
           gl.setGeoPos(geom.asInstanceOf[Point])
+          gl.setSpeed(speed)
           gl.setSetNumber(setNumber)
           val persisted = gl.save() // persist in DB
           if (persisted) {
@@ -182,5 +187,65 @@ class InsertionWorker extends Actor {
         if (batchNumbers.get._2 == batchNumbers.get._3 + 1) println("Import batch ["+ batchId +"]: 100%")
       }
     }
+  }
+
+  /**
+   * Compute the instantaneous speed in one GPS point
+   * @param ts The timestamp of the GPS point
+   * @param geom The GPS point
+   * @param setNumber The set number of the GPS point
+   * @return The speed in m/s
+   */
+  private def computeSpeed(ts: Date, geom: Geometry, setNumber: Int): Double = {
+    val INTERVAL_BETWEEN_SPEED_POINTS = 1000L // milliseconds
+    val diff = lastSpeedPoint.map(gpsLog => ts.getTime - gpsLog.getTimestamp.getTime)
+    val lastSetNumber = lastSpeedPoint.map(gpsLog => gpsLog.getSetNumber)
+    if (lastSetNumber.isDefined && lastSetNumber.get != setNumber) lastSpeedPoint = None // reset lastSpeedPoint if set number has changed
+    val point = geom.asInstanceOf[Point]
+    if (lastSpeedPoint.isEmpty) {
+      val speed = 0.0
+      val gl = new GpsLog()
+      gl.setTimestamp(ts)
+      gl.setGeoPos(point)
+      gl.setSpeed(speed)
+      gl.setSetNumber(setNumber)
+      lastSpeedPoint = Some(gl)
+      speed
+    } else if (lastSpeedPoint.isDefined && diff.get >= INTERVAL_BETWEEN_SPEED_POINTS) {
+      // speed needs to be recomputed for this point
+      val distance = computeDistanceBetween2GpsPoints(lastSpeedPoint.get.getGeoPos.getX, lastSpeedPoint.get.getGeoPos.getY, point.getX, point.getY)
+      val speed = distance / (INTERVAL_BETWEEN_SPEED_POINTS / 1000) // return m/s
+      Logger.info("Distance: "+distance+" m, speed: "+speed+" m/s")
+      val gl = new GpsLog()
+      gl.setTimestamp(ts)
+      gl.setGeoPos(point)
+      gl.setSpeed(speed)
+      gl.setSetNumber(setNumber)
+      lastSpeedPoint = Some(gl)
+      speed
+    } else {
+      lastSpeedPoint.map(_.getSpeed).get
+    }
+  }
+
+  /**
+   * Compute the distance between 2 GPS points (in meters)
+   * @param lon1 Longitude of 1st point
+   * @param lat1 Latitude of 1st point
+   * @param lon2 Longitude of 2nd point
+   * @param lat2 Latitude of 2nd point
+   * @return The distance in meters
+   */
+  private def computeDistanceBetween2GpsPoints(lon1: Double, lat1: Double, lon2: Double, lat2: Double): Double = {
+    val R = 6371 // km
+    val dLat = math.toRadians(lat2 - lat1)
+    val dLon = math.toRadians(lon2 - lon1)
+    var lat1InRad = math.toRadians(lat1)
+    var lat2InRad = math.toRadians(lat2)
+
+    val a = math.sin(dLat/2) * math.sin(dLat/2) + math.sin(dLon/2) * math.sin(dLon/2) * math.cos(lat1InRad) * math.cos(lat2InRad)
+    val c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    val distKm = R * c
+    distKm * 1000 // return meters
   }
 }
