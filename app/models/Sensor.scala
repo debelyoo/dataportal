@@ -1,7 +1,7 @@
 package models
 
 import javax.persistence._
-import controllers.util.JPAUtil
+import controllers.util.{DataImporter, JPAUtil}
 import org.hibernate.annotations.GenericGenerator
 import java.lang.Boolean
 import models.spatial._
@@ -144,10 +144,16 @@ object Sensor {
       val radiometerSensors = getActiveSensorByTimeInterval[RadiometerLog](from, to, false, Some(em))
       val compassSensors = getActiveSensorByTimeInterval[CompassLog](from, to, false, Some(em))
       val temperatureType = if (temperatureSensors.nonEmpty && dataType.isEmpty) {
-        val typeSensor = Sensor("temperature", "", "temperature")
+        // add a virtual sensor that will appear as "All temperature" in map interface
+        val typeSensor = Sensor("temperature", "", DataImporter.Types.TEMPERATURE)
         List(typeSensor)
       } else List()
-      val sensors = temperatureSensors ++ temperatureType ++ windSensors ++ radiometerSensors ++ compassSensors
+      val radiometerType = if (radiometerSensors.nonEmpty && dataType.isEmpty) {
+        // add a virtual sensor that will appear as "All radiometer" in map interface
+        val typeSensor = Sensor("radiometer", "", DataImporter.Types.RADIOMETER)
+        List(typeSensor)
+      } else List()
+      val sensors = temperatureSensors ++ temperatureType ++ windSensors ++ radiometerSensors ++ radiometerType ++ compassSensors
 
       em.getTransaction().commit()
       val filteredSensors = if (dataType.isDefined) sensors.filter(_.datatype == dataType.get) else sensors
