@@ -215,7 +215,7 @@ class InsertionWorker extends Actor {
       // speed needs to be recomputed for this point
       val distance = computeDistanceBetween2GpsPoints(lastSpeedPoint.get.getGeoPos.getX, lastSpeedPoint.get.getGeoPos.getY, point.getX, point.getY)
       val speed = distance / (INTERVAL_BETWEEN_SPEED_POINTS / 1000) // return m/s
-      Logger.info("Distance: "+distance+" m, speed: "+speed+" m/s")
+      //Logger.info("Distance: "+distance+" m, speed: "+speed+" m/s")
       val gl = new GpsLog()
       gl.setTimestamp(ts)
       gl.setGeoPos(point)
