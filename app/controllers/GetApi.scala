@@ -70,7 +70,7 @@ trait GetApi extends ResponseFormatter {
             DataLogManager.getByTimeIntervalAndSensor[RadiometerLog](startDate, endDate, geoOnly, sensorIdList, maxNb)
           }
           case DataImporter.Types.GPS => {
-            val gpsLogsNative = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false)
+            val gpsLogsNative = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false, maxNb)
             val gpsLogs = if (coordinateFormat == "swiss") {
               gpsLogsNative.map(gl => {
                 val arr = ApproxSwissProj.WGS84toLV03(gl.getGeoPos.getY, gl.getGeoPos.getX, 0L).toList // get east, north, height
@@ -92,6 +92,31 @@ trait GetApi extends ResponseFormatter {
         case ex: Exception => ex.printStackTrace(); BadRequest
       }
   }
+
+  // TODO - test only
+  def getGpsData = Action {
+    implicit request =>
+      try {
+        val map = request.queryString.map { case (k,v) => k -> v.mkString }
+        val format = map.get("format").getOrElse(GEOJSON_FORMAT) // default format is Geo json
+        //println("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
+        Logger.info("[GetApi] getGpsData() - <"+ format +">")
+        //println(map)
+        assert(map.contains("from_date"), {println("Missing from_date parameter")})
+        assert(map.contains("to_date"), {println("Missing to_date parameter")})
+        val startDate = DateFormatHelper.dateTimeFormatter.parse(map.get("from_date").get)
+        val endDate = DateFormatHelper.dateTimeFormatter.parse(map.get("to_date").get)
+        val maxNb = map.get("max_nb").map(_.toInt)
+        val gpsLogs = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false, maxNb)
+        //Ok(logsAsGeoJsonLinestring(Map("gps sensor" -> gpsLogs)))
+        Ok(logsAsGeoJson(Map("gps sensor" -> gpsLogs)))
+      } catch {
+        case ae: AssertionError => BadRequest
+        case ex: Exception => ex.printStackTrace(); BadRequest
+      }
+  }
+
+
 
   /**
    * Get details of a particular sensor (used mainly for tests)

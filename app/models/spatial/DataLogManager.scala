@@ -110,7 +110,12 @@ object DataLogManager {
    * @tparam T The type of data log to get
    * @return A list of the logs in the specified time interval
    */
-  def getByTimeInterval[T: ClassTag](startTime: Date, endTime: Date, geoOnly: Boolean, emOpt: Option[EntityManager] = None): List[T] = {
+  def getByTimeInterval[T: ClassTag](
+                                      startTime: Date,
+                                      endTime: Date,
+                                      geoOnly: Boolean,
+                                      maxNb: Option[Int] = None,
+                                      emOpt: Option[EntityManager] = None): List[T] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
@@ -128,7 +133,17 @@ object DataLogManager {
       //println(q.getResultList)
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList
       if (emOpt.isEmpty) em.getTransaction().commit()
-      logs
+      val reducedLogList = if (maxNb.isDefined && logs.length > maxNb.get) {
+        val moduloFactor = math.ceil(logs.length.toDouble / maxNb.get.toDouble).toInt
+        //println("logs list reduced by factor: "+ moduloFactor)
+        for {
+          (sl, ind) <- logs.zipWithIndex
+          if (ind % moduloFactor == 0)
+        } yield {
+          sl
+        }
+      } else logs
+      reducedLogList
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()

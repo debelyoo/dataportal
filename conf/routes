@@ -25,8 +25,9 @@ GET     /windlogs/*wId              controllers.Application.getWindLogById(wId)
 
 
 # Get sensor logs (by time interval)
-#GET     /api/*format/gps/from/*startTime/to/*endTime/sensorid/*sid              controllers.Application.getGpsLogByTimeInterval(format, startTime, endTime, sid)
+#GET     /api/*format/gps/from/*startTime/to/*endTime/sensorid/*sid             controllers.Application.getGpsLogByTimeInterval(format, startTime, endTime, sid)
 GET     /api/data                                                               controllers.Application.getData
+GET     /api/gpsdata                                                            controllers.Application.getGpsData
 
 # Get misc
 GET     /api/dates                                          controllers.Application.getLogDates

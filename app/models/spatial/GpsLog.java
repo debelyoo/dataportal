@@ -3,6 +3,7 @@ package models.spatial;
 import com.google.gson.*;
 import com.vividsolutions.jts.geom.Point;
 import controllers.util.*;
+import controllers.util.json.GeoJsonSerializable;
 import controllers.util.json.JsonSerializable;
 import models.Sensor;
 import org.hibernate.annotations.GenericGenerator;
@@ -13,7 +14,7 @@ import java.util.Date;
 
 @Entity
 @Table(name = "gpslog")
-public class GpsLog implements WebSerializable, SensorLog {
+public class GpsLog implements WebSerializable, GeoJsonSerializable, SensorLog {
 
     @Id
     @GeneratedValue(generator="increment")
@@ -99,13 +100,17 @@ public class GpsLog implements WebSerializable, SensorLog {
         return new GsonBuilder().registerTypeAdapter(GpsLog.class, new GpsLogSerializer()).create().toJson(this);
     }
 
+    @Override
+    public String toGeoJson() {
+        return new GsonBuilder().registerTypeAdapter(GpsLog.class, new GpsLogGeoJsonSerializer()).create().toJson(this);
+    }
+
     /**
-     * Custom Serializer for GPS log
+     * Custom JSON Serializer for GPS log
      */
     public static class GpsLogSerializer implements JsonSerializer<GpsLog> {
         @Override
         public JsonElement serialize(GpsLog gpsLog, java.lang.reflect.Type type, JsonSerializationContext context) {
-            //JsonElement gpsLogJson = new Gson().toJsonTree(gpsLog);
             JsonElement gpsLogJson = new JsonObject();
             gpsLogJson.getAsJsonObject().addProperty("id", gpsLog.getId());
             gpsLogJson.getAsJsonObject().addProperty("sensor_id", gpsLog.getSensor().id());
@@ -115,6 +120,37 @@ public class GpsLog implements WebSerializable, SensorLog {
             point.addProperty("y", gpsLog.getGeoPos().getY());
             gpsLogJson.getAsJsonObject().add("geo_pos", point);
             return gpsLogJson;
+        }
+    }
+
+    /**
+     * Custom Geo JSON Serializer for GPS log
+     */
+    public static class GpsLogGeoJsonSerializer implements JsonSerializer<GpsLog> {
+        @Override
+        public JsonElement serialize(GpsLog gpsLog, java.lang.reflect.Type type, JsonSerializationContext context) {
+            Gson gson = new Gson();
+            JsonObject geometryObj = new JsonObject();
+            geometryObj.addProperty("type", "Point");
+            String str = "["+gpsLog.getGeoPos().getX() +","+gpsLog.getGeoPos().getY()+"]";
+            JsonArray jArr = gson.fromJson(str, JsonArray.class);
+            geometryObj.add("coordinates", jArr);
+
+            JsonObject propertiesObj = new JsonObject();
+            propertiesObj.addProperty("id", gpsLog.getId());
+            propertiesObj.addProperty("sensor_id", gpsLog.getSensor().id());
+            propertiesObj.addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(gpsLog.getTimestamp()));
+            if (gpsLog.getGeoPos() != null) {
+                double[] arr = ApproxSwissProj.WGS84toLV03(gpsLog.getGeoPos().getY(), gpsLog.getGeoPos().getX(), 0L);
+                propertiesObj.addProperty("coordinate_swiss", arr[0] + "," + arr[1]);
+                propertiesObj.addProperty("speed", gpsLog.getSpeed());
+            }
+
+            JsonObject featureObj = new JsonObject();
+            featureObj.addProperty("type", "Feature");
+            featureObj.add("geometry", geometryObj);
+            featureObj.add("properties", propertiesObj);
+            return featureObj;
         }
     }
 
