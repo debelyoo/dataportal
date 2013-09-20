@@ -100,6 +100,7 @@ class InsertionWorker extends Actor {
     //case Message.InsertGpsLog(ts, sensor, north, east) => {
     case Message.InsertGpsLog(batchId, ts, setNumber, sensor, latitude, longitude) => {
       try {
+        println("[Message.InsertGpsLog] "+sensor.address)
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
         // ALTERNATIVE - create unique string, use timestamp format with seconds (and not milli) --> import only one GPS point per second

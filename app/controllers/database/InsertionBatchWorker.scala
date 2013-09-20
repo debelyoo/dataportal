@@ -35,9 +35,10 @@ class InsertionBatchWorker extends Actor {
                 DataLogManager.insertionWorker ! Message.InsertWindLog(batchId, date, sensor, chunksOnLine(2).toDouble)
               }
               case DataImporter.Types.GPS  => {
-                if (chunksOnLine.length == 4) {
-                  // address - timestamp - north value - east value
-                  if (ind == 0) setNumberOpt = DataLogManager.getNextSetNumber(date)
+                if (chunksOnLine.length == 5 && chunksOnLine(0) == "48") {
+                  //println("--> handle GPS log ! "+ chunksOnLine(0))
+                  // address - timestamp - latitude - longitude - elevation
+                  if (setNumberOpt.isEmpty) setNumberOpt = DataLogManager.getNextSetNumber(date)
                   //val setNumberOpt = DataLogManager.getNextSetNumber[GpsLog](date)
                   setNumberOpt.foreach(setNumber => {
                     DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, date, setNumber, sensor, chunksOnLine(2).toDouble, chunksOnLine(3).toDouble)

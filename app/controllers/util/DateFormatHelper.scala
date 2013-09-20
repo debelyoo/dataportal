@@ -18,7 +18,7 @@ object DateFormatHelper {
    */
   def labViewTsToJavaDate(labviewTs: Double): Date = {
     val labviewEpoch = dateTimeFormatter.parse("19040101-000000") // 1.1.1904
-    val newTs = labviewEpoch.getTime() + math.round(labviewTs * 1000) + (3600 * 1000) // add one hour for the time zone (UTC+01:00)
+    val newTs = labviewEpoch.getTime() + math.round(labviewTs * 1000)
     new Date(newTs)
   }
 }
