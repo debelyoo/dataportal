@@ -100,7 +100,7 @@ class InsertionWorker extends Actor {
     //case Message.InsertGpsLog(ts, sensor, north, east) => {
     case Message.InsertGpsLog(batchId, ts, setNumber, sensor, latitude, longitude) => {
       try {
-        println("[Message.InsertGpsLog] "+sensor.address)
+        //println("[Message.InsertGpsLog] "+sensor.address)
         val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
         assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
         // ALTERNATIVE - create unique string, use timestamp format with seconds (and not milli) --> import only one GPS point per second
@@ -198,8 +198,8 @@ class InsertionWorker extends Actor {
    * @return The speed in m/s
    */
   private def computeSpeed(ts: Date, geom: Geometry, setNumber: Int): Double = {
-    val INTERVAL_BETWEEN_SPEED_POINTS = 1000L // milliseconds
-    val diff = lastSpeedPoint.map(gpsLog => ts.getTime - gpsLog.getTimestamp.getTime)
+    val INTERVAL_BETWEEN_SPEED_POINTS = 1000L // milliseconds (it means that we compute speed every 1000 ms)
+    val timeDiff = lastSpeedPoint.map(gpsLog => ts.getTime - gpsLog.getTimestamp.getTime) // time difference (ms) between gps points
     val lastSetNumber = lastSpeedPoint.map(gpsLog => gpsLog.getSetNumber)
     if (lastSetNumber.isDefined && lastSetNumber.get != setNumber) lastSpeedPoint = None // reset lastSpeedPoint if set number has changed
     val point = geom.asInstanceOf[Point]
@@ -212,11 +212,11 @@ class InsertionWorker extends Actor {
       gl.setSetNumber(setNumber)
       lastSpeedPoint = Some(gl)
       speed
-    } else if (lastSpeedPoint.isDefined && diff.get >= INTERVAL_BETWEEN_SPEED_POINTS) {
+    } else if (lastSpeedPoint.isDefined && timeDiff.get >= INTERVAL_BETWEEN_SPEED_POINTS) {
       // speed needs to be recomputed for this point
       val distance = computeDistanceBetween2GpsPoints(lastSpeedPoint.get.getGeoPos.getX, lastSpeedPoint.get.getGeoPos.getY, point.getX, point.getY)
-      val speed = distance / (INTERVAL_BETWEEN_SPEED_POINTS / 1000) // return m/s
-      //Logger.info("Distance: "+distance+" m, speed: "+speed+" m/s")
+      val speed = distance / (timeDiff.get.toDouble / 1000.0) // return m/s
+      //Logger.info("TimeDiff: "+ timeDiff +" ms, Distance: "+distance+" m, speed: "+speed+" m/s")
       val gl = new GpsLog()
       gl.setTimestamp(ts)
       gl.setGeoPos(point)
@@ -225,6 +225,7 @@ class InsertionWorker extends Actor {
       lastSpeedPoint = Some(gl)
       speed
     } else {
+      // return the speed that was computed in the last speed point
       lastSpeedPoint.map(_.getSpeed).get
     }
   }
