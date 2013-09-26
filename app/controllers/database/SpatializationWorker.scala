@@ -26,7 +26,7 @@ class SpatializationWorker extends Actor {
         if (sensorLog.asInstanceOf[TemperatureLog].getGpsLog == null) {
           em.getTransaction.begin()
           // add position in temperaturelog table
-          //updateGeoPos[TemperatureLog](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
+          //updateGeoPos[TemperatureLogCat](sensorLog.getId.longValue(), gpsLog.getGeoPos, em)
           linkSensorLogToGpsLog[TemperatureLog](sensorLog.getId.longValue(), gpsLog.getId.longValue(), em)
           em.getTransaction.commit()
         }

@@ -110,7 +110,7 @@ public class WindLog implements WebSerializable, SensorLog {
     public String toKml() {
         String kmlStr = "";
         kmlStr += "<Placemark>";
-        kmlStr += "<name>temperaturelog"+ this.id +"</name>";
+        kmlStr += "<name>windlog"+ this.id +"</name>";
         kmlStr += "<description>The temperature measured in one point</description>";
         if (this.gpsLog != null) {
             kmlStr += "<Point>";
@@ -125,7 +125,7 @@ public class WindLog implements WebSerializable, SensorLog {
     public String toGml() {
         String gmlStr = "";
         gmlStr += "<gml:featureMember>";
-        gmlStr += "<ecol:restRequest fid=\"temperaturelog"+ this.id +"\">";
+        gmlStr += "<ecol:restRequest fid=\"windlog"+ this.id +"\">";
         gmlStr += "<ecol:id>"+ this.id +"</ecol:id>";
         gmlStr += "<ecol:sensor_id>"+ this.sensor.id() +"</ecol:sensor_id>";
         gmlStr += "<ecol:timestamp>"+ this.timestamp.toString() +"</ecol:timestamp>";

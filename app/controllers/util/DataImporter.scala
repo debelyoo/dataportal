@@ -11,6 +11,8 @@ object DataImporter {
     val WIND = "wind"
     val GPS = "gps"
     val RADIOMETER = "radiometer"
+    val GPS_ELEMO = "gps_elemo"
+    val TEMPERATURE_ELEMO = "temperature_elemo"
   }
 
   /**

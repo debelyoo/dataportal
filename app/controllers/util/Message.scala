@@ -13,6 +13,9 @@ object Message {
   case class InsertRadiometerLog (batchId: String, ts: Date, sensor: Sensor, radiometerVal: Double)
   case class InsertSensor (sensor: Sensor)
   case class SkipLog (batchId: String)
+  // TEST
+  case class InsertGpsLogElemo (batchId: String, ts: Date, setNumber: Int, sensor: Sensor, latitude: Double, longitude: Double)
+  case class InsertTemperatureLogElemo (batchId: String, ts: Date, sensor: Sensor, tempVal: Double)
   // Spatialization
   case class SpatializeTemperatureLog (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)
   case class SpatializeWindLog (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)

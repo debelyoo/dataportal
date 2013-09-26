@@ -89,7 +89,7 @@ public class TemperatureLog implements WebSerializable, SensorLog {
         } else {
             gpsStr = "GPS: NULL";
         }
-        return "[TemperatureLog] id: "+ this.id +", sensor: "+this.sensor +", TS: "+this.timestamp +", " +
+        return "[TemperatureLogCat] id: "+ this.id +", sensor: "+this.sensor +", TS: "+this.timestamp +", " +
                 "value: "+this.value +", "+gpsStr;
     }
 
@@ -168,7 +168,7 @@ public class TemperatureLog implements WebSerializable, SensorLog {
     }
 
     /**
-     * Save the TemperatureLog in Postgres database
+     * Save the TemperatureLogCat in Postgres database
      */
     public Boolean save() {
         EntityManager em = JPAUtil.createEntityManager();

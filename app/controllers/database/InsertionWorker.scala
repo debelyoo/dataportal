@@ -10,6 +10,7 @@ import controllers.database.BatchManager._
 import scala.Some
 import java.util.Date
 import play.api.Logger
+import models.elemoImport.{TemperatureLogCat, TrajectoryPoint}
 
 class InsertionWorker extends Actor {
   implicit def queue2finitequeue[A](q: Queue[A]) = new FiniteQueue[A](q)
@@ -97,7 +98,6 @@ class InsertionWorker extends Actor {
         case ae: AssertionError => None
       }
     }
-    //case Message.InsertGpsLog(ts, sensor, north, east) => {
     case Message.InsertGpsLog(batchId, ts, setNumber, sensor, latitude, longitude) => {
       try {
         //println("[Message.InsertGpsLog] "+sensor.address)
@@ -175,6 +175,67 @@ class InsertionWorker extends Actor {
         //sender ! res
       } catch {
         case ae: AssertionError => sender ! None
+      }
+    }
+    /// TEST
+    case Message.InsertGpsLogElemo(batchId, ts, setNumber, sensor, latitude, longitude) => {
+      try {
+        //println("[Message.InsertGpsLog] "+sensor.address)
+        val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
+        assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
+        val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
+        val res = if (!logCache.contains(uniqueString)) {
+          val (lat, lon) = if (math.abs(latitude) > 90 || math.abs(longitude) > 180) {
+            // east coordinate comes as longitude var, north coordinate comes as latitude var
+            val arr = ApproxSwissProj.LV03toWGS84(longitude, latitude, 0L).toList
+            //val latitude = arr(0)
+            //val longitude = arr(1)
+            (arr(0), arr(1))
+          } else {
+            (latitude, longitude)
+          }
+          //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
+          val geom = CoordinateHelper.wktToGeometry("POINT("+ lon +" "+ lat +")")
+          val gl = new TrajectoryPoint()
+          gl.setTimestamp(ts)
+          gl.setCoordinate(geom.asInstanceOf[Point])
+          gl.setOutingId(8) // hard coded - warning
+          val persisted = gl.save() // persist in DB
+          if (persisted) {
+            logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
+            Some(true)
+          } else None
+        } else Some(false)
+        BatchManager.updateBatchProgress(batchId, "Insertion")
+        //sender ! res
+      } catch {
+        case ae: AssertionError => None
+      }
+    }
+    /// TEST
+    case Message.InsertTemperatureLogElemo(batchId, ts, sensor, temperatureValue) => {
+      try {
+        // fetch the sensor in DB, to get its id
+        val sensorInDb = Sensor.getByNameAndAddress(sensor.name, sensor.address)
+        assert(sensorInDb.isDefined, {println("[Message.InsertTemperatureLog] Sensor is not in Database !")})
+        //println("[RCV message] - insert temperature log: "+temperatureValue+", "+ sensorInDb.get)
+        val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
+        if (!logCache.contains(uniqueString)) {
+          // insert log in cache only if cache does not contain unique string (address-timestamp)
+          val tl = new TemperatureLogCat()
+          tl.setTimestamp(ts)
+          tl.setValue(temperatureValue)
+          tl.setDeviceId(10) // hard coded - warning
+          tl.setOutingId(8) // hard coded - warning
+          val persisted = tl.save() // persist in DB
+          if (persisted) {
+            logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
+            Some(true)
+          } else None
+        } else Some(false)
+        BatchManager.updateBatchProgress(batchId, "Insertion")
+      } catch {
+        case ae: AssertionError => None
       }
     }
     case Message.InsertSensor(sensor) => {

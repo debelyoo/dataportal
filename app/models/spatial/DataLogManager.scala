@@ -13,6 +13,7 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 import scala.Some
 import play.api.Logger
+import models.elemoImport.Mission
 
 object DataLogManager {
 
@@ -331,6 +332,55 @@ object DataLogManager {
       val dates = q.getResultList.map(_.asInstanceOf[Date]).toList.reverse.map(ts => DateFormatHelper.selectYearFormatter.format(ts)) // use reverse to get the most recent date on top
       em.getTransaction().commit()
       dates
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      em.close()
+    }
+  }
+
+  /**
+   * Get the distinct dates for which there is logs
+   * @return A list of dates (as String) and vehicles
+   */
+  def getMissionDates: List[(String, String)] = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val q = em.createQuery("SELECT DISTINCT cast(m.departureTime as date), m.vehicle.name FROM "+ classOf[Mission].getName +" m")
+      //val dates = q.getResultList.map(_.asInstanceOf[Date]).toList.map(ts => DateFormatHelper.selectYearFormatter.format(ts))
+      val dates = q.getResultList.map(_.asInstanceOf[Array[Object]]).toList.map(obj =>
+        (DateFormatHelper.selectYearFormatter.format(obj(0).asInstanceOf[Date]), obj(1).asInstanceOf[String])
+      )
+      em.getTransaction().commit()
+      dates
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      em.close()
+    }
+  }
+
+  /**
+   * Get the missions for a specific date
+   * @param date The date of the missions to get
+   * @return A list of missions
+   */
+  def getMissionsForDate(date: Date): List[Mission] = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val afterDate = Calendar.getInstance()
+      afterDate.setTime(date)
+      afterDate.add(Calendar.DAY_OF_YEAR, 1)
+      val q = em.createQuery("FROM "+ classOf[Mission].getName+" m  WHERE departuretime BETWEEN :start AND :end ORDER BY departuretime DESC")
+      q.setParameter("start", date, TemporalType.DATE)
+      q.setParameter("end", afterDate.getTime, TemporalType.DATE)
+      val missions = q.getResultList.map(_.asInstanceOf[Mission]).toList
+      em.getTransaction().commit()
+      missions
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()

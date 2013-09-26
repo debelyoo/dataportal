@@ -39,9 +39,9 @@ trait GetApi extends ResponseFormatter {
         val map = request.queryString.map { case (k,v) => k -> v.mkString }
         val format = map.get("format").getOrElse(JSON_FORMAT) // default format is Json
         //println("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
-        Logger.info("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
         //println(map)
         assert(map.contains("data_type"), {println("Missing data_type parameter")})
+        Logger.info("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
         assert(map.contains("sensor_id"), {println("Missing sensor_id parameter")})
         assert(map.contains("from_date"), {println("Missing from_date parameter")})
         assert(map.contains("to_date"), {println("Missing to_date parameter")})
@@ -93,7 +93,10 @@ trait GetApi extends ResponseFormatter {
       }
   }
 
-  // TODO - test only
+  /**
+   * Get the GPS data
+   * @return
+   */
   def getGpsData = Action {
     implicit request =>
       try {
@@ -110,6 +113,33 @@ trait GetApi extends ResponseFormatter {
         val gpsLogs = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false, maxNb)
         //Ok(logsAsGeoJsonLinestring(Map("gps sensor" -> gpsLogs)))
         Ok(logsAsGeoJson(Map("gps sensor" -> gpsLogs)))
+      } catch {
+        case ae: AssertionError => BadRequest
+        case ex: Exception => ex.printStackTrace(); BadRequest
+      }
+  }
+
+  /**
+   * Get the trajectory of a mission
+   * @return
+   */
+  def getTrajectory = Action {
+    implicit request =>
+      try {
+        val map = request.queryString.map { case (k,v) => k -> v.mkString }
+        val format = map.get("format").getOrElse(GEOJSON_FORMAT) // default format is Geo json
+        val mode = map.get("mode").getOrElse("linestring") // default mode is linestring
+        //println("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
+        Logger.info("[GetApi] getTrajectory() - <"+ format +">")
+        //println(map)
+        assert(map.contains("mission_id"), {println("Missing mission_id parameter")})
+        val missionId = map.get("mission_id").map(_.toInt)
+        val maxNb = map.get("max_nb").map(_.toInt).getOrElse(2000)
+        // TODO - get start and end time for mission
+        val gpsLogs = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false, maxNb)
+        // TODO - get linestring out of trajectory field (in DB)
+        val resp = if (mode == "linestring") logsAsGeoJsonLinestring(Map("gps sensor" -> gpsLogs)) else logsAsGeoJson(Map("gps sensor" -> gpsLogs))
+        Ok(resp)
       } catch {
         case ae: AssertionError => BadRequest
         case ex: Exception => ex.printStackTrace(); BadRequest
@@ -177,6 +207,27 @@ trait GetApi extends ResponseFormatter {
     val dateList = DataLogManager.getDates
     val jsList = Json.toJson(dateList.map(date => Json.toJson(date)))
     Ok(Json.toJson(Map("dates" -> jsList, "count" -> Json.toJson(dateList.length))))
+  }
+
+  /**
+   * Get dates (year-month-day) of missions in DB
+   * @return A list of dates (JSON)
+   */
+  def getMissionDates = Action {
+    val dateList = DataLogManager.getMissionDates
+    val jsList = Json.toJson(dateList.map { case (dateStr, vehicle) => Json.toJson(Map("departuretime" -> dateStr, "vehicle" -> vehicle))})
+    Ok(jsList)
+  }
+
+  /**
+   * Get missions for a psecific date
+   * @return A list of missions (JSON)
+   */
+  def getMissionsForDate(dateStr: String) = Action {
+    val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
+    val missionList = DataLogManager.getMissionsForDate(date)
+    val jsList = Json.toJson(missionList.map(m => Json.parse(m.toJson)))
+    Ok(jsList)
   }
 
   /**

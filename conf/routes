@@ -25,12 +25,14 @@ GET     /windlogs/*wId              controllers.Application.getWindLogById(wId)
 
 
 # Get sensor logs (by time interval)
-#GET     /api/*format/gps/from/*startTime/to/*endTime/sensorid/*sid             controllers.Application.getGpsLogByTimeInterval(format, startTime, endTime, sid)
-GET     /api/data                                                               controllers.Application.getData
-GET     /api/gpsdata                                                            controllers.Application.getGpsData
+GET     /api/data                                           controllers.Application.getData
+GET     /api/gpsdata                                        controllers.Application.getGpsData
+GET     /api/trajectory                                     controllers.Application.getTrajectory
 
 # Get misc
 GET     /api/dates                                          controllers.Application.getLogDates
+GET     /api/missiondates                                   controllers.Application.getMissionDates
+GET     /api/missions/fordate/*date                         controllers.Application.getMissionsForDate(date)
 GET     /api/times/fordate/*date/andset/*set                controllers.Application.getLogTimesForDateAndSet(date, set)
 GET     /api/sets/fordate/*date                             controllers.Application.getLogSetsForDate(date)
 GET     /api/sensors/from/*startDate/to/*endDate            controllers.Application.getSensorByDatetime(startDate, endDate)

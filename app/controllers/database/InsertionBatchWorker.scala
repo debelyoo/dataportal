@@ -51,7 +51,29 @@ class InsertionBatchWorker extends Actor {
                 // address - timestamp - value
                 DataLogManager.insertionWorker ! Message.InsertRadiometerLog(batchId, date, sensor, chunksOnLine(2).toDouble)
               }
-              case _  => println("Unknown data type !")
+              /// Test
+              case DataImporter.Types.GPS_ELEMO  => {
+                if (chunksOnLine.length == 5 && chunksOnLine(0) == "48") {
+                  //println("--> handle GPS log ! "+ chunksOnLine(0))
+                  // address - timestamp - latitude - longitude - elevation
+                  if (setNumberOpt.isEmpty) setNumberOpt = DataLogManager.getNextSetNumber(date)
+                  //val setNumberOpt = DataLogManager.getNextSetNumber[GpsLog](date)
+                  setNumberOpt.foreach(setNumber => {
+                    DataLogManager.insertionWorker ! Message.InsertGpsLogElemo(batchId, date, setNumber, sensor, chunksOnLine(2).toDouble, chunksOnLine(3).toDouble)
+                  })
+                } else {
+                  DataLogManager.insertionWorker ! Message.SkipLog(batchId) // necessary to update batch progress correctly (when GPS error logs are skipped)
+                }
+              }
+              case DataImporter.Types.TEMPERATURE_ELEMO => {
+                // address - timestamp - value
+                if (sensor.address == "97") {
+                  DataLogManager.insertionWorker ! Message.InsertTemperatureLogElemo(batchId, date, sensor, chunksOnLine(2).toDouble)
+                } else {
+                  DataLogManager.insertionWorker ! Message.SkipLog(batchId)
+                }
+              }
+              case _  => println("Unknown data type ! ["+ dataType +"]")
             }
           }
         }
