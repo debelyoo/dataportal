@@ -5,29 +5,11 @@ import models.spatial._
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import play.api.Logger
-import com.vividsolutions.jts.geom.Point
-
-//import scala.reflect.{ClassTag, classTag}
-import models.Sensor
+import models._
+import scala.Some
 
 trait GetApi extends ResponseFormatter {
   this: Controller =>
-
-  /**
-   * Get logs by time interval
-   * @param format The
-   * @param startTime
-   * @param endTime
-   * @param sensorId
-   */
-  /*def getGpsLogByTimeInterval(format: String, startTime: String, endTime: String, sensorId: String) = Action {
-    val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
-    val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-    val logList = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false)
-    val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
-    // build return JSON obj with array and count
-    Ok(Json.toJson(Map("logs" -> jsList, "count" -> Json.toJson(logList.length))))
-  }*/
 
   /**
    * Handle data request with query params  (ex: /api/data?data_type=temperature&from_date=20130613-150000&to_date=20130613-170000&sensor_id=4&geo_only=true)
@@ -41,51 +23,22 @@ trait GetApi extends ResponseFormatter {
         //println("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
         //println(map)
         assert(map.contains("data_type"), {println("Missing data_type parameter")})
-        Logger.info("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
-        assert(map.contains("sensor_id"), {println("Missing sensor_id parameter")})
-        assert(map.contains("from_date"), {println("Missing from_date parameter")})
-        assert(map.contains("to_date"), {println("Missing to_date parameter")})
-        val startDate = DateFormatHelper.dateTimeFormatter.parse(map.get("from_date").get)
-        val endDate = DateFormatHelper.dateTimeFormatter.parse(map.get("to_date").get)
-        val geoOnly = map.get("geo_only").getOrElse("true").toBoolean
-        val coordinateFormat = map.get("coordinate_format").getOrElse("gps")
+        val datatype = map.get("data_type").get
+        Logger.info("[GetApi] getData() - "+ datatype + " <"+ format +">")
+        assert(map.contains("mission_id"), {println("Missing mission_id parameter")})
+        val missionId = map.get("mission_id").map(_.toLong)
+        val startDate = map.get("from_date").map(DateFormatHelper.dateTimeFormatter.parse(_))
+        val endDate = map.get("to_date").map(DateFormatHelper.dateTimeFormatter.parse(_))
+        assert(map.contains("device_id"), {println("Missing device_id parameter")})
+        //val geoOnly = map.get("geo_only").getOrElse("true").toBoolean
         //val sensorIdList = map.get("sensor_id").map(_.toLong).toList // TODO handle multi Ids (by parsing string)
-        val sensorIdList = map.get("sensor_id").map {
-          case "all" => Sensor.getByDatetime(startDate, endDate, map.get("data_type")).map(_.id)
-          case _ => List(map.get("sensor_id").get.toLong)
-        }.get
+
         val maxNb = map.get("max_nb").map(_.toInt)
-        val logMap = map.get("data_type").get match {
-          case DataImporter.Types.TEMPERATURE => {
-            //println("GET data - "+DataImporter.Types.TEMPERATURE)
-            DataLogManager.getByTimeIntervalAndSensor[TemperatureLog](startDate, endDate, geoOnly, sensorIdList, maxNb)
-          }
-          case DataImporter.Types.WIND => {
-            DataLogManager.getByTimeIntervalAndSensor[WindLog](startDate, endDate, geoOnly, sensorIdList, maxNb)
-          }
-          case DataImporter.Types.COMPASS => {
-            DataLogManager.getByTimeIntervalAndSensor[CompassLog](startDate, endDate, geoOnly, sensorIdList, maxNb)
-          }
-          case DataImporter.Types.RADIOMETER => {
-            DataLogManager.getByTimeIntervalAndSensor[RadiometerLog](startDate, endDate, geoOnly, sensorIdList, maxNb)
-          }
-          case DataImporter.Types.GPS => {
-            val gpsLogsNative = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false, maxNb)
-            val gpsLogs = if (coordinateFormat == "swiss") {
-              gpsLogsNative.map(gl => {
-                val arr = ApproxSwissProj.WGS84toLV03(gl.getGeoPos.getY, gl.getGeoPos.getX, 0L).toList // get east, north, height
-                val geom = CoordinateHelper.wktToGeometry("POINT("+ arr(0) +" "+ arr(1) +")")
-                gl.setGeoPos(geom.asInstanceOf[Point])
-                gl
-              })
-            } else gpsLogsNative
-            Map("gps sensor" -> gpsLogs)
-          }
-          case _ => {
-            println("GET data - Unknown data type")
-            Map[String, List[WebSerializable]]()
-          }
-        }
+        val deviceIdList = map.get("device_id").map {
+          case "all" => Device.getForMission(missionId.get, map.get("data_type")).map(_.id)
+          case _ => List(map.get("device_id").get.toLong)
+        }.get
+        val logMap = DataLogManager.getDataByMission(datatype, missionId.get, deviceIdList, maxNb)
         formatResponse(format, logMap)
       } catch {
         case ae: AssertionError => BadRequest
@@ -102,6 +55,7 @@ trait GetApi extends ResponseFormatter {
       try {
         val map = request.queryString.map { case (k,v) => k -> v.mkString }
         val format = map.get("format").getOrElse(GEOJSON_FORMAT) // default format is Geo json
+        val coordinateFormat = map.get("coordinate_format").getOrElse("gps")
         //println("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
         Logger.info("[GetApi] getGpsData() - <"+ format +">")
         //println(map)
@@ -128,17 +82,19 @@ trait GetApi extends ResponseFormatter {
       try {
         val map = request.queryString.map { case (k,v) => k -> v.mkString }
         val format = map.get("format").getOrElse(GEOJSON_FORMAT) // default format is Geo json
-        val mode = map.get("mode").getOrElse("linestring") // default mode is linestring
+        val mode = map.get("mode").getOrElse(GIS_LINESTRING) // default mode is linestring
         //println("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
         Logger.info("[GetApi] getTrajectory() - <"+ format +">")
         //println(map)
         assert(map.contains("mission_id"), {println("Missing mission_id parameter")})
         val missionId = map.get("mission_id").map(_.toInt)
-        val maxNb = map.get("max_nb").map(_.toInt).getOrElse(2000)
-        // TODO - get start and end time for mission
-        val gpsLogs = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false, maxNb)
-        // TODO - get linestring out of trajectory field (in DB)
-        val resp = if (mode == "linestring") logsAsGeoJsonLinestring(Map("gps sensor" -> gpsLogs)) else logsAsGeoJson(Map("gps sensor" -> gpsLogs))
+        val maxNb = map.get("max_nb").map(_.toInt)
+        val resp = if (mode == GIS_LINESTRING) {
+          DataLogManager.getTrajectoryLinestring(missionId.get)
+        } else {
+          val trajectoryPoints = DataLogManager.getTrajectoryPoints(missionId.get, maxNb)
+          pointsAsGeoJson(trajectoryPoints)
+        }
         Ok(resp)
       } catch {
         case ae: AssertionError => BadRequest
@@ -146,14 +102,20 @@ trait GetApi extends ResponseFormatter {
       }
   }
 
+  def getDeviceForMission(missionId: String) = Action {
+    val deviceList = Device.getForMission(missionId.toLong, None)
+    val jsList = Json.toJson(deviceList.map(d => Json.parse(d.toJson)))
+    // build return JSON obj with array and count
+    Ok(Json.toJson(Map("devices" -> jsList, "count" -> Json.toJson(deviceList.length))))
+  }
 
 
   /**
-   * Get details of a particular sensor (used mainly for tests)
+   * Get details of a particular device (used mainly for tests)
    */
-  def getSensorById(sId: String) = Action {
-    val sensorMap = Sensor.getById(List(sId.toLong), None)
-    sensorMap.get(sId.toLong).map(s => Ok(Json.toJson(s.toJson))).getOrElse(NotFound) // return Not Found if no sensor with id 'sId' exists
+  def getDeviceById(dId: String) = Action {
+    val deviceMap = Device.getById(List(dId.toLong), None)
+    deviceMap.get(dId.toLong).map(s => Ok(Json.toJson(s.toJson))).getOrElse(NotFound) // return Not Found if no device with id 'dId' exists
   }
 
   /**
@@ -163,7 +125,7 @@ trait GetApi extends ResponseFormatter {
    * @param dataType The type of the sensor to get
    * @return A list of sensors (JSON)
    */
-  def getSensorByDatetime(startTime: String, endTime: String, dataType: Option[String] = None) = Action {
+  /*def getSensorByDatetime(startTime: String, endTime: String, dataType: Option[String] = None) = Action {
     //println("Start: "+startTime +", End: "+endTime)
     val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
     val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
@@ -171,7 +133,7 @@ trait GetApi extends ResponseFormatter {
     val jsList = Json.toJson(sensorList.map(s => Json.parse(s.toJson)))
     // build return JSON obj with array and count
     Ok(Json.toJson(Map("sensors" -> jsList, "count" -> Json.toJson(sensorList.length))))
-  }
+  }*/
 
   /// Getters for log details (used mainly for tests)
   def getGpsLogById(gId: String) = Action {

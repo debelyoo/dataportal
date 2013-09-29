@@ -1,7 +1,6 @@
 package controllers.util;
 
-import models.Sensor;
-import models.spatial.GpsLog;
+import models.Device;
 
 import java.util.Date;
 
@@ -10,6 +9,6 @@ import java.util.Date;
  */
 public interface SensorLog {
     Long getId();
-    Sensor getSensor();
+    Device getDevice();
     Date getTimestamp();
 }

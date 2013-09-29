@@ -5,7 +5,7 @@ import com.vividsolutions.jts.geom.Point;
 import controllers.util.*;
 import controllers.util.json.GeoJsonSerializable;
 import controllers.util.json.JsonSerializable;
-import models.Sensor;
+import models.Device;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
@@ -22,8 +22,8 @@ public class GpsLog implements WebSerializable, GeoJsonSerializable, SensorLog {
     private Long id;
 
     @OneToOne
-    @JoinColumn(name="sensor_id")
-    private Sensor sensor;
+    @JoinColumn(name="device_id")
+    private Device device;
 
     private Date timestamp;
 
@@ -50,12 +50,12 @@ public class GpsLog implements WebSerializable, GeoJsonSerializable, SensorLog {
     }
 
     @Override
-    public Sensor getSensor() {
-        return sensor;
+    public Device getDevice() {
+        return device;
     }
 
-    public void setSensor(Sensor s) {
-        this.sensor = s;
+    public void setSensor(Device d) {
+        this.device = d;
     }
 
     @Override
@@ -113,7 +113,7 @@ public class GpsLog implements WebSerializable, GeoJsonSerializable, SensorLog {
         public JsonElement serialize(GpsLog gpsLog, java.lang.reflect.Type type, JsonSerializationContext context) {
             JsonElement gpsLogJson = new JsonObject();
             gpsLogJson.getAsJsonObject().addProperty("id", gpsLog.getId());
-            gpsLogJson.getAsJsonObject().addProperty("sensor_id", gpsLog.getSensor().id());
+            gpsLogJson.getAsJsonObject().addProperty("device_id", gpsLog.getDevice().id());
             gpsLogJson.getAsJsonObject().addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(gpsLog.getTimestamp()));
             JsonObject point = new JsonObject();
             point.addProperty("x", gpsLog.getGeoPos().getX());
@@ -138,7 +138,7 @@ public class GpsLog implements WebSerializable, GeoJsonSerializable, SensorLog {
 
             JsonObject propertiesObj = new JsonObject();
             propertiesObj.addProperty("id", gpsLog.getId());
-            propertiesObj.addProperty("sensor_id", gpsLog.getSensor().id());
+            propertiesObj.addProperty("device_id", gpsLog.getDevice().id());
             propertiesObj.addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(gpsLog.getTimestamp()));
             if (gpsLog.getGeoPos() != null) {
                 double[] arr = ApproxSwissProj.WGS84toLV03(gpsLog.getGeoPos().getY(), gpsLog.getGeoPos().getX(), 0L);
@@ -175,7 +175,7 @@ public class GpsLog implements WebSerializable, GeoJsonSerializable, SensorLog {
         gmlStr += "<gml:featureMember>";
         gmlStr += "<ecol:restRequest fid=\"temperaturelog"+ this.id +"\">";
         gmlStr += "<ecol:id>"+ this.id +"</ecol:id>";
-        gmlStr += "<ecol:sensor_id>"+ this.sensor.id() +"</ecol:sensor_id>";
+        gmlStr += "<ecol:sensor_id>"+ this.device.id() +"</ecol:sensor_id>";
         gmlStr += "<ecol:timestamp>"+ this.timestamp.toString() +"</ecol:timestamp>";
         if (this.geoPos != null) {
             gmlStr += "<ecol:geo_pos>";

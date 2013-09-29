@@ -12,7 +12,7 @@ import javax.xml.transform.dom.DOMSource
 import play.api.mvc.Results.Ok
 import java.util.Date
 import play.api.Logger
-import models.spatial.GpsLog
+import models.spatial.{TrajectoryPoint, GpsLog}
 import com.google.gson.{Gson, JsonArray, JsonObject, JsonElement}
 
 trait ResponseFormatter {
@@ -22,17 +22,20 @@ trait ResponseFormatter {
   val GML_FORMAT = "gml"
   val GEOJSON_FORMAT = "geojson"
 
+  val GIS_LINESTRING = "linestring"
+  val GIS_POINTS = "points"
+
   /**
    * Format the logs list in the right format, depending on what has been requested in the REST query
    * @param format The desired format
    * @param logMap The list of logs (by sensor)
    * @return A HTTP response
    */
-  def formatResponse(format: String, logMap: Map[String, List[WebSerializable]]) = {
+  def formatResponse(format: String, logMap: Map[String, List[JsonSerializable]]) = {
     format match {
       case JSON_FORMAT => Ok(logsAsJson(logMap))
       //case KML_FORMAT => Ok(logsAsKml(logMap))
-      case GML_FORMAT => Ok(logsAsGml(logMap))
+      //case GML_FORMAT => Ok(logsAsGml(logMap))
       case _ => Ok(logsAsJson(logMap))
     }
   }
@@ -84,7 +87,7 @@ trait ResponseFormatter {
     asXml(xmlDoc)
   }
 
-  def logsAsGeoJsonLinestring(logMap: Map[String, List[GpsLog]]): JsValue = {
+  /*def logsAsGeoJsonLinestring(logMap: Map[String, List[GpsLog]]): JsValue = {
     val gson = new Gson()
     val start = new Date
     if (logMap.size > 1) Logger.warn("logsAsGmlLinestring() - logMap contains more than one log serie")
@@ -95,7 +98,7 @@ trait ResponseFormatter {
         val jArr = gson.fromJson(str, classOf[JsonArray])
         coordArray.add(jArr)
       })
-    Logger.warn("Geo Json: "+ coordArray.size() +" items")
+    //Logger.warn("Geo Json: "+ coordArray.size() +" items")
     val geometryObj: JsonObject = new JsonObject
     geometryObj.addProperty("type", "LineString")
     geometryObj.add("coordinates", coordArray)
@@ -113,7 +116,7 @@ trait ResponseFormatter {
     dataJson.getAsJsonObject.addProperty("type", "FeatureCollection")
     dataJson.getAsJsonObject.add("features", featureArray)
     Json.toJson(Json.parse((geometryObj.asInstanceOf[JsonElement]).toString))
-  }
+  }*/
 
   /**
    * Create a GeoJson document with a list of gps logs
@@ -130,7 +133,27 @@ trait ResponseFormatter {
       val featureObj = gson.fromJson(log.toGeoJson, classOf[JsonObject])
       featureArray.add(featureObj)
     })
-    Logger.warn("Geo Json: "+ logList.size +" items")
+    //Logger.warn("Geo Json: "+ logList.size +" items")
+
+    val dataJson = (new JsonObject).asInstanceOf[JsonElement]
+    dataJson.getAsJsonObject.addProperty("type", "FeatureCollection")
+    dataJson.getAsJsonObject.add("features", featureArray)
+    Json.toJson(Json.parse(dataJson.toString))
+  }
+
+  /**
+   * Create a GeoJson document with a list of TrajectoryPoint
+   * @param points The list of TrajectoryPoints
+   * @return A GeoJson Document
+   */
+  def pointsAsGeoJson(points: List[TrajectoryPoint]): JsValue = {
+    val gson: Gson = new Gson
+    val featureArray = new JsonArray
+    points.foreach(pt => {
+      val featureObj = gson.fromJson(pt.toGeoJson, classOf[JsonObject])
+      featureArray.add(featureObj)
+    })
+    //Logger.warn("Geo Json: "+ points.size +" items")
 
     val dataJson = (new JsonObject).asInstanceOf[JsonElement]
     dataJson.getAsJsonObject.addProperty("type", "FeatureCollection")

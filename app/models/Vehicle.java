@@ -1,4 +1,4 @@
-package models.elemoImport;
+package models;
 
 import controllers.util.JPAUtil;
 import org.hibernate.annotations.GenericGenerator;
@@ -24,7 +24,7 @@ public class Vehicle {
         return id;
     }
 
-    private void setId(Long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

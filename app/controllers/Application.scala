@@ -3,10 +3,11 @@ package controllers
 import play.api._
 import play.api.mvc._
 import controllers.util.{DateFormatHelper, DataImporter}
-import models.spatial.{TemperatureLog, CompassLog, DataLogManager, GpsLog}
+import models.spatial.{GpsLog}
 import play.api.libs.json.{JsValue, Json}
 import com.google.gson.{JsonArray, JsonObject, JsonElement}
 import scala.concurrent.ExecutionContext.Implicits.global
+import models.DataLogManager
 
 object Application extends Controller with GetApi {
   

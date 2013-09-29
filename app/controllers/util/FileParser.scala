@@ -1,7 +1,7 @@
 package controllers.util
 
 import java.io.File
-import models.Sensor
+import models.{DataLogManager, Device}
 import controllers.database.InsertionWorker
 import play.libs.Akka
 import akka.actor.Props
@@ -12,7 +12,6 @@ import scala.concurrent.duration._
 import play.api.libs.concurrent.Execution.Implicits._
 import scala.concurrent.Await
 import java.util.UUID
-import models.spatial.DataLogManager
 
 // for the ExecutionContext
 
@@ -26,8 +25,8 @@ object FileParser {
    * @param file The name of the address file
    * @return A Map with the sensors defined in address file
    */
-  def parseAddressFile(file: File): Option[Map[String, Sensor]] = {
-    val sensors = scala.collection.mutable.Map[String, Sensor]() // address -> Sensor(name, address)
+  def parseAddressFile(file: File): Option[Map[String, Device]] = {
+    val sensors = scala.collection.mutable.Map[String, Device]() // address -> Sensor(name, address)
     try {
       val source = scala.io.Source.fromFile(file)
       val linesAsStr = source.mkString
@@ -43,7 +42,7 @@ object FileParser {
           //println(chunksOnLine(0)+ " - "+ chunksOnLine(1))
           val addr = chunksOnLine(0)
           val name = chunksOnLine(1)
-          sensors += Tuple2(addr, Sensor(name, addr, ""))
+          sensors += Tuple2(addr, Device(name, addr, ""))
         }
       }
       Some(sensors.toMap)
@@ -57,17 +56,17 @@ object FileParser {
    * Parse a data file
    * @param dataType The type of data to store
    * @param file The name of the data file
-   * @param sensors The sensors defined in the address file
+   * @param devices The sensors defined in the address file
    * @return The nb of inserted values
    */
-  def parseDataFile(dataType: String, file: File, sensors: Map[String, Sensor]): Option[String] = {
+  def parseDataFile(dataType: String, file: File, devices: Map[String, Device]): Option[String] = {
     try {
       val source = scala.io.Source.fromFile(file)
       val linesAsStr = source.mkString
       source.close()
       val lines = linesAsStr.split("\\r?\\n")
       val batchId = UUID.randomUUID().toString
-      DataLogManager.insertionWorker ! Message.SetInsertionBatch(batchId, file.getName, dataType, lines, sensors)
+      DataLogManager.insertionWorker ! Message.SetInsertionBatch(batchId, file.getName, dataType, lines, devices)
       Some(batchId)
     } catch {
       case ex: Exception => ex.printStackTrace; None

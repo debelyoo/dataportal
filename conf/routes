@@ -16,7 +16,7 @@ POST     /import                    controllers.Application.importData
 POST     /spatialize                controllers.Application.spatializeData
 
 # Get sensor logs (by id)
-GET     /sensors/*sId               controllers.Application.getSensorById(sId)
+GET     /devices/*dId               controllers.Application.getDeviceById(dId)
 GET     /gpslogs/*gId               controllers.Application.getGpsLogById(gId)
 GET     /compasslogs/*cId           controllers.Application.getCompassLogById(cId)
 GET     /temperaturelogs/*tId       controllers.Application.getTemperatureLogById(tId)
@@ -35,7 +35,8 @@ GET     /api/missiondates                                   controllers.Applicat
 GET     /api/missions/fordate/*date                         controllers.Application.getMissionsForDate(date)
 GET     /api/times/fordate/*date/andset/*set                controllers.Application.getLogTimesForDateAndSet(date, set)
 GET     /api/sets/fordate/*date                             controllers.Application.getLogSetsForDate(date)
-GET     /api/sensors/from/*startDate/to/*endDate            controllers.Application.getSensorByDatetime(startDate, endDate)
+#GET     /api/sensors/from/*startDate/to/*endDate            controllers.Application.getSensorByDatetime(startDate, endDate)
+GET     /api/devices/formission/*missionId                  controllers.Application.getDeviceForMission(missionId)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

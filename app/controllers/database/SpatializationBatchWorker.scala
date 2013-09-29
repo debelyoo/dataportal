@@ -3,7 +3,7 @@ package controllers.database
 import akka.actor.Actor
 import controllers.util.{DataImporter, Message}
 import controllers.database.BatchManager._
-import models.spatial.DataLogManager
+import models.DataLogManager
 
 
 class SpatializationBatchWorker extends Actor {
@@ -17,9 +17,7 @@ class SpatializationBatchWorker extends Actor {
       //println("receive Message.Work")
       spatializationBatches.get(batchId).map { case (gLogs, sensors, logs) =>
         for {
-          //gl <- gLogs
           tl <- logs
-          //sensor <- sensors
         } {
           //println("gl: "+gl+", sensor: "+sensor)
           //val tl = DataLogManager.getClosestLog(logs, gl.getTimestamp, MARGIN_IN_SEC, sensor.id)

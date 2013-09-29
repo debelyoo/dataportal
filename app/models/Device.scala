@@ -12,8 +12,8 @@ import scala.Some
 import scala.reflect.{ClassTag, classTag}
 
 @Entity
-@Table(name = "sensor")
-case class Sensor(name: String, address: String, datatype: String) {
+@Table(name = "device")
+case class Device(name: String, address: String, datatype: String) {
 
   @Id
   @GeneratedValue(generator="increment")
@@ -30,11 +30,11 @@ case class Sensor(name: String, address: String, datatype: String) {
   def this() = this("foo", "bar", "xx") // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
 
   /**
-   * Persist sensor in DB (if it is not already in)
+   * Persist device in DB (if it is not already in)
    * @return
    */
   def save: Boolean = {
-    val sensorInDb = Sensor.getByNameAndAddress(this.name, this.address)
+    val sensorInDb = Device.getByNameAndAddress(this.name, this.address)
     if (sensorInDb.isEmpty) {
       //println("[Sensor] save() - "+ this.toString)
       val em: EntityManager = JPAUtil.createEntityManager
@@ -61,12 +61,12 @@ case class Sensor(name: String, address: String, datatype: String) {
    * @return true if success
    */
   def updateType(newType: String): Boolean = {
-    println("[Sensor] update() - "+ this.toString)
+    println("[Device] update() - "+ this.toString)
     val em: EntityManager = JPAUtil.createEntityManager
     // UPDATE sensor SET datatype='temperature' WHERE id=16;
     try {
       em.getTransaction.begin
-      val queryStr = "UPDATE "+ classOf[Sensor].getName +" SET datatype='"+ newType +"' WHERE id="+this.id
+      val queryStr = "UPDATE "+ classOf[Device].getName +" SET datatype='"+ newType +"' WHERE id="+this.id
       val q = em.createQuery(queryStr)
       q.executeUpdate()
       em.getTransaction.commit
@@ -79,19 +79,19 @@ case class Sensor(name: String, address: String, datatype: String) {
   }
 }
 
-object Sensor {
+object Device {
   /**
    * Get a sensor by Id
    * @param sIdList A list of sensor Ids
    * @return The sensor
    */
-  def getById(sIdList: List[Long], emOpt: Option[EntityManager]): Map[Long, Sensor] = {
+  def getById(sIdList: List[Long], emOpt: Option[EntityManager]): Map[Long, Device] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
-      val q = em.createQuery("from "+ classOf[Sensor].getName +" WHERE id IN ("+ sIdList.mkString(",") +")")
+      val q = em.createQuery("from "+ classOf[Device].getName +" WHERE id IN ("+ sIdList.mkString(",") +")")
       //q.setParameter("id",sId)
-      val sensors = q.getResultList.map(_.asInstanceOf[Sensor]).map(s => (s.id, s)).toMap
+      val sensors = q.getResultList.map(_.asInstanceOf[Device]).map(s => (s.id, s)).toMap
       if (emOpt.isEmpty) em.getTransaction().commit()
       sensors
       //Some(sensor)
@@ -104,34 +104,83 @@ object Sensor {
   }
 
   /**
-   * Get a sensor by name and address
-   * @param name The sensor name
-   * @param address The sensor address
-   * @return The sensor
+   * Get a device by name and address
+   * @param name The device name
+   * @param address The device address
+   * @return The device
    */
-  def getByNameAndAddress(name: String, address: String): Option[Sensor] = {
+  def getByNameAndAddress(name: String, address: String): Option[Device] = {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
-      val q = em.createQuery("from "+ classOf[Sensor].getName +" where name = '"+ name +"' and address = '"+ address +"'")
-      val sensor = q.getSingleResult.asInstanceOf[Sensor]
+      val q = em.createQuery("from "+ classOf[Device].getName +" where name = '"+ name +"' and address = '"+ address +"'")
+      val device = q.getSingleResult.asInstanceOf[Device]
       em.getTransaction().commit()
       em.close()
-      Some(sensor)
+      Some(device)
     } catch {
       case nre: NoResultException => None
       case ex: Exception => ex.printStackTrace; None
     }
   }
 
+  def getForMission(missionId: Long, datatype: Option[String]): List[Device] = {
+    val em = JPAUtil.createEntityManager()
+    val typeMap = collection.mutable.Map[String, Int]()
+    try {
+      em.getTransaction().begin()
+      // TODO - improve many to many request
+      val typeCondition = if (datatype.isDefined) " AND d.datatype = '"+ datatype.get +"'" else ""
+      val query = "SELECT d.id, d.name FROM equipment AS e, device AS d WHERE e.mission_id = "+ missionId +" AND e.device_id = d.id"+ typeCondition +" ORDER BY name"
+      val q = em.createNativeQuery(query)
+      /*val devices = q.getResultList.map(_.asInstanceOf[Device]).toList
+      devices.foreach(d => {
+        if (!typeMap.contains(d.datatype)) {
+          typeMap += d.datatype -> 1
+        } else {
+          typeMap(d.datatype) = (typeMap(d.datatype) + 1)
+        }
+      })*/
+      val devices = q.getResultList.map(_.asInstanceOf[Array[Object]]).toList.map(obj => {
+        val dId = obj(0).asInstanceOf[Int]
+        val d = Device.getById(List(dId), Some(em)).get(dId).get
+        if (!typeMap.contains(d.datatype)) {
+          typeMap += d.datatype -> 1
+        } else {
+          typeMap(d.datatype) = (typeMap(d.datatype) + 1)
+        }
+        d
+      })
+      // add a virtual sensor that will appear as "All temperature" in map interface
+      val virtualDeviceList = for {
+        t <- typeMap
+        if (t._2 > 1)
+      } yield {
+        Device(t._1, "", t._1)
+        /*val d = Device()
+        d.setId(0)
+        d.setName(t._1)
+        d.setDatatype(t._1)
+        d*/
+      }
+      em.getTransaction().commit()
+      devices ++ virtualDeviceList
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      em.close()
+    }
+  }
+
   /**
-   * Get active sensors by time range
+   * Get active devices by time range
    * @param from start time of range
    * @param to end time of range
-   * @param dataType type of the sensor
-   * @return A list of sensors (active during specified time range)
+   * @param dataType type of the device
+   * @return A list of devices (active during specified time range)
    */
-  def getByDatetime(from: Date, to: Date, dataType: Option[String] = None): List[Sensor] = {
+  def getByDatetime(from: Date, to: Date, dataType: Option[String] = None): List[Device] = {
     /*SELECT DISTINCT s.id, s.name
     FROM temperaturelog tl, sensor s where timestamp BETWEEN '2013-06-13 16:20:00'::timestamp
       AND '2013-06-13 16:31:25'::timestamp AND sensor_id = s.id AND s.name like 'PT%';*/
@@ -145,19 +194,19 @@ object Sensor {
       val compassSensors = getActiveSensorByTimeInterval[CompassLog](from, to, false, Some(em))
       val temperatureType = if (temperatureSensors.nonEmpty && dataType.isEmpty) {
         // add a virtual sensor that will appear as "All temperature" in map interface
-        val typeSensor = Sensor("temperature", "", DataImporter.Types.TEMPERATURE)
+        val typeSensor = Device("temperature", "", DataImporter.Types.TEMPERATURE)
         List(typeSensor)
       } else List()
       val radiometerType = if (radiometerSensors.nonEmpty && dataType.isEmpty) {
         // add a virtual sensor that will appear as "All radiometer" in map interface
-        val typeSensor = Sensor("radiometer", "", DataImporter.Types.RADIOMETER)
+        val typeSensor = Device("radiometer", "", DataImporter.Types.RADIOMETER)
         List(typeSensor)
       } else List()
-      val sensors = temperatureSensors ++ temperatureType ++ windSensors ++ radiometerSensors ++ radiometerType ++ compassSensors
+      val devices = temperatureSensors ++ temperatureType ++ windSensors ++ radiometerSensors ++ radiometerType ++ compassSensors
 
       em.getTransaction().commit()
-      val filteredSensors = if (dataType.isDefined) sensors.filter(_.datatype == dataType.get) else sensors
-      filteredSensors.sortBy(_.name)
+      val filteredDevices = if (dataType.isDefined) devices.filter(_.datatype == dataType.get) else devices
+      filteredDevices.sortBy(_.name)
     } catch {
       case ex: Exception => ex.printStackTrace; List()
     } finally {
@@ -173,7 +222,7 @@ object Sensor {
    * @tparam T The type of data log to get
    * @return A list of the logs in the specified time interval
    */
-  private def getActiveSensorByTimeInterval[T: ClassTag](startTime: Date, endTime: Date, geoOnly: Boolean, emOpt: Option[EntityManager] = None): List[Sensor] = {
+  private def getActiveSensorByTimeInterval[T: ClassTag](startTime: Date, endTime: Date, geoOnly: Boolean, emOpt: Option[EntityManager] = None): List[Device] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
@@ -188,7 +237,7 @@ object Sensor {
       q.setParameter("start", startTime, TemporalType.TIMESTAMP)
       q.setParameter("end", endTime, TemporalType.TIMESTAMP)
       //println(q.getResultList)
-      val sensors = q.getResultList.map(_.asInstanceOf[Sensor]).toList
+      val sensors = q.getResultList.map(_.asInstanceOf[Device]).toList
       if (emOpt.isEmpty) em.getTransaction().commit()
       sensors
     } catch {

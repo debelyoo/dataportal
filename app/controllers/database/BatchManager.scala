@@ -1,13 +1,13 @@
 package controllers.database
 
 import models.spatial.GpsLog
-import models.Sensor
+import models.Device
 import controllers.util.SensorLog
 import scala.collection.mutable.{Map => MMap}
 
 object BatchManager {
-  val spatializationBatches = MMap[String, (List[GpsLog], List[Sensor], List[SensorLog])]() // batchId -> (list of GPS logs, list of sensors, list of data logs)
-  val insertionBatches = MMap[String, (Array[String], Map[String, Sensor])]() // batchId -> (filename, Array of lines, sensors)
+  val spatializationBatches = MMap[String, (List[GpsLog], List[Device], List[SensorLog])]() // batchId -> (list of GPS logs, list of sensors, list of data logs)
+  val insertionBatches = MMap[String, (Array[String], Map[String, Device])]() // batchId -> (filename, Array of lines, sensors)
   val batchProgress = MMap[String, (String, Int, Int)]() // batchId -> (filename/datatype, nbElementsTotal, nbElementsDone)
 
   def updateBatchProgress(batchId: String, batchType: String) {

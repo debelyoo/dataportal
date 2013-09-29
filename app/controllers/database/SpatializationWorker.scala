@@ -3,9 +3,11 @@ package controllers.database
 import akka.actor.{Actor, ActorSystem}
 import controllers.util.{SensorLog, JPAUtil, Message}
 import models.spatial._
-import models.spatial.DataLogManager._
+import models._
+import DataLogManager._
 import javax.persistence.EntityManager
 import BatchManager._
+import models.{RadiometerLog, WindLog, CompassLog, TemperatureLog}
 
 class SpatializationWorker extends Actor {
 
@@ -18,7 +20,7 @@ class SpatializationWorker extends Actor {
       DataLogManager.spatializationBatchWorker ! Message.Work(batchId, dataType)
     }
 
-    case Message.SpatializeTemperatureLog(batchId, gpsLog, sensorLog) => {
+    /*case Message.SpatializeTemperatureLog(batchId, gpsLog, sensorLog) => {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         val batchNumbers = batchProgress.get(batchId)
@@ -104,7 +106,7 @@ class SpatializationWorker extends Actor {
       if (batchNumbers.isDefined) {
         BatchManager.updateBatchProgress(batchId, "Spatialization")
       }
-    }
+    }*/
 
     case _ => println("[SpatializationWorker] Unknown message")
   }

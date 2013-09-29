@@ -1,4 +1,4 @@
-package models.elemoImport;
+package models;
 
 import com.google.gson.*;
 import com.vividsolutions.jts.geom.LineString;
@@ -10,6 +10,7 @@ import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.Set;
 
 @Entity
 @Table(name = "mission")
@@ -30,6 +31,11 @@ public class Mission implements JsonSerializable {
     @OneToOne
     @JoinColumn(name="vehicle_id")
     private Vehicle vehicle;
+
+    /*@ManyToMany(cascade = CascadeType.ALL)
+    @JoinTable(name = "equipment", joinColumns = { @JoinColumn(name = "mission_id") }, inverseJoinColumns = { @JoinColumn(name = "device_id") })
+    private Set<Device> devices;
+    */
 
     public Mission() {
     }
@@ -65,6 +71,14 @@ public class Mission implements JsonSerializable {
     public void setVehicle(Vehicle v) {
         this.vehicle = v;
     }
+
+    /*public Set<Device> getDevices() {
+        return this.devices;
+    }
+
+    public void setDevices(Set<Device> devs) {
+        this.devices = devs;
+    }*/
 
     public String toString() {
         return id + " -> date: " + departureTime + ", vehicle: " + vehicle.getName();
