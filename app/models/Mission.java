@@ -24,7 +24,7 @@ public class Mission implements JsonSerializable {
 
     private Date departureTime;
 
-    @Column(name="coordinate")
+    @Column(name="trajectory")
     @Type(type="org.hibernate.spatial.GeometryType")
     private LineString trajectory;
 
