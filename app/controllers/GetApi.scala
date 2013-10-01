@@ -182,7 +182,7 @@ trait GetApi extends ResponseFormatter {
   }
 
   /**
-   * Get missions for a psecific date
+   * Get missions for a specific date
    * @return A list of missions (JSON)
    */
   def getMissionsForDate(dateStr: String) = Action {
@@ -190,6 +190,16 @@ trait GetApi extends ResponseFormatter {
     val missionList = DataLogManager.getMissionsForDate(date)
     val jsList = Json.toJson(missionList.map(m => Json.parse(m.toJson)))
     Ok(jsList)
+  }
+
+  /**
+   * Get footage for a specific date
+   * @return The coordinate of a footage (JSON)
+   */
+  def getFootageForDate(dateStr: String) = Action {
+    val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
+    val resp = DataLogManager.getFootageForDate(date)
+    Ok(resp)
   }
 
   /**

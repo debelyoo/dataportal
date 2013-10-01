@@ -18,6 +18,7 @@ import com.vividsolutions.jts.geom.Point
 import controllers.util.json.JsonSerializable
 import scala.Some
 import models.spatial.{TrajectoryPoint, GpsLog}
+import com.google.gson.{JsonArray, JsonElement, JsonObject}
 
 object DataLogManager {
 
@@ -532,6 +533,53 @@ object DataLogManager {
       case ex: Exception => ex.printStackTrace; List()
     } finally {
       if (emOpt.isEmpty) em.close()
+    }
+  }
+
+  /**
+   * Get the footage for a specific date
+   * @param date The date of the footage to get
+   * @return the footage coordinate (JSON)
+   */
+  def getFootageForDate(date: Date): JsValue = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val afterDate = Calendar.getInstance()
+      afterDate.setTime(date)
+      afterDate.add(Calendar.DAY_OF_YEAR, 1)
+      val nativeQuery = "SELECT imagename, ST_X(leftuppercorner) AS xlu, ST_Y(leftuppercorner) AS ylu, ST_X(leftlowercorner) AS xll, ST_Y(leftlowercorner) AS yll, " +
+        "ST_X(rightuppercorner) AS xru, ST_Y(rightuppercorner) AS yru, ST_X(rightlowercorner) AS xrl, ST_Y(rightlowercorner) AS yrl FROM device" +
+        " INNER JOIN measurement ON device.id=measurement.deviceid" +
+        " INNER JOIN footage ON footage.id=measurement.footageid" +
+        " WHERE timestamp BETWEEN :start AND :end";
+      val q = em.createNativeQuery(nativeQuery)
+      q.setParameter("start", date, TemporalType.DATE)
+      q.setParameter("end", afterDate.getTime, TemporalType.DATE)
+      val res = q.getResultList.map(_.asInstanceOf[Array[Object]])
+      val jsArr = new JsonArray
+      res.foreach(resultArray => {
+        val dataJson = (new JsonObject).asInstanceOf[JsonElement]
+        dataJson.getAsJsonObject.addProperty("imagename", resultArray(0).asInstanceOf[String])
+        dataJson.getAsJsonObject.addProperty("xlu", resultArray(1).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("ylu", resultArray(2).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("xll", resultArray(3).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("yll", resultArray(4).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("xru", resultArray(5).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("yru", resultArray(6).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("xrl", resultArray(7).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("yrl", resultArray(8).asInstanceOf[Double])
+        jsArr.add(dataJson)
+      })
+
+      em.getTransaction().commit()
+      Json.toJson(Json.parse(jsArr.toString))
+      //Json.parse(jsStr)
+    } catch {
+      case nre: NoResultException => Json.parse("{\"error\": \"no result\"}")
+      case ex: Exception => ex.printStackTrace; Json.parse("{\"error\": \"exception\"}")
+    } finally {
+      em.close()
     }
   }
 

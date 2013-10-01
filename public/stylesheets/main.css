@@ -1,3 +1,6 @@
+body {
+    overflow-y: hidden;
+}
 .container_large {
     height: 90%;
 }
