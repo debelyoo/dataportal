@@ -1,8 +1,22 @@
 body {
     /*overflow-y: hidden;*/
 }
+
+#navbarContainer {
+    position: relative;
+    /*float: left;*/
+    width: 100%;
+    height: 41px;
+}
+
 .container_large {
-    height: 90%;
+    top: 40px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    width: auto;
+    height: auto;
 }
 
 .spaced_top {

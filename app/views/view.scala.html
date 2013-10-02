@@ -1,3 +1,133 @@
-@main("data visualization - ECOL", false) {
-<iframe src="/views" width="100%" height="95%" frameborder="0" scrolling="auto" name="myInlineFrame">TEXT FOR NON-COMPATIBLE BROWSERS HERE</iframe>
-}
+@import play.api.Play
+@import play.api.Play.current
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>ELEMO - data visualization</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
+    <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/bootstrap.min.css")">
+    <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
+    <link type="text/css" href="http://www.epfl.ch/css/epfl.css" media="all" rel="stylesheet" />
+    <link type="text/css" href="http://www.epfl.ch/css/enac.css" media="all" rel="stylesheet"/>
+    <link type="text/css" href="@routes.Assets.at("stylesheets/map/geodata.css")" rel="Stylesheet" />
+    <link type="text/css" href="@routes.Assets.at("stylesheets/map/graph.css")" rel="stylesheet" />
+    <link type="text/css" href="http://extjs.cachefly.net/ext-3.4.0/resources/css/ext-all.css" rel="stylesheet" />
+    <link type="text/css" href="/css/datepicker.css" rel="stylesheet" media="screen" />
+    <style>
+        body {
+        /*padding-top: 40px;*/ /* 40px to make the container go all the way to the bottom of the topbar */
+        }
+    </style>
+    <script src="http://www.epfl.ch/js/jquery-epfl.min.js" type="text/javascript"></script>
+    <script src="http://www.epfl.ch/js/globalnav.js" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/jquery-2.0.3.min.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/bootstrap.min.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/underscore.min.js")" type="text/javascript"></script> <!-- backbone dependency -->
+    <script src="@routes.Assets.at("javascripts/backbone.min.js")" type="text/javascript"></script>
+    <script src="http://extjs.cachefly.net/ext-3.4.0/adapter/ext/ext-base.js" type="text/javascript"></script>
+    <script src="http://extjs.cachefly.net/ext-3.4.0/ext-all.js" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/datepicker/datepicker.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/map/config.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/OpenLayers/OpenLayers.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/OpenLayers/lib/deprecated.js")" type="text/javascript"></script>
+    <script src="http://api.geoext.org/1.1/GeoExt/script/GeoExt.js" type="text/javascript"></script>
+    <script type="text/javascript"
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAgXLODziyi0s4im_2UdFZWIwd4BLZQto4&sensor=false">
+    </script>
+    <script src="@routes.Assets.at("javascripts/map/mapLayerUtil.js")" type="text/javascript"></script>
+</head>
+<body onload="init()">
+    <div id="navbarContainer">
+        <div class="navbar navbar-inverse navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container">
+                    <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="brand" href="@Play.configuration.getString("application.context")">ECOL data portal</a>
+                    <div class="nav-collapse collapse">
+                        <ul class="nav">
+                            <li><a href="@routes.Application.importForm">Import</a></li> <!-- class="active" on li -->
+                            <!--<li><a href="@routes.Application.spatializeForm">Spatialize</a></li>-->
+                            <li><a href="@routes.Application.view">View</a></li>
+                            <li><a href="@routes.Application.contact">Contact</a></li>
+                        </ul>
+                    </div><!--/.nav-collapse -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container_large">
+        <div id="mapPanel"></div>
+        <div id="controlContainer">
+            <div id="controlPanelHideBtnPlaceholder" onclick="toggleControlPanel()"></div>
+            <div id="controlPanel">
+                <div id="selectDiv" class="overlayPanel">
+                    <div id="calendar"></div>
+                    <div id="buttonRow">
+                        <div id="addLayerBtn" class="selectBtn" onclick="onAddLayersClicked();">Add layers</div>
+                        <div id="resetBtn" class="selectBtn" onclick="onResetClicked();">Reset selection</div>
+                        <!--<div id="updateBtn">Update</div>-->
+                        <div id="loadingGifPlaceholder"><img id="loadingGif" src="/img/loading.gif"></div>
+                    </div>
+
+                    <div id="layerTreeContainer">
+                        <ul class="tree">
+                            <li class="inpath"> Layers<ul><li id='layerTree'></li></ul></li>
+                            <li class="inpath"> Legend<ul><li id='legendPanel'></li></ul></li>
+                        </ul>
+                    </div>
+                </div>
+                <div id="infoDiv">
+                    <b>Details</b><br/><br/>
+                    <b>Time:</b> <span id="dataTimePlaceholder"></span><br/>
+                    <!--<b>Value:</b> <span id="dataValuePlaceholder"></span><br/>-->
+                    <span id="dataValuePlaceholder"></span>
+                    <b>East:</b> <span id="eastValuePlaceholder"></span> m<br/>
+                    <b>North:</b> <span id="northValuePlaceholder"></span> m<br/>
+                    <b>Speed:</b> <span id="speedValuePlaceholder"></span> m/s
+                </div>
+            </div>
+        </div>
+        <div id="graphPanelContainer">
+            <div id="graphPanelHideBtnPlaceholder" class="rotated270" onclick="toggleGraphPanel()"></div>
+            <div id="graphPanel" class="overlayPanel">
+                <!--<div id="graphPanelBtnPanel">
+                    <div id="graphPanelZoomBtnPlaceholder" onclick=""></div>
+                </div>-->
+                <div id="dataSelectPanel">
+                    <b>Trajectory</b> <span id="trajectorySelectPlaceholder"></span>
+                    <div id="deviceSelectRow">
+                        <b>Device</b> <span id="deviceSelectPlaceholder"></span>
+                    </div>
+                </div>
+                <div id="dataGraphPlaceholder"></div>
+            </div>
+        </div>
+        <div id="graphZoomPanel">
+            <div id="graphZoomLegendPlaceholder">Click on the graph to zoom (2 points)</div>
+            <div id="graphZoomPlaceholder"></div>
+            <div id="graphZoomBtnPanel">
+                <div id="zoomBtnSubPanel">
+                    <div id="graphZoomZoomBtn" class="graphZoomBtn" onclick="">Zoom</div>
+                    <div id="graphZoomResetZoomBtn" class="graphZoomBtn" onclick="">Reset Zoom</div>
+                </div>
+                <div id="graphZoomCloseBtn" class="graphZoomBtn" onclick="closeZoomGraph()">Close</div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            function init() {
+                initSelectPanel();
+            }
+        </script>
+        <script type="text/javascript" src="@routes.Assets.at("javascripts/map/d3.v3.min.js")"></script>
+        <script type="text/javascript" src="@routes.Assets.at("javascripts/map/graphD3.js")"></script>
+        <script type="text/javascript" src="@routes.Assets.at("javascripts/map/panelUtil.js")"></script>
+    </div>
+</body>
+</html>

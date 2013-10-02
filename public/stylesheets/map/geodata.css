@@ -1,0 +1,319 @@
+body {
+	overflow: hidden;
+}
+
+#mapPanel {
+	height: 100%;
+}
+
+#mapPanel img { max-width:none; } /* to avoid bug with bootstrap for images in raster layers */
+
+/* useful for layer tree controls */
+.tree a{
+	display:inline;
+	margin-left:0px;
+}
+
+.tree ul .hitarea, .tree ul a {
+	position:static;
+}
+/* */
+
+#controlContainer {
+	position: absolute;
+	top: 15%;
+	left: 75%;
+	width: 25%;
+	height: 100%;
+	overflow: hidden;
+}
+
+#controlPanelHideBtnPlaceholder {
+	position: relative;
+	/*left: 30%;*/
+	width: 20px;
+	height: 20px;
+	/*border-radius: 5px;*/
+	border: 1px solid white;
+	background: url('/img/arrow-right.png');
+	background-color: rgba(0, 0, 0, 0.6);
+	background-size: 20px 20px;
+	background-repeat: no-repeat;
+	background-position: center;
+	padding: 5px;
+	float: left;
+	cursor: pointer;
+	z-index: 999;
+}
+
+#controlPanel {
+	position: relative;
+	/*left: 30%;*/
+	/*width: 90%;*/
+	height: 100%;
+	float: left;
+	margin-bottom: 10px;
+	z-index: 999;
+}
+
+.overlayPanel {
+	background-color: rgba(0, 0, 0, 0.6);
+	color: white;
+	z-index: 999;
+}
+
+#selectDiv {
+	min-width: 300px;
+	max-height: 50%;
+	/*border-radius: 5px;*/
+	margin-bottom: 10px;
+	border: 1px solid white;
+	padding: 5px;
+	overflow-y: auto;
+}
+
+#calendar {
+	margin-bottom: 10px;
+}
+
+div.datepicker .catDate {
+	background: #FFA62F;
+}
+
+div.datepicker .ulmDate {
+	background: #FFF380;
+}
+
+div.datepicker .ulmCatDate {
+	background: -webkit-linear-gradient(left, #FFF380, #FFA62F);
+	background: linear-gradient(left, #FFF380, #FFA62F);
+}
+
+div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate a {
+	color: black !important;
+	cursor: pointer;
+}
+
+#dateSelect {
+	width: 120px;
+}
+
+#setSelect {
+	width: 70px;
+}
+
+.timeField {
+	width: 70px;
+}
+
+#infoDiv {
+	width: 230px;
+	/*border-radius: 5px;*/
+	border: 1px solid white;
+	background-color: rgba(0, 0, 0, 0.6);
+	padding: 5px;
+	color: white;
+	display: none;
+	z-index: 999;
+}
+
+#graphPanelContainer {
+	position: absolute;
+	width: 100%;
+	height: 30%;
+	top: 95%;
+	left: 0;
+}
+
+#graphPanel {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	border-top: 1px solid white;
+	color: white;
+	/*display: none;*/
+}
+
+#dataSelectPanel {
+	display: none;
+	float: left;
+	padding: 10px;
+}
+
+#dataSelectPanel b {
+	color: white;
+}
+
+#dataGraphPlaceholder {
+	float: left;
+}
+
+#graphPanelBtnPanel {
+	position: relative;
+	float: left;
+}
+
+#graphPanelHideBtnPlaceholder {
+	position: relative;
+	width: 20px;
+	height: 20px;
+	/*border-radius: 5px;*/
+	border: 1px solid white;
+	background: url('/img/arrow-right.png');
+	background-color: rgba(0, 0, 0, 0.6);
+	background-size: 20px 20px;
+	background-repeat: no-repeat;
+	background-position: center;
+	padding: 5px;
+	cursor: pointer;
+}
+
+#graphPanelZoomBtnPlaceholder {
+	position: relative;
+	width: 20px;
+	height: 20px;
+	/*border-radius: 5px;*/
+	border: 1px solid white;
+	background: url('/img/zoom.png');
+	background-color: rgba(0, 0, 0, 0.6);
+	background-size: 20px 20px;
+	background-repeat: no-repeat;
+	background-position: center;
+	padding: 5px;
+	cursor: pointer;
+}
+
+#deviceSelectRow {
+	display: none;
+}
+
+#graphPlaceholder {
+	position: relative;
+	/*border-radius: 5px;*/
+	border: 1px solid white;
+	background-color: rgba(0, 0, 0, 0.6);
+	padding: 5px;
+	float: left;
+}
+
+#fieldContainer {
+	margin: 5px 0;
+}
+
+/*#updateBtn {
+	width: 50px;
+	border: solid 1px white;
+	float: right;
+	padding: 5px;
+	background-color: gray;
+	border-radius: 8px;
+	margin-right: 20px;
+	cursor: pointer;
+}*/
+
+#buttonRow {
+	height: 50px;
+}
+
+.selectBtn {
+	border: solid 1px white;
+	padding: 5px;
+	background-color: gray;
+	/*border-radius: 8px;*/
+	margin-right: 20px;
+	cursor: pointer;
+	float: left
+}
+
+#loadingGifPlaceholder {
+	width: 30px;
+	height: 30px;
+	float: left;
+	padding: 5px;
+	margin-right: 15px;
+	display: none;
+}
+
+#loadingGif {
+	width: 25px;
+	height: 25px;
+}
+
+/*#layerTreeContainer {
+	width: 60%;
+}*/
+
+.rotated180 {
+	transform:rotate(180deg);
+	-webkit-transform:rotate(180deg); /* Safari and Chrome */
+}
+
+.rotated90 {
+	transform:rotate(90deg);
+	-webkit-transform:rotate(90deg); /* Safari and Chrome */
+}
+
+.rotated270 {
+	transform:rotate(270deg);
+	-webkit-transform:rotate(270deg); /* Safari and Chrome */
+}
+
+/* graph zoom elements */
+#graphZoomPanel {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	width: 100%;	
+	height: 100%;
+	z-index: 1100; /* must be over map zoom buttons and layer switcher */
+	background-color: rgba(0, 0, 0, 0.95);
+	display: none;
+}
+
+#graphZoomLegendPlaceholder {
+	height: 30px;
+	position: absolute;
+	top: 5%;
+	left: 10%;
+	color: white;
+	/*border: 1px solid red;*/
+}
+
+#graphZoomPlaceholder {
+	width: 90%;
+	height: 70%;
+	margin: 5% 5% 0 5%;
+}
+
+#graphZoomBtnPanel {
+	margin: auto;
+	width: 70%;
+}
+
+#zoomBtnSubPanel {
+	float: left;
+}
+
+.graphZoomBtn {
+	width: 100px;
+	text-align: center;
+	padding: 5px;
+	margin: 5px;
+	cursor: pointer;
+	color: white;
+	background-color: grey;
+}
+
+#graphZoomZoomBtn {
+	float: left;
+	display: none;
+}
+
+#graphZoomResetZoomBtn {
+	float: left;
+	display: none;
+}
+
+#graphZoomCloseBtn {
+	float: right;
+}

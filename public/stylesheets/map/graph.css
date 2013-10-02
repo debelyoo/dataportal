@@ -1,0 +1,47 @@
+/*body {
+  font: 10px sans-serif;
+}*/
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: white;
+  shape-rendering: crispEdges;
+}
+
+.axis .tick,
+.axis text {
+	stroke: white;
+	font: 9px sans-serif lighter verdana;
+}
+
+/*.x.axis path {
+  display: none;
+}*/
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.hover-line {
+	stroke: #6E7B8B;
+}
+
+.zoom-line {
+	stroke: yellow;
+}
+
+.dataTooltip body {
+	background-color: transparent;
+}
+
+#tooltipText {
+	color: white;
+	padding: 5px;
+}
+
+/*.tooltipContainer {
+	width: 210px;
+}*/
