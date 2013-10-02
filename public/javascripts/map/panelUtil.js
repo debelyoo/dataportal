@@ -15,10 +15,6 @@ var nbSelectedDates, nbMissionListReceived = 0;
  * Initialize the select panel (right). It is the first function to be called when document is ready.
  */
 function initSelectPanel() {
-		var navbarHeight = $('.navbar-fixed-top').height();
-        var correctedHeight = $('#container_large').height() - navbarHeight;
-        console.log(correctedHeight);
-        //$('#container_large').height(correctedHeight);
 	/*$('.timeField').change(function() {
 		//alert('Handler for .change() called.');
 		//console.log($("#startTimeField").val());
@@ -145,6 +141,18 @@ function createLayerTreeControls() {
 			return record.get("layer").CLASS_NAME == "OpenLayers.Layer.Vector"
 		}
 	});
+}
+
+function onLemanBtnClicked() {
+	ptLeman= new OpenLayers.LonLat(6.59,46.39).transform(mapLayerUtil.get('epsg4326'),mapLayerUtil.get('epsg900913'));
+    zoomLeman=10;
+    mapLayerUtil.mapPanel.map.setCenter(ptLeman,zoomLeman);
+}
+
+function onBaikalBtnClicked() {
+    ptBaikal= new OpenLayers.LonLat(108.208923,53.585984).transform(mapLayerUtil.get('epsg4326'),mapLayerUtil.get('epsg900913'));
+    zoomBaikal=6;
+    mapLayerUtil.mapPanel.map.setCenter(ptBaikal,zoomBaikal);
 }
 
 function onAddLayersClicked() {
@@ -423,7 +431,7 @@ function createDeviceSelectForData(jsonData, missionId) {
 
 function getDeviceData(datatype, missionId, deviceId) {
 	var url = config.get('URL_PREFIX') +"/api/data?data_type="+datatype+"&mission_id="+missionId+"&device_id="+deviceId
-	var graphHeight = $('#graphPanel').height() - 25;
+	var graphHeight = $('#graphPanel').height();
 	//console.log("graph height: "+graphHeight)
 	var embeddedGraph = new GraphD3({
 		containerElementId: 'dataGraphPlaceholder', 

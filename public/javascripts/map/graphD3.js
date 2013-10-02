@@ -295,7 +295,7 @@ var GraphD3 = Backbone.Model.extend({
 				  .attr("transform", function(d) { return "translate(" + self.x(d.value.date) + "," + self.y(d.value.logValue) + ")"; })
 				  .attr("x", 3)
 				  .attr("dy", ".35em")
-				  .style("stroke", "white")
+				  .style("stroke", "black")
 				  .text(function(d) { return d.name; });
 			  
 			  // add a 'hover' line that we'll show as a user moves their mouse (or finger)

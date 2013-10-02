@@ -12,6 +12,8 @@ var MapLayerUtil = Backbone.Model.extend({
 			'strokeColor': '#66cccc',
 			'fillColor': '#66cccc'
 		}),
+		epsg900913: new OpenLayers.Projection("EPSG:900913"),
+		epsg4326: new OpenLayers.Projection("EPSG:4326"),
 		nbTrajectory: 0,
 		trajectoryLayers: {}
 	}, 
@@ -19,7 +21,6 @@ var MapLayerUtil = Backbone.Model.extend({
 		//this.map = new OpenLayers.Map("mapPanel");
 		var position    = new OpenLayers.LonLat(6.566,46.519).transform('EPSG:4326', 'EPSG:3857'); // Google.v3 uses web mercator as projection, so we have to transform our coordinates
 		//var zoom        = 17;
-		var epsg900913 = new OpenLayers.Projection("EPSG:900913");
 		
 		this.styleMap = new OpenLayers.StyleMap({
 			'default': this.get('defaultStyle'),
@@ -41,7 +42,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		this.mapPanel = new GeoExt.MapPanel({
 			renderTo: "mapPanel", 		// Name of the HTML DOM the panel will be rendered in
 			map: new OpenLayers.Map({
-				projection: epsg900913, // Make sure the projection is Google's spherical mercator
+				projection: this.get('epsg900913'), // Make sure the projection is Google's spherical mercator
 				units: "m",		// Map horizontal units are meters
 				center: position 	// Center on Leman lake
 			}),
@@ -85,7 +86,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		this.set({nbTrajectory: nbTraj});
 		var trajectoryLayer = new OpenLayers.Layer.Vector(layerTitle, {
 			strategies: [new OpenLayers.Strategy.Fixed()],
-			projection: new OpenLayers.Projection("EPSG:4326"),
+			projection: this.get('epsg4326'),
 			protocol: new OpenLayers.Protocol.HTTP({
 				url: geojsonUrl,
 				format: new OpenLayers.Format.GeoJSON()
@@ -164,7 +165,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		});*/
 		this.gmlLayer = new OpenLayers.Layer.Vector(layerTitle, {
 			strategies: [new OpenLayers.Strategy.Fixed()],
-			projection: new OpenLayers.Projection("EPSG:4326"),
+			projection: this.get('epsg4326'),
 			protocol: new OpenLayers.Protocol.HTTP({
 				url: gmlUrl,
 				format: new OpenLayers.Format.GeoJSON()

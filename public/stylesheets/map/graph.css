@@ -5,13 +5,13 @@
 .axis path,
 .axis line {
   fill: none;
-  stroke: white;
+  stroke: black;
   shape-rendering: crispEdges;
 }
 
 .axis .tick,
 .axis text {
-	stroke: white;
+	stroke: black;
 	font: 9px sans-serif lighter verdana;
 }
 
@@ -38,7 +38,7 @@
 }
 
 #tooltipText {
-	color: white;
+	color: black;
 	padding: 5px;
 }
 

@@ -67,9 +67,13 @@
         <div id="controlContainer">
             <div id="controlPanelHideBtnPlaceholder" onclick="toggleControlPanel()"></div>
             <div id="controlPanel">
-                <div id="selectDiv" class="overlayPanel">
-                    <div id="calendar"></div>
-                    <div id="buttonRow">
+                <div id="selectDiv" class="overlayPanelWhite">
+                    <div class="buttonRow centered">
+                        <div id="lemanBtn" class="selectBtn" onclick="onLemanBtnClicked();">Leman</div>
+                        <div id="baikalBtn" class="selectBtn" onclick="onBaikalBtnClicked();">Baikal</div>
+                    </div>
+                    <div id="calendar" class="centered"></div>
+                    <div class="buttonRow centered">
                         <div id="addLayerBtn" class="selectBtn" onclick="onAddLayersClicked();">Add layers</div>
                         <div id="resetBtn" class="selectBtn" onclick="onResetClicked();">Reset selection</div>
                         <!--<div id="updateBtn">Update</div>-->
@@ -96,7 +100,8 @@
         </div>
         <div id="graphPanelContainer">
             <div id="graphPanelHideBtnPlaceholder" class="rotated270" onclick="toggleGraphPanel()"></div>
-            <div id="graphPanel" class="overlayPanel">
+            <div id="graphPanelSpacer" class="overlayPanelWhite"></div>
+            <div id="graphPanel" class="overlayPanelWhite">
                 <!--<div id="graphPanelBtnPanel">
                     <div id="graphPanelZoomBtnPlaceholder" onclick=""></div>
                 </div>-->
