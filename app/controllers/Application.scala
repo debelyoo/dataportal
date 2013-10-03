@@ -43,9 +43,9 @@ object Application extends Controller with GetApi {
   Called when import form is submitted
    */
   def importData = Action(parse.multipartFormData) { request =>
-    val (addressFile, dataFile, dataType) = DataImporter.uploadFiles(request)
+    val (addressFile, dataFile, dataType, missionId) = DataImporter.uploadFiles(request)
     if (addressFile.isDefined && dataFile.isDefined) {
-      val batchId = DataImporter.importFromFile(dataType, addressFile.get, dataFile.get)
+      val batchId = DataImporter.importFromFile(dataType, addressFile.get, dataFile.get, missionId)
       Redirect(routes.Application.importResult(batchId))
     } else {
       Redirect(routes.Application.index).flashing(

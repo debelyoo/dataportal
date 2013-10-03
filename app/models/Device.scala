@@ -187,7 +187,6 @@ object Device {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
-      //val temperatureSensors = getActiveSensorByTimeInterval[TemperatureLogCat](from, to, false, Some(em)).map(_.getSensor).distinct
       val temperatureSensors = getActiveSensorByTimeInterval[TemperatureLog](from, to, false, Some(em))
       val windSensors = getActiveSensorByTimeInterval[WindLog](from, to, false, Some(em))
       val radiometerSensors = getActiveSensorByTimeInterval[RadiometerLog](from, to, false, Some(em))

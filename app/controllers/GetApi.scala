@@ -102,11 +102,29 @@ trait GetApi extends ResponseFormatter {
       }
   }
 
+  /**
+   * Get the devices for a mission
+   * @param missionId The id of the mission
+   * @return
+   */
   def getDeviceForMission(missionId: String) = Action {
     val deviceList = Device.getForMission(missionId.toLong, None)
     val jsList = Json.toJson(deviceList.map(d => Json.parse(d.toJson)))
     // build return JSON obj with array and count
     Ok(Json.toJson(Map("devices" -> jsList, "count" -> Json.toJson(deviceList.length))))
+  }
+
+  /**
+   * Get the points of interest for a mission
+   * @param missionId The id of the mission
+   * @return
+   */
+  def getPointOfInterestForMission(missionId: String) = Action {
+    val poiList = DataLogManager.getPointOfInterest(missionId.toLong)
+    Ok(pointsAsGeoJson(poiList))
+    //val jsList = Json.toJson(poiList.map(d => Json.parse(d.toGeoJson)))
+    // build return JSON obj with array and count
+    //Ok(Json.toJson(Map("points_of_interest" -> jsList, "count" -> Json.toJson(poiList.length))))
   }
 
 
@@ -177,7 +195,9 @@ trait GetApi extends ResponseFormatter {
    */
   def getMissionDates = Action {
     val dateList = DataLogManager.getMissionDates
-    val jsList = Json.toJson(dateList.map { case (dateStr, vehicle) => Json.toJson(Map("departuretime" -> dateStr, "vehicle" -> vehicle))})
+    val jsList = Json.toJson(dateList.map { case (missionId, dateStr, vehicle) =>
+      Json.toJson(Map("id" -> Json.toJson(missionId), "departuretime" -> Json.toJson(dateStr), "vehicle" -> Json.toJson(vehicle)))
+    })
     Ok(jsList)
   }
 

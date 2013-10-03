@@ -13,7 +13,7 @@ class SpatializationBatchWorker extends Actor {
     /**
      * Process: iterate over the sensor logs. For each sensor log, find the closest GPS log (if it exists), and link it to the sensor log
      */
-    case Message.Work(batchId, dataType) => {
+    case Message.Work(batchId, dataType, missionId) => {
       //println("receive Message.Work")
       spatializationBatches.get(batchId).map { case (gLogs, sensors, logs) =>
         for {

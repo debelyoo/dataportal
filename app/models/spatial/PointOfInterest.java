@@ -14,9 +14,8 @@ import javax.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "trajectorypoint")
-public class TrajectoryPoint implements GeoJsonSerializable {
-
+@Table(name = "pointofinterest")
+public class PointOfInterest implements GeoJsonSerializable {
 
     @Id
     @GeneratedValue(generator="increment")
@@ -33,7 +32,7 @@ public class TrajectoryPoint implements GeoJsonSerializable {
     @JoinColumn(name="mission_id")
     private Mission mission;
 
-    public TrajectoryPoint() {
+    public PointOfInterest() {
     }
 
     public Long getId() {
@@ -60,14 +59,6 @@ public class TrajectoryPoint implements GeoJsonSerializable {
         this.coordinate = pos;
     }
 
-    /*public Double getAltitude() {
-        return altitude;
-    }
-
-    public void setAltitude(Double alt) {
-        this.altitude = alt;
-    }*/
-
     public Mission getMission() {
         return this.mission;
     }
@@ -82,15 +73,15 @@ public class TrajectoryPoint implements GeoJsonSerializable {
 
     @Override
     public String toGeoJson() {
-        return new GsonBuilder().registerTypeAdapter(TrajectoryPoint.class, new TrajectoryPointGeoJsonSerializer()).create().toJson(this);
+        return new GsonBuilder().registerTypeAdapter(PointOfInterest.class, new PointOfInterestGeoJsonSerializer()).create().toJson(this);
     }
 
     /**
      * Custom Geo JSON Serializer for GPS log
      */
-    public static class TrajectoryPointGeoJsonSerializer implements JsonSerializer<TrajectoryPoint> {
+    public static class PointOfInterestGeoJsonSerializer implements JsonSerializer<PointOfInterest> {
         @Override
-        public JsonElement serialize(TrajectoryPoint point, java.lang.reflect.Type type, JsonSerializationContext context) {
+        public JsonElement serialize(PointOfInterest point, java.lang.reflect.Type type, JsonSerializationContext context) {
             Gson gson = new Gson();
             JsonObject geometryObj = new JsonObject();
             geometryObj.addProperty("type", "Point");
@@ -101,10 +92,9 @@ public class TrajectoryPoint implements GeoJsonSerializable {
             JsonObject propertiesObj = new JsonObject();
             propertiesObj.addProperty("id", point.getId());
             propertiesObj.addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(point.getTimestamp()));
-            //propertiesObj.addProperty("altitude", point.getAltitude());
             if (point.getCoordinate() != null) {
-                double[] arr = ApproxSwissProj.WGS84toLV03(point.coordinate.getCoordinate().y, point.coordinate.getCoordinate().x, point.coordinate.getCoordinate().z);
-                propertiesObj.addProperty("coordinate_swiss", arr[0] + "," + arr[1] +","+arr[2]);
+                double[] arr = ApproxSwissProj.WGS84toLV03(point.coordinate.getCoordinate().y, point.coordinate.getCoordinate().x,point.coordinate.getCoordinate().z);
+                propertiesObj.addProperty("coordinate_swiss", arr[0] + "," + arr[1]+","+arr[2]);
                 //propertiesObj.addProperty("speed", gpsLog.getSpeed());
             }
 
@@ -130,12 +120,10 @@ public class TrajectoryPoint implements GeoJsonSerializable {
             em.getTransaction().commit();
             res = true;
         } catch (Exception ex) {
-            ex.printStackTrace();
-            System.out.println("[ERROR - TrajectoryPoint] "+ ex.getMessage());
+            System.out.println("[WARNING] "+ ex.getMessage());
         } finally {
             em.close();
         }
         return res;
     }
-
 }

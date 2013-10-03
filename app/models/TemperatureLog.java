@@ -106,7 +106,7 @@ public class TemperatureLog implements JsonSerializable, SensorLog {
     }
 
     /**
-     * Save the TemperatureLogCat in Postgres database
+     * Save the TemperatureLog in Postgres database
      */
     public Boolean save() {
         EntityManager em = JPAUtil.createEntityManager();

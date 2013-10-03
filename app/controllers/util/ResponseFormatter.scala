@@ -1,7 +1,7 @@
 package controllers.util
 
 import play.api.libs.json.{Json, JsValue}
-import controllers.util.json.JsonSerializable
+import controllers.util.json.{GeoJsonSerializable, JsonSerializable}
 import controllers.util.xml.{GmlSerializable, KmlSerializable}
 import play.libs.XML
 import scala.xml.{Node, NodeSeq}
@@ -146,7 +146,7 @@ trait ResponseFormatter {
    * @param points The list of TrajectoryPoints
    * @return A GeoJson Document
    */
-  def pointsAsGeoJson(points: List[TrajectoryPoint]): JsValue = {
+  def pointsAsGeoJson(points: List[GeoJsonSerializable]): JsValue = {
     val gson: Gson = new Gson
     val featureArray = new JsonArray
     points.foreach(pt => {

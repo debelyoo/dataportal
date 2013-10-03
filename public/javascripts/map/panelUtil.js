@@ -194,6 +194,8 @@ function getMissionsForDates(dateArr) {
 				} else {
 					console.log("[ERROR] Mission from unknown vehicle !!");
 				}
+				mapLayerUtil.addPointOfInterestLayer(missions[j]);
+				mapLayerUtil.addRasterLayer(missions[j]);
 			}
 			if (nbMissionListReceived == nbSelectedDates) {			
 				createPathSelectForData();
@@ -362,7 +364,8 @@ function refreshSetField(date) {
 function createPathSelectForData() {
 	//console.log("createPathSelectForData()", missions);
 	var dataGraphAvailable = false;
-	var options = "<option value=0>Select a trajectory</option>"; // default value
+	var options = "";
+	//var options = "<option value=0>Select a trajectory</option>"; // default value
 	for (var i = 0; i < currentMissions.length; i++) {
 		mission = currentMissions[i];
 		var missionName = mission.date + " - " + mission.vehicle
@@ -384,6 +387,7 @@ function createPathSelectForData() {
 		}
 	});
 	if (dataGraphAvailable) {
+	    getDevicesForMission(currentMissions[0].id);
 		$('#dataSelectPanel').show();
 		toggleGraphPanel();
 	}
@@ -399,8 +403,8 @@ function getDevicesForMission(missionId) {
 
 function createDeviceSelectForData(jsonData, missionId) {
 	var devices = jsonData['devices'];
-	console.log("createDeviceSelectForData()", devices);
-	var options = "<option value=0>Select a device</option>";
+	//console.log("createDeviceSelectForData()", devices);
+	var options = "<option value=\"altitude--0\">Altitude</option>";
 	devices.map(function(d) {
 		var deviceName, deviceId;
 		if (d['id'] != 0) {
@@ -422,15 +426,17 @@ function createDeviceSelectForData(jsonData, missionId) {
 		var deviceParts = deviceId.split('--');
 		var datatype = deviceParts[0];
 		var did = deviceParts[1];
-		// load data log graph - TODO
-		console.log("load data for device: "+did+" and mission: "+missionId);
+		//console.log("load data for device: "+did+" and mission: "+missionId);
 		getDeviceData(datatype, missionId, did);
 	});
 	$('#deviceSelectRow').show();
+	/// show graph with altitude
+	getDeviceData("altitude", $("#pathSelect").val(), 0);
 }
 
 function getDeviceData(datatype, missionId, deviceId) {
 	var url = config.get('URL_PREFIX') +"/api/data?data_type="+datatype+"&mission_id="+missionId+"&device_id="+deviceId
+	console.log(url);
 	var graphHeight = $('#graphPanel').height();
 	//console.log("graph height: "+graphHeight)
 	var embeddedGraph = new GraphD3({

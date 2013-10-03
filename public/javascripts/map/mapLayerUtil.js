@@ -89,7 +89,9 @@ var MapLayerUtil = Backbone.Model.extend({
 			projection: this.get('epsg4326'),
 			protocol: new OpenLayers.Protocol.HTTP({
 				url: geojsonUrl,
-				format: new OpenLayers.Format.GeoJSON()
+				format: new OpenLayers.Format.GeoJSON({
+				    ignoreExtraDims: true // necessary to ignore 3rd coordinate (z) in geojson points
+				})
 			}),
 			styleMap: customStyleMap
 		});
@@ -117,9 +119,69 @@ var MapLayerUtil = Backbone.Model.extend({
 			//this.map.addControl(new OpenLayers.Control.LayerSwitcher());
 			//this.testFeatures(this.gmlLayer, 0, callback);
 		}
-		
-		this.addRasterLayer(mission);
 	},
+
+	addPointOfInterestLayer: function(mission) {
+        var geojsonUrl = config.get('URL_PREFIX') +"/api/pointsofinterest/formission/"+mission.id;
+        console.log(geojsonUrl);
+        var layerTitle = mission.date + " - " + mission.vehicle + " (POI)";
+
+        var pink = "rgb(255,105,180)"; // pink
+        var white = "rgb(255,255,255)";
+        var customStyleMap = new OpenLayers.StyleMap({
+            "default": new OpenLayers.Style({
+                pointRadius: 5,
+                strokeColor: pink,
+                fillColor: pink
+            }),
+            "select": new OpenLayers.Style({
+                pointRadius: 5,
+                strokeColor: pink,
+                fillColor: white
+            }),
+        })
+
+        var poiLayer = new OpenLayers.Layer.Vector(layerTitle, {
+            strategies: [new OpenLayers.Strategy.Fixed()],
+            projection: this.get('epsg4326'),
+            protocol: new OpenLayers.Protocol.HTTP({
+                url: geojsonUrl,
+                format: new OpenLayers.Format.GeoJSON({
+                    ignoreExtraDims: true // necessary to ignore 3rd coordinate (z) in geojson points
+                })
+            }),
+            styleMap: customStyleMap
+        });
+
+        // Add layer to map
+        //console.log(poiLayer.features.length);
+        this.mapPanel.map.addLayer(poiLayer);
+
+        function selectPoi() {
+            console.log("POI selected");
+        }
+
+        var highlightCtrl = new OpenLayers.Control.SelectFeature(poiLayer, {
+            hover: true,
+            highlightOnly: true,
+            renderIntent: "temporary",
+            eventListeners: {
+                //beforefeaturehighlighted: printFeatureDetails,
+                //featurehighlighted: this.printFeatureDetails
+                //featureunhighlighted: printFeatureDetails
+            }
+        });
+        var selectCtrl = new OpenLayers.Control.SelectFeature(poiLayer, {
+            clickout: true,
+            onSelect: selectPoi,
+            //onUnselect: this.unselectData
+        });
+        // Add controls
+        //this.mapPanel.map.addControl(highlightCtrl);
+        this.mapPanel.map.addControl(selectCtrl);
+        //highlightCtrl.activate();
+        selectCtrl.activate();
+    },
 	
 	addRasterLayer: function(mission) {
 		var self = this;

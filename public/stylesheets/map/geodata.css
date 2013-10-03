@@ -97,6 +97,7 @@ div.datepicker .ulmDate {
 
 div.datepicker .ulmCatDate {
 	background: -webkit-linear-gradient(left, #FFF380, #FFA62F);
+	background: -moz-linear-gradient(left, #FFF380, #FFA62F);
 	background: linear-gradient(left, #FFF380, #FFA62F);
 }
 

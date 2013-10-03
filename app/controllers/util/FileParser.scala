@@ -59,14 +59,14 @@ object FileParser {
    * @param devices The sensors defined in the address file
    * @return The nb of inserted values
    */
-  def parseDataFile(dataType: String, file: File, devices: Map[String, Device]): Option[String] = {
+  def parseDataFile(dataType: String, file: File, devices: Map[String, Device], missionId: Long): Option[String] = {
     try {
       val source = scala.io.Source.fromFile(file)
       val linesAsStr = source.mkString
       source.close()
       val lines = linesAsStr.split("\\r?\\n")
       val batchId = UUID.randomUUID().toString
-      DataLogManager.insertionWorker ! Message.SetInsertionBatch(batchId, file.getName, dataType, lines, devices)
+      DataLogManager.insertionWorker ! Message.SetInsertionBatch(batchId, file.getName, dataType, lines, devices, missionId)
       Some(batchId)
     } catch {
       case ex: Exception => ex.printStackTrace; None

@@ -17,7 +17,7 @@ import play.api.libs.json.{Json, JsValue}
 import com.vividsolutions.jts.geom.Point
 import controllers.util.json.JsonSerializable
 import scala.Some
-import models.spatial.{TrajectoryPoint, GpsLog}
+import models.spatial.{PointOfInterest, TrajectoryPoint, GpsLog}
 import com.google.gson.{JsonArray, JsonElement, JsonObject}
 
 object DataLogManager {
@@ -58,7 +58,7 @@ object DataLogManager {
    * @tparam T The type of data to get
    * @return A list with the non-geolocated logs
    */
-  private def getNotGeolocated[T:ClassTag](emOpt: Option[EntityManager] = None): List[T] = {
+  /*private def getNotGeolocated[T:ClassTag](emOpt: Option[EntityManager] = None): List[T] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
@@ -73,7 +73,7 @@ object DataLogManager {
     } finally {
       if (emOpt.isEmpty) em.close()
     }
-  }
+  }*/
 
   /**
    * Get the sensor logs by date
@@ -188,6 +188,9 @@ object DataLogManager {
         } else gpsLogsNative
         Map("gps sensor" -> gpsLogs)
       }*/
+      case DataImporter.Types.ALTITUDE => {
+        getAltitude(missionId, maxNb)
+      }
       case _ => {
         println("GET data - Unknown data type")
         Map[String, List[JsonSerializable]]()
@@ -256,6 +259,15 @@ object DataLogManager {
     }
   }
 
+  /**
+   * Get data log by mission and device
+   * @param missionId The id of the mission
+   * @param deviceIdList The list of devices we are interested in
+   * @param maxNb The maximum number of logs to return
+   * @param emOpt An optional entity manager
+   * @tparam T The type of log to get
+   * @return A map of logs by device
+   */
   private def getByMissionAndDevice[T: ClassTag](
                                                missionId: Long,
                                                deviceIdList: List[Long],
@@ -291,8 +303,7 @@ object DataLogManager {
         } else logs
         println("Nb of logs returned: "+reducedLogList.length)
         (devices.get(sId).get.name, reducedLogList.map(_.asInstanceOf[T]))
-      }
-      }
+      }}
     } catch {
       case nre: NoResultException => println("No result !!"); Map()
       case ex: Exception => ex.printStackTrace; Map()
@@ -429,16 +440,16 @@ object DataLogManager {
 
   /**
    * Get the distinct dates for which there is logs
-   * @return A list of dates (as String) and vehicles
+   * @return A list of mission id, dates (as String) and vehicles
    */
-  def getMissionDates: List[(String, String)] = {
+  def getMissionDates: List[(Long, String, String)] = {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
-      val q = em.createQuery("SELECT DISTINCT cast(m.departureTime as date), m.vehicle.name FROM "+ classOf[Mission].getName +" m")
+      val q = em.createQuery("SELECT DISTINCT m.id, cast(m.departureTime as date), m.vehicle.name FROM "+ classOf[Mission].getName +" m")
       //val dates = q.getResultList.map(_.asInstanceOf[Date]).toList.map(ts => DateFormatHelper.selectYearFormatter.format(ts))
       val dates = q.getResultList.map(_.asInstanceOf[Array[Object]]).toList.map(obj =>
-        (DateFormatHelper.selectYearFormatter.format(obj(0).asInstanceOf[Date]), obj(1).asInstanceOf[String])
+        (obj(0).asInstanceOf[Long], DateFormatHelper.selectYearFormatter.format(obj(1).asInstanceOf[Date]), obj(2).asInstanceOf[String])
       )
       em.getTransaction().commit()
       dates
@@ -489,16 +500,41 @@ object DataLogManager {
       val q = em.createNativeQuery(nativeQuery)
       val res = q.getSingleResult.asInstanceOf[String]
       em.getTransaction().commit()
-      Json.parse(res)
+      if (res != null) {
+        Json.parse(res)
+      } else {
+        Json.parse("{\"error\": \"no trajectory for mission: "+ missionId +"\"}")
+      }
     } catch {
       case nre: NoResultException => Json.parse("{\"error\": \"no result\"}")
-      case ex: Exception => ex.printStackTrace; Json.parse("{\"error\": \"exception\"}")
+      case ex: Exception => ex.printStackTrace; Json.parse("{\"error\": \""+ ex.getMessage +"\"}")
     } finally {
       em.close()
     }
   }
 
-  def getTrajectoryPoints(missionId: Int,
+  /**
+   * Get the altitude data for a mission
+   * @param missionId The is of the mission
+   * @param maxNb The maximum number of points to get
+   * @return A map with the altitude logs
+   */
+  def getAltitude(missionId: Long, maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
+    val pointList = getTrajectoryPoints(missionId, maxNb)
+    val altitudeLogList = pointList.map(trajPt => AltitudeLog(trajPt.getId,
+      DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.getTimestamp),
+      trajPt.getCoordinate.getCoordinate.z))
+    Map("altitude" -> altitudeLogList)
+  }
+
+  /**
+   * Get the trajectory points of a mission
+   * @param missionId The id of the mission
+   * @param maxNb The maximum n b of points to get
+   * @param emOpt An optional entity manager
+   * @return A list of trajectory points
+   */
+  def getTrajectoryPoints(missionId: Long,
                           maxNb: Option[Int],
                           emOpt: Option[EntityManager] = None): List[TrajectoryPoint] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
@@ -528,6 +564,31 @@ object DataLogManager {
         println("Nb of points returned: "+reducedPointList.length)
         reducedPointList
       //})
+    } catch {
+      case nre: NoResultException => println("No result !!"); List()
+      case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      if (emOpt.isEmpty) em.close()
+    }
+  }
+
+  /**
+   * Get the points of interest of a mission
+   * @param missionId The id of the mission
+   * @param emOpt An optional entity manager
+   * @return A list of points of interest
+   */
+  def getPointOfInterest(missionId: Long, emOpt: Option[EntityManager] = None): List[PointOfInterest] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
+    try {
+      if (emOpt.isEmpty) em.getTransaction().begin()
+      val queryStr = "FROM "+ classOf[PointOfInterest].getName +" poi WHERE poi.mission.id = "+ missionId +" ORDER BY timestamp"
+      //println(queryStr)
+      val q = em.createQuery(queryStr, classOf[PointOfInterest])
+      //println(q.getResultList)
+      val pointList = q.getResultList.toList
+      if (emOpt.isEmpty) em.getTransaction().commit()
+      pointList
     } catch {
       case nre: NoResultException => println("No result !!"); List()
       case ex: Exception => ex.printStackTrace; List()
