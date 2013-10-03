@@ -227,8 +227,8 @@ function createCalendar() {
 	// draw calendar
 	$( "#calendar" ).DatePicker({
 		flat: true,
-		current: "2013-05-13",
-		date: "2013-05-13",
+		current: "2013-07-10",
+		date: "2013-07-10   ",
 		format: "Y-m-d",
 		mode:"multiple",
 		onRender: function(date){
