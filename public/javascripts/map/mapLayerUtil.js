@@ -59,18 +59,24 @@ var MapLayerUtil = Backbone.Model.extend({
 		// disable 3D effect with google map
 		gmapLayer.mapObject.setTilt(0);
 	},
+
+	/**
+	 * Add all the layers related to a mission (trajectory, raster, POI)
+	 * @param mission
+	 * @param mode
+	 */
+	addLayers: function(mission, mode) {
+	    this.addTrajectoryLayer(mission, mode);
+	    this.getPoiForMission(mission);
+        this.addRasterLayer(mission);
+	},
 	
 	/**
 	 * Add a layer with a trajectory (either linestring or points)
 	 * @param mission The mission 
-	 * @param asLinestring Indicates if the data are displayed as linestring (otherwise set of points)
+	 * @param mode Indicates if the data are displayed as linestring (otherwise set of points)
 	 */
-	addTrajectoryLayer: function(mission, asLinestring) {
-		var mode = "";
-		if (asLinestring)
-			mode = "linestring";
-		else
-			mode = "points";
+	addTrajectoryLayer: function(mission, mode) {
 		var geojsonUrl = config.get('URL_PREFIX') +"/api/trajectory?max_nb="+config.get('MAX_NB_DATA_POINTS_ON_MAP')+"&format=geojson&mode="+mode+"&mission_id="+mission.id;
 		console.log(geojsonUrl);
 		var layerTitle = mission.date + " - " + mission.vehicle;
@@ -102,7 +108,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		map[mission.id] = layerTitle;
 		this.set({trajectoryLayers: map});
 		
-		if (!asLinestring) {
+		if (mode == "points") {
 			this.highlightCtrl = new OpenLayers.Control.SelectFeature(trajectoryLayer, {
 				hover: true,
 				highlightOnly: true,
@@ -134,6 +140,11 @@ var MapLayerUtil = Backbone.Model.extend({
                 strokeColor: pink,
                 fillColor: pink
             }),
+            "temporary": new OpenLayers.Style({
+                pointRadius: 5,
+                strokeColor: white,
+                fillColor: pink
+            }),
             "select": new OpenLayers.Style({
                 pointRadius: 5,
                 strokeColor: pink,
@@ -160,6 +171,9 @@ var MapLayerUtil = Backbone.Model.extend({
         function selectPoi() {
             console.log("POI selected");
         }
+        function highlightPoi() {
+            console.log("POI highlighted");
+        }
 
         var highlightCtrl = new OpenLayers.Control.SelectFeature(poiLayer, {
             hover: true,
@@ -167,7 +181,7 @@ var MapLayerUtil = Backbone.Model.extend({
             renderIntent: "temporary",
             eventListeners: {
                 //beforefeaturehighlighted: printFeatureDetails,
-                //featurehighlighted: this.printFeatureDetails
+                featurehighlighted: highlightPoi
                 //featureunhighlighted: printFeatureDetails
             }
         });
@@ -177,12 +191,16 @@ var MapLayerUtil = Backbone.Model.extend({
             //onUnselect: this.unselectData
         });
         // Add controls
-        //this.mapPanel.map.addControl(highlightCtrl);
+        this.mapPanel.map.addControl(highlightCtrl);
         this.mapPanel.map.addControl(selectCtrl);
-        //highlightCtrl.activate();
+        highlightCtrl.activate();
         selectCtrl.activate();
     },
-	
+
+	/**
+	 * Add a raster layer
+	 * @param mission The mission linked to the raster layer
+	 */
 	addRasterLayer: function(mission) {
 		var self = this;
 		var url = config.get('URL_PREFIX') +"/api/footage/fordate/"+mission.date;
@@ -206,6 +224,20 @@ var MapLayerUtil = Backbone.Model.extend({
 			}
 		});
 	},
+
+	/**
+     * Get the points of interest of a mission. If there are some, then create layer for them
+     * @param mission The mission
+     */
+    getPoiForMission: function(mission) {
+    var self = this;
+        $.ajax({
+            url: config.get('URL_PREFIX') +"/api/pointsofinterest/formission/"+mission.id
+        }).done(function( jsonData ) {
+            if(jsonData.features.length > 0)
+                self.addPointOfInterestLayer(mission);
+        });
+    },
 	
 	/**
 	 * Reload the data layer (the itinerary of the boat). Called when click on update button - NO MORE USED
@@ -292,7 +324,7 @@ var MapLayerUtil = Backbone.Model.extend({
 	printFeatureDetails: function(e) {
 		//console.log(e.feature['attributes']);
 		//console.log(mapLayerUtil.gmlLayer.features[0]); // e.feature['attributes'].id);
-		updateInfoDiv("infoDiv", e.feature['attributes'], true);
+		//updateInfoDiv("infoDiv", e.feature['attributes'], true);
 		if (mapLayerUtil.has('activeGraph')) {
 			mapLayerUtil.updateHoverLine(e);
 		}

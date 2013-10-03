@@ -5,6 +5,7 @@ import controllers.util.{DateFormatHelper, DataImporter, Message}
 import controllers.database.BatchManager._
 import models.spatial.{GpsLog}
 import models.{DataLogManager, Device}
+import java.util.Date
 
 class InsertionBatchWorker extends Actor {
   //val TIMEOUT = 5 seconds
@@ -14,7 +15,10 @@ class InsertionBatchWorker extends Actor {
       var setNumberOpt: Option[Int] = None
       insertionBatches.get(batchId).map { case (lines, sensors) =>
         for ((line, ind) <- lines.zipWithIndex) {
-          val chunksOnLine = line.split("\\t")
+          val chunksOnLine = if(dataType != DataImporter.Types.ULM_TRAJECTORY)
+            line.split("\\t")
+          else
+            line.split(",")
           if (chunksOnLine.nonEmpty) {
             //println(chunksOnLine.toList)
             val deviceOpt = sensors.get(chunksOnLine(0))
@@ -60,6 +64,13 @@ class InsertionBatchWorker extends Actor {
                 val tsDate = DateFormatHelper.labViewTsToJavaDate(chunksOnLine(0).toDouble) // if TS comes from labview
                 DataLogManager.insertionWorker ! Message.InsertPointOfInterest(batchId, missionId, tsDate,
                   chunksOnLine(1).toDouble, chunksOnLine(2).toDouble, chunksOnLine(3).toDouble)
+              }
+              case DataImporter.Types.ULM_TRAJECTORY => {
+                // latitude - longitude - elevation - ts
+                val tsDate = DateFormatHelper.ulmKmlTimestampFormatter.parse(chunksOnLine(3))
+                println(tsDate)
+                DataLogManager.insertionWorker ! Message.InsertUlmTrajectory(batchId, missionId, tsDate,
+                  chunksOnLine(1).toDouble, chunksOnLine(0).toDouble, chunksOnLine(2).toDouble)
               }
               case _  => println("Unknown data type ! ["+ dataType +"]")
             }

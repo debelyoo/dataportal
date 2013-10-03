@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 import play.api.libs.concurrent.Execution.Implicits._
 import scala.concurrent.Await
 import java.util.UUID
+import play.Logger
 
 // for the ExecutionContext
 
@@ -64,7 +65,11 @@ object FileParser {
       val source = scala.io.Source.fromFile(file)
       val linesAsStr = source.mkString
       source.close()
-      val lines = linesAsStr.split("\\r?\\n")
+      val lines = if (dataType != DataImporter.Types.ULM_TRAJECTORY)
+        linesAsStr.split("\\r?\\n")
+      else
+        linesAsStr.split("\\n")
+      //Logger.info("lines: "+lines.length)
       val batchId = UUID.randomUUID().toString
       DataLogManager.insertionWorker ! Message.SetInsertionBatch(batchId, file.getName, dataType, lines, devices, missionId)
       Some(batchId)

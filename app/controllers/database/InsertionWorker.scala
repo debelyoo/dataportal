@@ -249,6 +249,23 @@ class InsertionWorker extends Actor {
         case ae: AssertionError => None
       }
     }
+    case Message.InsertUlmTrajectory(batchId, missionId, ts, latitude, longitude, altitude) => {
+      try {
+        //println("[Message.InsertPointOfInterest] ")
+        //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
+        val geom = CoordinateHelper.wktToGeometry("POINT("+ longitude +" "+ latitude +" "+ altitude +")")
+        val poi = new TrajectoryPoint()
+        poi.setTimestamp(ts)
+        poi.setCoordinate(geom.asInstanceOf[Point])
+        //poi.setAltitude(altitude)
+        val m = DataLogManager.getById[Mission](missionId)
+        poi.setMission(m.get)
+        val persisted = poi.save() // persist in DB
+        BatchManager.updateBatchProgress(batchId, "Insertion")
+      } catch {
+        case ae: AssertionError => None
+      }
+    }
     case Message.InsertDevice(sensor) => {
       //println("[RCV message] - insert sensor: "+sensor)
       sender ! sensor.save

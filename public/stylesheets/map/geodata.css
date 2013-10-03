@@ -83,6 +83,16 @@ body {
     margin-left: auto;
 }
 
+#selectDiv .centeredLarge {
+    width: 80%;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+#selectMode {
+    width: 80px;
+}
+
 #calendar {
 	margin-bottom: 10px;
 }

@@ -13,6 +13,7 @@ object DataImporter {
     val GPS = "gps"
     val RADIOMETER = "radiometer"
     val POINT_OF_INTEREST = "point_of_interest"
+    val ULM_TRAJECTORY = "ulm_trajectory"
   }
 
   /**
