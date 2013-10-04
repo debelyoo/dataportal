@@ -67,8 +67,28 @@ var MapLayerUtil = Backbone.Model.extend({
 	 */
 	addLayers: function(mission, mode) {
 	    this.addTrajectoryLayer(mission, mode);
-	    this.getPoiForMission(mission);
+	    this.getPoiForMission(mission, this.addControls);
         this.addRasterLayer(mission);
+	},
+
+	/**
+	 * Add the controls (highlight & select), called from addPointOfInterestLayer() as callback
+	 */
+	addControls: function() {
+         var layers = new Array();
+         //var selectableLayers = new Array();
+         var map = mapLayerUtil.get('trajectoryLayers');
+         for (m in map) {
+             layers.push(map[m]);
+             /*if (m.indexOf("POI") > -1) {
+                // selectable layers are only point of interest layers
+                selectableLayers.push(map[m]);
+             }*/
+         }
+         //console.log(layers);
+         // layers for highlight and select must be the same (two sets of layers create a bug)
+         mapLayerUtil.setHighlightCtrl(layers);
+         mapLayerUtil.setSelectCtrl(layers);
 	},
 	
 	/**
@@ -105,10 +125,10 @@ var MapLayerUtil = Backbone.Model.extend({
 		// Add layer to map
 		this.mapPanel.map.addLayer(trajectoryLayer);
 		var map = this.get('trajectoryLayers');
-		map[mission.id] = layerTitle;
+		map[mission.id] = trajectoryLayer;
 		this.set({trajectoryLayers: map});
 		
-		if (mode == "points") {
+		/*if (mode == "points") {
 			this.highlightCtrl = new OpenLayers.Control.SelectFeature(trajectoryLayer, {
 				hover: true,
 				highlightOnly: true,
@@ -124,10 +144,15 @@ var MapLayerUtil = Backbone.Model.extend({
 			this.highlightCtrl.activate();
 			//this.map.addControl(new OpenLayers.Control.LayerSwitcher());
 			//this.testFeatures(this.gmlLayer, 0, callback);
-		}
+		}*/
 	},
 
-	addPointOfInterestLayer: function(mission) {
+    /**
+     * Add a layer with the points of interest
+     * @param mission The mission linked to the points of interest
+     * @param callback The callback to add the controls
+     */
+	addPointOfInterestLayer: function(mission, callback) {
         var geojsonUrl = config.get('URL_PREFIX') +"/api/pointsofinterest/formission/"+mission.id;
         console.log(geojsonUrl);
         var layerTitle = mission.date + " - " + mission.vehicle + " (POI)";
@@ -167,15 +192,15 @@ var MapLayerUtil = Backbone.Model.extend({
         // Add layer to map
         //console.log(poiLayer.features.length);
         this.mapPanel.map.addLayer(poiLayer);
+        var map = this.get('trajectoryLayers');
+        map[mission.id+"-POI"] = poiLayer;
+        this.set({trajectoryLayers: map});
 
-        function selectPoi() {
-            console.log("POI selected");
-        }
         function highlightPoi() {
             console.log("POI highlighted");
         }
 
-        var highlightCtrl = new OpenLayers.Control.SelectFeature(poiLayer, {
+        /*var highlightCtrl = new OpenLayers.Control.SelectFeature(poiLayer, {
             hover: true,
             highlightOnly: true,
             renderIntent: "temporary",
@@ -190,11 +215,22 @@ var MapLayerUtil = Backbone.Model.extend({
             onSelect: selectPoi,
             //onUnselect: this.unselectData
         });
+        */
         // Add controls
-        this.mapPanel.map.addControl(highlightCtrl);
+        callback();
+        /*this.mapPanel.map.addControl(highlightCtrl);
         this.mapPanel.map.addControl(selectCtrl);
         highlightCtrl.activate();
         selectCtrl.activate();
+        */
+    },
+
+    selectPoi: function(ev) {
+        var selectedLayer = ev.layer;
+        //console.log(ev.layer);
+        if (selectedLayer.name.indexOf("POI") > -1) {
+            console.log("POI selected");
+        }
     },
 
 	/**
@@ -228,15 +264,51 @@ var MapLayerUtil = Backbone.Model.extend({
 	/**
      * Get the points of interest of a mission. If there are some, then create layer for them
      * @param mission The mission
+     * @param callback The callback to call when layer is loaded
      */
-    getPoiForMission: function(mission) {
+    getPoiForMission: function(mission, callback) {
     var self = this;
         $.ajax({
             url: config.get('URL_PREFIX') +"/api/pointsofinterest/formission/"+mission.id
         }).done(function( jsonData ) {
             if(jsonData.features.length > 0)
-                self.addPointOfInterestLayer(mission);
+                self.addPointOfInterestLayer(mission, callback);
         });
+    },
+
+    /**
+     * Set a highlight control on the map. It takes an array of layers because
+     * multiple highlight controls are not supported (http://lists.osgeo.org/pipermail/openlayers-dev/2010-October/006589.html)
+     * @param layers The array of layers impacted by this control
+     */
+    setHighlightCtrl: function(layers) {
+        this.highlightCtrl = new OpenLayers.Control.SelectFeature(layers, {
+            hover: true,
+            highlightOnly: true,
+            renderIntent: "temporary",
+            eventListeners: {
+                //beforefeaturehighlighted: printFeatureDetails,
+                featurehighlighted: this.printFeatureDetails
+                //featureunhighlighted: printFeatureDetails
+            }
+        });
+        this.mapPanel.map.addControl(this.highlightCtrl);
+        this.highlightCtrl.activate();
+    },
+
+    /**
+     * Set a select control on the map. It takes an array of layers because
+     * multiple select controls are not supported (http://lists.osgeo.org/pipermail/openlayers-dev/2010-October/006589.html)
+     * @param layers The array of layers impacted by this control
+     */
+    setSelectCtrl: function(layers) {
+        this.selectCtrl = new OpenLayers.Control.SelectFeature(layers, {
+            clickout: true,
+            onSelect: this.selectPoi,
+            //onUnselect: this.unselectData
+        });
+        this.mapPanel.map.addControl(this.selectCtrl);
+        this.selectCtrl.activate();
     },
 	
 	/**
@@ -322,11 +394,14 @@ var MapLayerUtil = Backbone.Model.extend({
 		this.set({nbTrajectory: 0});
 	},
 	printFeatureDetails: function(e) {
-		//console.log(e.feature['attributes']);
+		//console.log(e.feature.layer);
 		//console.log(mapLayerUtil.gmlLayer.features[0]); // e.feature['attributes'].id);
 		//updateInfoDiv("infoDiv", e.feature['attributes'], true);
-		if (mapLayerUtil.has('activeGraph')) {
-			mapLayerUtil.updateHoverLine(e);
+		var selectedLayer = e.feature.layer;
+		if (selectedLayer.name.indexOf("POI") == -1) {
+		    if (mapLayerUtil.has('activeGraph')) {
+			    mapLayerUtil.updateHoverLine(e);
+		    }
 		}
 	},
 	/**
@@ -382,8 +457,8 @@ var MapLayerUtil = Backbone.Model.extend({
 		this.highlightCtrl.unselectAll();
 		//console.log("highlightFeaturePoint() - "+xpf);
 		var map = this.get('trajectoryLayers');
-		var layerName = map[$('#pathSelect').val()];
-		var layerForGraph = this.mapPanel.map.getLayersByName(layerName)[0];
+		var layerForGraph = map[$('#pathSelect').val()];
+		//var layerForGraph = this.mapPanel.map.getLayersByName(layerName)[0];
 		//console.log(layerForGraph.features.length);
 		var index = Math.round(xpf * layerForGraph.features.length);
 		if (index == layerForGraph.features.length)

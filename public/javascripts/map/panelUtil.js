@@ -228,7 +228,7 @@ function createCalendar() {
 	$( "#calendar" ).DatePicker({
 		flat: true,
 		current: "2013-07-10",
-		date: "2013-07-10   ",
+		date: "2013-07-10",
 		format: "Y-m-d",
 		mode:"multiple",
 		onRender: function(date){
@@ -403,7 +403,13 @@ function getDevicesForMission(missionId) {
 function createDeviceSelectForData(jsonData, missionId) {
 	var devices = jsonData['devices'];
 	//console.log("createDeviceSelectForData()", devices);
-	var options = "<option value=\"altitude--0\">Altitude</option>";
+	var options;
+	if (isCatamaranMission(mission)) {
+	    options = "<option value=\"speed--0\">Speed</option>";
+	} else {
+	    options = "<option value=\"altitude--0\">Altitude</option>";
+	}
+
 	devices.map(function(d) {
 		var deviceName, deviceId;
 		if (d['id'] != 0) {
@@ -421,16 +427,22 @@ function createDeviceSelectForData(jsonData, missionId) {
 	var pathSelect = "<select id=\"deviceSelect\">" + options + "</select>";
 	$('#deviceSelectPlaceholder').html(pathSelect);
 	$('#deviceSelect').change(function() {
-		var deviceId = $("#deviceSelect").val();
-		var deviceParts = deviceId.split('--');
-		var datatype = deviceParts[0];
-		var did = deviceParts[1];
 		//console.log("load data for device: "+did+" and mission: "+missionId);
-		getDeviceData(datatype, missionId, did);
+		var deviceTypeAndId = getDatatypeAndDeviceId();
+		getDeviceData(deviceTypeAndId[0], missionId, deviceTypeAndId[1]);
 	});
 	$('#deviceSelectRow').show();
 	/// show graph with altitude
-	getDeviceData("altitude", $("#pathSelect").val(), 0);
+	var deviceTypeAndId = getDatatypeAndDeviceId();
+	getDeviceData(deviceTypeAndId[0], $("#pathSelect").val(), deviceTypeAndId[1]);
+}
+
+function getDatatypeAndDeviceId() {
+    var deviceId = $("#deviceSelect").val();
+    var deviceParts = deviceId.split('--');
+    //var datatype = deviceParts[0];
+    //var did = deviceParts[1];
+    return deviceParts;
 }
 
 function getDeviceData(datatype, missionId, deviceId) {

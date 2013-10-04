@@ -205,11 +205,12 @@ class InsertionWorker extends Actor {
           //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
           val geom = CoordinateHelper.wktToGeometry("POINT("+ lon +" "+ lat +" "+ alt +")")
           val pt = geom.asInstanceOf[Point]
+          val speed = computeSpeed(ts, pt, setNumber)
           //Logger.info("Insert point: "+pt.getCoordinate.x+", "+pt.getCoordinate.y+", "+pt.getCoordinate.z)
           val gl = new TrajectoryPoint()
           gl.setTimestamp(ts)
           gl.setCoordinate(pt)
-          //gl.setAltitude(altitude)
+          gl.setSpeed(speed)
           val m = DataLogManager.getById[Mission](missionId)
           gl.setMission(m.get)
           val persisted = gl.save() // persist in DB
@@ -287,10 +288,10 @@ class InsertionWorker extends Actor {
    * @return The speed in m/s
    */
   private def computeSpeed(ts: Date, point: Point, setNumber: Int): Double = {
-    /*val INTERVAL_BETWEEN_SPEED_POINTS = 1000L // milliseconds (it means that we compute speed every 1000 ms)
+    val INTERVAL_BETWEEN_SPEED_POINTS = 1000L // milliseconds (it means that we compute speed every 1000 ms)
     val timeDiff = lastSpeedPoint.map(gpsLog => ts.getTime - gpsLog.getTimestamp.getTime) // time difference (ms) between gps points
-    val lastSetNumber = lastSpeedPoint.map(gpsLog => gpsLog.getSetNumber)
-    if (lastSetNumber.isDefined && lastSetNumber.get != setNumber) lastSpeedPoint = None // reset lastSpeedPoint if set number has changed
+    //val lastSetNumber = lastSpeedPoint.map(gpsLog => gpsLog.getSetNumber)
+    //if (lastSetNumber.isDefined && lastSetNumber.get != setNumber) lastSpeedPoint = None // reset lastSpeedPoint if set number has changed
     //val point = geom.asInstanceOf[Point]
     if (lastSpeedPoint.isEmpty) {
       val speed = 0.0
@@ -298,26 +299,25 @@ class InsertionWorker extends Actor {
       gl.setTimestamp(ts)
       gl.setCoordinate(point)
       gl.setSpeed(speed)
-      gl.setSetNumber(setNumber)
+      //gl.setSetNumber(setNumber)
       lastSpeedPoint = Some(gl)
       speed
     } else if (lastSpeedPoint.isDefined && timeDiff.get >= INTERVAL_BETWEEN_SPEED_POINTS) {
       // speed needs to be recomputed for this point
-      val distance = computeDistanceBetween2GpsPoints(lastSpeedPoint.get.getGeoPos.getX, lastSpeedPoint.get.getGeoPos.getY, point.getX, point.getY)
+      val distance = computeDistanceBetween2GpsPoints(lastSpeedPoint.get.getCoordinate.getX, lastSpeedPoint.get.getCoordinate.getY, point.getX, point.getY)
       val speed = distance / (timeDiff.get.toDouble / 1000.0) // return m/s
       //Logger.info("TimeDiff: "+ timeDiff +" ms, Distance: "+distance+" m, speed: "+speed+" m/s")
       val gl = new TrajectoryPoint()
       gl.setTimestamp(ts)
       gl.setCoordinate(point)
       gl.setSpeed(speed)
-      gl.setSetNumber(setNumber)
+      //gl.setSetNumber(setNumber)
       lastSpeedPoint = Some(gl)
       speed
     } else {
       // return the speed that was computed in the last speed point
       lastSpeedPoint.map(_.getSpeed).get
-    }*/
-    0L
+    }
   }
 
   /**

@@ -19,6 +19,7 @@ import controllers.util.json.JsonSerializable
 import scala.Some
 import models.spatial.{PointOfInterest, TrajectoryPoint, GpsLog}
 import com.google.gson.{JsonArray, JsonElement, JsonObject}
+import models.internal.{SpeedLog, AltitudeLog}
 
 object DataLogManager {
 
@@ -190,6 +191,9 @@ object DataLogManager {
       }*/
       case DataImporter.Types.ALTITUDE => {
         getAltitude(missionId, maxNb)
+      }
+      case DataImporter.Types.SPEED => {
+        getSpeed(missionId, maxNb)
       }
       case _ => {
         println("GET data - Unknown data type")
@@ -525,6 +529,14 @@ object DataLogManager {
       DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.getTimestamp),
       trajPt.getCoordinate.getCoordinate.z))
     Map("altitude" -> altitudeLogList)
+  }
+
+  def getSpeed(missionId: Long, maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
+    val pointList = getTrajectoryPoints(missionId, maxNb)
+    val speedLogList = pointList.map(trajPt => SpeedLog(trajPt.getId,
+      DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.getTimestamp),
+      trajPt.getSpeed))
+    Map("speed" -> speedLogList)
   }
 
   /**

@@ -33,6 +33,8 @@ public class TrajectoryPoint implements GeoJsonSerializable {
     @JoinColumn(name="mission_id")
     private Mission mission;
 
+    private Double speed;
+
     public TrajectoryPoint() {
     }
 
@@ -60,20 +62,20 @@ public class TrajectoryPoint implements GeoJsonSerializable {
         this.coordinate = pos;
     }
 
-    /*public Double getAltitude() {
-        return altitude;
-    }
-
-    public void setAltitude(Double alt) {
-        this.altitude = alt;
-    }*/
-
     public Mission getMission() {
         return this.mission;
     }
 
     public void setMission(Mission m) {
         this.mission = m;
+    }
+
+    public Double getSpeed() {
+        return this.speed;
+    }
+
+    public void setSpeed(Double sp) {
+        this.speed = sp;
     }
 
     public String toString() {

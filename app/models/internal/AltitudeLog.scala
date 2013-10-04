@@ -1,6 +1,5 @@
-package models
+package models.internal
 
-import java.util.Date
 import com.google.gson.Gson
 import controllers.util.json.JsonSerializable
 
