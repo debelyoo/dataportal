@@ -1,85 +1,16 @@
-package models
+package controllers.modelmanager
 
-import javax.persistence._
+import javax.persistence.{TemporalType, NoResultException, EntityManager}
+import models._
 import controllers.util.{DataImporter, JPAUtil}
-import org.hibernate.annotations.GenericGenerator
-import java.lang.Boolean
-import models.spatial._
-import com.google.gson.Gson
-import java.util.Date
 import scala.collection.JavaConversions._
+import java.util.Date
+import scala.reflect._
+import java.lang.Boolean
 import scala.Some
-import scala.reflect.{ClassTag, classTag}
+import models.Device
 
-@Entity
-@Table(name = "device")
-case class Device(name: String, address: String, datatype: String) {
-
-  @Id
-  @GeneratedValue(generator="increment")
-  @GenericGenerator(name="increment", strategy = "increment")
-  var id: Long = _
-
-  override def toString = id + " -> name: " + name + ", address: " + address + ", type: "+ datatype
-
-  def toJson: String = {
-    val gson = new Gson()
-    gson.toJson(this)
-  }
-
-  def this() = this("foo", "bar", "xx") // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
-
-  /**
-   * Persist device in DB (if it is not already in)
-   * @return
-   */
-  def save: Boolean = {
-    val sensorInDb = Device.getByNameAndAddress(this.name, this.address)
-    if (sensorInDb.isEmpty) {
-      //println("[Sensor] save() - "+ this.toString)
-      val em: EntityManager = JPAUtil.createEntityManager
-      try {
-        em.getTransaction.begin
-        em.persist(this)
-        em.getTransaction.commit
-        true
-      } catch {
-        case ex: Exception => {
-          false
-        }
-      } finally {
-        em.close
-      }
-    } else {
-      true
-    }
-  }
-
-  /**
-   * Update the data type of the sensor
-   * @param newType The new type to set
-   * @return true if success
-   */
-  def updateType(newType: String): Boolean = {
-    println("[Device] update() - "+ this.toString)
-    val em: EntityManager = JPAUtil.createEntityManager
-    // UPDATE sensor SET datatype='temperature' WHERE id=16;
-    try {
-      em.getTransaction.begin
-      val queryStr = "UPDATE "+ classOf[Device].getName +" SET datatype='"+ newType +"' WHERE id="+this.id
-      val q = em.createQuery(queryStr)
-      q.executeUpdate()
-      em.getTransaction.commit
-      true
-    } catch {
-      case ex: Exception => false
-    } finally {
-      em.close
-    }
-  }
-}
-
-object Device {
+object DeviceManager {
   /**
    * Get a sensor by Id
    * @param sIdList A list of sensor Ids
@@ -91,9 +22,9 @@ object Device {
       if (emOpt.isEmpty) em.getTransaction().begin()
       val q = em.createQuery("from "+ classOf[Device].getName +" WHERE id IN ("+ sIdList.mkString(",") +")")
       //q.setParameter("id",sId)
-      val sensors = q.getResultList.map(_.asInstanceOf[Device]).map(s => (s.id, s)).toMap
+      val devices = q.getResultList.map(_.asInstanceOf[Device]).map(s => (s.getId.toLong, s)).toMap
       if (emOpt.isEmpty) em.getTransaction().commit()
-      sensors
+      devices
       //Some(sensor)
     } catch {
       case nre: NoResultException => Map()
@@ -109,18 +40,19 @@ object Device {
    * @param address The device address
    * @return The device
    */
-  def getByNameAndAddress(name: String, address: String): Option[Device] = {
-    val em = JPAUtil.createEntityManager()
+  def getByNameAndAddress(name: String, address: String, emOpt: Option[EntityManager] = None): Option[Device] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
-      em.getTransaction().begin()
+      if (emOpt.isEmpty) em.getTransaction().begin()
       val q = em.createQuery("from "+ classOf[Device].getName +" where name = '"+ name +"' and address = '"+ address +"'")
       val device = q.getSingleResult.asInstanceOf[Device]
-      em.getTransaction().commit()
-      em.close()
+      if (emOpt.isEmpty) em.getTransaction().commit()
       Some(device)
     } catch {
       case nre: NoResultException => None
       case ex: Exception => ex.printStackTrace; None
+    } finally {
+      if (emOpt.isEmpty) em.close()
     }
   }
 
@@ -133,21 +65,13 @@ object Device {
       val typeCondition = if (datatype.isDefined) " AND d.datatype = '"+ datatype.get +"'" else ""
       val query = "SELECT d.id, d.name FROM equipment AS e, device AS d WHERE e.mission_id = "+ missionId +" AND e.device_id = d.id"+ typeCondition +" ORDER BY name"
       val q = em.createNativeQuery(query)
-      /*val devices = q.getResultList.map(_.asInstanceOf[Device]).toList
-      devices.foreach(d => {
-        if (!typeMap.contains(d.datatype)) {
-          typeMap += d.datatype -> 1
-        } else {
-          typeMap(d.datatype) = (typeMap(d.datatype) + 1)
-        }
-      })*/
       val devices = q.getResultList.map(_.asInstanceOf[Array[Object]]).toList.map(obj => {
         val dId = obj(0).asInstanceOf[Int]
-        val d = Device.getById(List(dId), Some(em)).get(dId).get
-        if (!typeMap.contains(d.datatype)) {
-          typeMap += d.datatype -> 1
+        val d = getById(List(dId), Some(em)).get(dId).get
+        if (!typeMap.contains(d.getDatatype)) {
+          typeMap += d.getDatatype -> 1
         } else {
-          typeMap(d.datatype) = (typeMap(d.datatype) + 1)
+          typeMap(d.getDatatype) = (typeMap(d.getDatatype) + 1)
         }
         d
       })
@@ -156,12 +80,7 @@ object Device {
         t <- typeMap
         if (t._2 > 1)
       } yield {
-        Device(t._1, "", t._1)
-        /*val d = Device()
-        d.setId(0)
-        d.setName(t._1)
-        d.setDatatype(t._1)
-        d*/
+        new Device(0, t._1, "", t._1)
       }
       em.getTransaction().commit()
       devices ++ virtualDeviceList
@@ -193,19 +112,19 @@ object Device {
       val compassSensors = getActiveSensorByTimeInterval[CompassLog](from, to, false, Some(em))
       val temperatureType = if (temperatureSensors.nonEmpty && dataType.isEmpty) {
         // add a virtual sensor that will appear as "All temperature" in map interface
-        val typeSensor = Device("temperature", "", DataImporter.Types.TEMPERATURE)
+        val typeSensor = new Device(0, "temperature", "", DataImporter.Types.TEMPERATURE)
         List(typeSensor)
       } else List()
       val radiometerType = if (radiometerSensors.nonEmpty && dataType.isEmpty) {
         // add a virtual sensor that will appear as "All radiometer" in map interface
-        val typeSensor = Device("radiometer", "", DataImporter.Types.RADIOMETER)
+        val typeSensor = new Device(0, "radiometer", "", DataImporter.Types.RADIOMETER)
         List(typeSensor)
       } else List()
       val devices = temperatureSensors ++ temperatureType ++ windSensors ++ radiometerSensors ++ radiometerType ++ compassSensors
 
       em.getTransaction().commit()
-      val filteredDevices = if (dataType.isDefined) devices.filter(_.datatype == dataType.get) else devices
-      filteredDevices.sortBy(_.name)
+      val filteredDevices = if (dataType.isDefined) devices.filter(_.getDatatype == dataType.get) else devices
+      filteredDevices.sortBy(_.getName)
     } catch {
       case ex: Exception => ex.printStackTrace; List()
     } finally {
@@ -246,4 +165,5 @@ object Device {
       if (emOpt.isEmpty) em.close()
     }
   }
+
 }

@@ -2,7 +2,6 @@ package controllers.util
 
 import java.util.Date
 import models.Device
-import models.spatial.{GpsLog}
 
 object Message {
   // Insertion
@@ -19,16 +18,17 @@ object Message {
   case class InsertGpsLogElemo (batchId: String, ts: Date, setNumber: Int, device: Device, latitude: Double, longitude: Double)
   case class InsertTemperatureLogElemo (batchId: String, ts: Date, device: Device, tempVal: Double)
   // Spatialization
-  case class SpatializeTemperatureLog (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)
+  /*case class SpatializeTemperatureLog (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)
   case class SpatializeWindLog (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)
   case class SpatializeRadiometerLog (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)
   case class SpatializeCompassLog (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)
+  */
   case class NoCloseLog (batchId: String)
 
   case class Work (batchId: String, dataType: String, missionId: Long)
   //case class Test (batchId: String, gpsLog: GpsLog, sensorLog: SensorLog)
   case class GetSpatializationProgress (batchId: String)
-  case class SetSpatializationBatch (batchId: String, gpsLogs: List[GpsLog], devices: List[Device],sensorLogs: List[SensorLog])
+  //case class SetSpatializationBatch (batchId: String, gpsLogs: List[GpsLog], devices: List[Device],sensorLogs: List[SensorLog])
   case class GetInsertionProgress (batchId: String)
   case class SetInsertionBatch (batchId: String, filename: String, dataType: String, lines: Array[String], devices: Map[String, Device], missionId: Long)
 }

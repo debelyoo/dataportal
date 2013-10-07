@@ -3,7 +3,7 @@ package controllers.database
 import akka.actor.Actor
 import controllers.util.{DataImporter, Message}
 import controllers.database.BatchManager._
-import models.DataLogManager
+import controllers.modelmanager.DataLogManager
 
 
 class SpatializationBatchWorker extends Actor {
@@ -15,7 +15,7 @@ class SpatializationBatchWorker extends Actor {
      */
     case Message.Work(batchId, dataType, missionId) => {
       //println("receive Message.Work")
-      spatializationBatches.get(batchId).map { case (gLogs, sensors, logs) =>
+      /*spatializationBatches.get(batchId).map { case (gLogs, sensors, logs) =>
         for {
           tl <- logs
         } {
@@ -33,7 +33,7 @@ class SpatializationBatchWorker extends Actor {
             DataLogManager.spatializationWorker ! Message.NoCloseLog(batchId)
           }
         }
-      }
+      }*/
     }
   }
 

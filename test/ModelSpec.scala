@@ -1,5 +1,5 @@
+import controllers.modelmanager.DataLogManager
 import java.util.Date
-import models.DataLogManager
 import models.spatial.{GpsLog}
 import org.specs2.mutable._
 import play.api.libs.json.{JsObject, Json}

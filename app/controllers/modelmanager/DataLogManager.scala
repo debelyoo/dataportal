@@ -1,4 +1,4 @@
-package models
+package controllers.modelmanager
 
 import controllers.util._
 import javax.persistence.{Query, EntityManager, TemporalType, NoResultException}
@@ -16,8 +16,7 @@ import play.api.Logger
 import play.api.libs.json.{Json, JsValue}
 import com.vividsolutions.jts.geom.Point
 import controllers.util.json.JsonSerializable
-import scala.Some
-import models.spatial.{PointOfInterest, TrajectoryPoint, GpsLog}
+import models.spatial.{PointOfInterest, TrajectoryPoint}
 import com.google.gson.{JsonArray, JsonElement, JsonObject}
 import models.internal.{SpeedLog, AltitudeLog}
 
@@ -38,19 +37,20 @@ object DataLogManager {
    * @tparam T The type of data log to get
    * @return The log
    */
-  def getById[T: ClassTag](sId: Long): Option[T] = {
-    val em = JPAUtil.createEntityManager()
+  def getById[T: ClassTag](sId: Long, emOpt: Option[EntityManager] = None): Option[T] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
-      em.getTransaction().begin()
+      if (emOpt.isEmpty) em.getTransaction().begin()
       val clazz = classTag[T].runtimeClass
       val q = em.createQuery("from "+ clazz.getName +" where id = "+sId)
       val log = q.getSingleResult.asInstanceOf[T]
-      em.getTransaction().commit()
-      em.close()
+      if (emOpt.isEmpty) em.getTransaction().commit()
       Some(log)
     } catch {
       case nre: NoResultException => None
       case ex: Exception => ex.printStackTrace; None
+    } finally {
+      if (emOpt.isEmpty) em.close()
     }
   }
 
@@ -222,7 +222,7 @@ object DataLogManager {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
-      val devices = Device.getById(deviceIdList, emOpt)
+      val devices = DeviceManager.getById(deviceIdList, emOpt)
       val clazz = classTag[T].runtimeClass
       // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
       val geoCondition = if (geoOnly) "AND log.gpsLog IS NOT NULL " else ""
@@ -239,7 +239,7 @@ object DataLogManager {
       val diff = (new Date).getTime - start.getTime
       println("Nb of logs queried: "+logs.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
-      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getDevice.id)
+      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getDevice.getId)
       logsMapBySensorId.map { case (sId, logs) => {
           val reducedLogList = if (maxNb.isDefined && logs.length > maxNb.get) {
             val moduloFactor = math.ceil(logs.length.toDouble / maxNb.get.toDouble).toInt
@@ -252,7 +252,7 @@ object DataLogManager {
             }
           } else logs
           println("Nb of logs returned: "+reducedLogList.length)
-          (devices.get(sId).get.name, reducedLogList.map(_.asInstanceOf[T]))
+          (devices.get(sId).get.getName, reducedLogList.map(_.asInstanceOf[T]))
         }
       }
     } catch {
@@ -280,7 +280,7 @@ object DataLogManager {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
-      val devices = Device.getById(deviceIdList, emOpt)
+      val devices = DeviceManager.getById(deviceIdList, emOpt)
       val clazz = classTag[T].runtimeClass
       val deviceCondition = if (deviceIdList.nonEmpty) "AND log.device.id IN ("+ deviceIdList.mkString(",") +") " else ""
       val queryStr = "FROM "+ clazz.getName +" log WHERE log.mission.id = " + missionId + deviceCondition +
@@ -293,7 +293,7 @@ object DataLogManager {
       val diff = (new Date).getTime - start.getTime
       println("Nb of logs queried: "+logs.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
-      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getDevice.id)
+      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getDevice.getId)
       logsMapBySensorId.map { case (sId, logs) => {
         val reducedLogList = if (maxNb.isDefined && logs.length > maxNb.get) {
           val moduloFactor = math.ceil(logs.length.toDouble / maxNb.get.toDouble).toInt
@@ -306,7 +306,7 @@ object DataLogManager {
           }
         } else logs
         println("Nb of logs returned: "+reducedLogList.length)
-        (devices.get(sId).get.name, reducedLogList.map(_.asInstanceOf[T]))
+        (devices.get(sId).get.getName, reducedLogList.map(_.asInstanceOf[T]))
       }}
     } catch {
       case nre: NoResultException => println("No result !!"); Map()
@@ -335,7 +335,7 @@ object DataLogManager {
    * @param dataType The type of data to handle
    * @return The number of successes, the number of failures
    */
-  def spatialize(dataType: String, dateStr: String): String = {
+  /*def spatialize(dataType: String, dateStr: String): String = {
     //println("Spatializing [Start]")
     val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
     val start = new Date
@@ -350,7 +350,7 @@ object DataLogManager {
           val firstTime = logs.head.getTimestamp
           val lastTime = logs.last.getTimestamp
           // get sensors
-          val devices = Device.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.COMPASS)
+          val devices = DeviceManager.getByDatetime(firstTime, lastTime).filter(s => s.getDatatype == DataImporter.Types.COMPASS)
           // get GPS logs
           val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
           val batchId = UUID.randomUUID().toString
@@ -369,7 +369,7 @@ object DataLogManager {
           val firstTime = logs.head.getTimestamp
           val lastTime = logs.last.getTimestamp
           // get sensors
-          val devices = Device.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.TEMPERATURE)
+          val devices = DeviceManager.getByDatetime(firstTime, lastTime).filter(s => s.getDatatype == DataImporter.Types.TEMPERATURE)
           // get GPS logs
           val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
           val batchId = UUID.randomUUID().toString
@@ -387,7 +387,7 @@ object DataLogManager {
           val firstTime = logs.head.getTimestamp
           val lastTime = logs.last.getTimestamp
           // get sensors
-          val devices = Device.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.RADIOMETER)
+          val devices = DeviceManager.getByDatetime(firstTime, lastTime).filter(s => s.getDatatype == DataImporter.Types.RADIOMETER)
           // get GPS logs
           val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
           val batchId = UUID.randomUUID().toString
@@ -406,7 +406,7 @@ object DataLogManager {
           val firstTime = logs.head.getTimestamp
           val lastTime = logs.last.getTimestamp
           // get sensors
-          val devices = Device.getByDatetime(firstTime, lastTime).filter(s => s.datatype == DataImporter.Types.WIND)
+          val devices = DeviceManager.getByDatetime(firstTime, lastTime).filter(s => s.getDatatype == DataImporter.Types.WIND)
           // get GPS logs
           val gLogs = getByTimeInterval[GpsLog](firstTime, lastTime, false)
           val batchId = UUID.randomUUID().toString
@@ -420,13 +420,13 @@ object DataLogManager {
       case _ => ""
     }
     batchId
-  }
+  }*/
 
   /**
    * Get the distinct dates for which there is logs
    * @return A list of dates (as String)
    */
-  def getDates: List[String] = {
+  /*def getDates: List[String] = {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
@@ -440,7 +440,7 @@ object DataLogManager {
     } finally {
       em.close()
     }
-  }
+  }*/
 
   /**
    * Get the distinct dates for which there is logs
@@ -661,7 +661,7 @@ object DataLogManager {
    * @param date The date
    * @return The first and last log time
    */
-  def getTimesForDateAndSet(date: Date, setNumber: Option[Int]): (String, String) = {
+  /*def getTimesForDateAndSet(date: Date, setNumber: Option[Int]): (String, String) = {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
@@ -685,14 +685,14 @@ object DataLogManager {
     } finally {
       em.close()
     }
-  }
+  }*/
 
   /**
    * Get the list of set numbers for a specific date
    * @param date The date we want
    * @return A list of set numbers
    */
-  def getLogSetsForDate(date: Date): List[Int] = {
+  /*def getLogSetsForDate(date: Date): List[Int] = {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
@@ -711,7 +711,7 @@ object DataLogManager {
     } finally {
       em.close()
     }
-  }
+  }*/
 
   /**
     * Get the closest log (of a sensor) to a specified timestamp
@@ -733,7 +733,7 @@ object DataLogManager {
     val closeLogs = logs.filter(log =>
       (log.getTimestamp.getTime > beforeDate.getTime.getTime &&
         log.getTimestamp.getTime < afterDate.getTime.getTime &&
-        log.getDevice.id == sensorId)
+        log.getDevice.getId == sensorId)
     )
     if (closeLogs.nonEmpty) {
       val (closestPoint, diff) = closeLogs.map(cl => {
@@ -754,7 +754,7 @@ object DataLogManager {
    * @param marginInSeconds The margin +/- around the timestamp
    * @return An option with the closest GPS log we found
    */
-  def getClosestGpsLog(gpsLogs: List[GpsLog], ts: Date, marginInSeconds: Int): Option[GpsLog] = {
+  /*def getClosestGpsLog(gpsLogs: List[GpsLog], ts: Date, marginInSeconds: Int): Option[GpsLog] = {
     //println("[DataLogManager] getClosestLog() - "+logs.head)
     val beforeDate = Calendar.getInstance()
     beforeDate.setTime(ts)
@@ -777,7 +777,7 @@ object DataLogManager {
       println("[WARNING] No close GPS log for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
       None
     }
-  }
+  }*/
 
   /**
    * Update the geo position
@@ -859,7 +859,7 @@ object DataLogManager {
    * @return An option with the next set number to use
    */
   def getNextSetNumber[T:ClassTag](date: Date): Option[Int] = {
-    val MAX_TIME_DIFF_BETWEEN_SETS = 1000 * 60 * 0.5 // 30 seconds
+    /*val MAX_TIME_DIFF_BETWEEN_SETS = 1000 * 60 * 0.5 // 30 seconds
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
@@ -887,7 +887,8 @@ object DataLogManager {
       case ex: Exception => ex.printStackTrace; None
     } finally {
       em.close()
-    }
+    }*/
+    Some(0)
   }
 
 }

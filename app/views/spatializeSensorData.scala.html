@@ -1,4 +1,4 @@
-@import models.DataLogManager
+@import modelmanager.DataLogManager
 
 @main("spatialize - ECOL", true) {
 
@@ -17,14 +17,12 @@
         </div>
     </div>
     <div class="control-group">
-        <label class="control-label" for="selectDate">Date</label>
+        <!--<label class="control-label" for="selectDate">Date</label>
         <div class="controls">
             <select id="selectDate" name="date">
-                @for(date <- DataLogManager.getDates) {
-                    <option>@date</option>
-                }
+
             </select>
-        </div>
+        </div>-->
     </div>
 
     <div class="control-group">

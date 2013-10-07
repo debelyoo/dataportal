@@ -3,9 +3,9 @@ package controllers.database
 import akka.actor.Actor
 import controllers.util.{DateFormatHelper, DataImporter, Message}
 import controllers.database.BatchManager._
-import models.spatial.{GpsLog}
-import models.{DataLogManager, Device}
 import java.util.Date
+import controllers.modelmanager.DataLogManager
+import models.Device
 
 class InsertionBatchWorker extends Actor {
   //val TIMEOUT = 5 seconds
@@ -23,7 +23,7 @@ class InsertionBatchWorker extends Actor {
             //println(chunksOnLine.toList)
             val deviceOpt = sensors.get(chunksOnLine(0))
             val device = if (deviceOpt.isDefined) {
-              val dev = Device(deviceOpt.get.name, deviceOpt.get.address, dataType)
+              val dev = new Device(deviceOpt.get.getName, deviceOpt.get.getAddress, dataType)
               DataLogManager.insertionWorker ! Message.InsertDevice(dev)
               Some(dev)
             } else None

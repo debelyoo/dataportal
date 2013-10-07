@@ -7,6 +7,7 @@ import play.api.mvc._
 import play.api.Logger
 import models._
 import scala.Some
+import controllers.modelmanager.{DeviceManager, DataLogManager}
 
 trait GetApi extends ResponseFormatter {
   this: Controller =>
@@ -35,7 +36,7 @@ trait GetApi extends ResponseFormatter {
 
         val maxNb = map.get("max_nb").map(_.toInt)
         val deviceIdList = map.get("device_id").map {
-          case "all" => Device.getForMission(missionId.get, map.get("data_type")).map(_.id)
+          case "all" => DeviceManager.getForMission(missionId.get, map.get("data_type")).map(_.getId.toLong)
           case _ => List(map.get("device_id").get.toLong)
         }.get
         val logMap = DataLogManager.getDataByMission(datatype, missionId.get, deviceIdList, maxNb)
@@ -50,7 +51,7 @@ trait GetApi extends ResponseFormatter {
    * Get the GPS data
    * @return
    */
-  def getGpsData = Action {
+  /*def getGpsData = Action {
     implicit request =>
       try {
         val map = request.queryString.map { case (k,v) => k -> v.mkString }
@@ -71,7 +72,7 @@ trait GetApi extends ResponseFormatter {
         case ae: AssertionError => BadRequest
         case ex: Exception => ex.printStackTrace(); BadRequest
       }
-  }
+  }*/
 
   /**
    * Get the trajectory of a mission
@@ -108,7 +109,7 @@ trait GetApi extends ResponseFormatter {
    * @return
    */
   def getDeviceForMission(missionId: String) = Action {
-    val deviceList = Device.getForMission(missionId.toLong, None)
+    val deviceList = DeviceManager.getForMission(missionId.toLong, None)
     val jsList = Json.toJson(deviceList.map(d => Json.parse(d.toJson)))
     // build return JSON obj with array and count
     Ok(Json.toJson(Map("devices" -> jsList, "count" -> Json.toJson(deviceList.length))))
@@ -132,7 +133,7 @@ trait GetApi extends ResponseFormatter {
    * Get details of a particular device (used mainly for tests)
    */
   def getDeviceById(dId: String) = Action {
-    val deviceMap = Device.getById(List(dId.toLong), None)
+    val deviceMap = DeviceManager.getById(List(dId.toLong), None)
     deviceMap.get(dId.toLong).map(s => Ok(Json.toJson(s.toJson))).getOrElse(NotFound) // return Not Found if no device with id 'dId' exists
   }
 
@@ -154,10 +155,10 @@ trait GetApi extends ResponseFormatter {
   }*/
 
   /// Getters for log details (used mainly for tests)
-  def getGpsLogById(gId: String) = Action {
+  /*def getGpsLogById(gId: String) = Action {
     val logOpt = DataLogManager.getById[GpsLog](gId.toLong)
     logOpt.map(gl => Ok(gl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'gId' exists
-  }
+  }*/
   def getCompassLogById(cId: String) = Action {
     val logOpt = DataLogManager.getById[CompassLog](cId.toLong)
     logOpt.map(cl => Ok(cl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'cId' exists
@@ -183,11 +184,11 @@ trait GetApi extends ResponseFormatter {
    * Get dates (year-month-day) of measures in DB
    * @return A list of dates (JSON)
    */
-  def getLogDates = Action {
+  /*def getLogDates = Action {
     val dateList = DataLogManager.getDates
     val jsList = Json.toJson(dateList.map(date => Json.toJson(date)))
     Ok(Json.toJson(Map("dates" -> jsList, "count" -> Json.toJson(dateList.length))))
-  }
+  }*/
 
   /**
    * Get dates (year-month-day) of missions in DB
@@ -227,7 +228,7 @@ trait GetApi extends ResponseFormatter {
    * @param dateStr The date to look for
    * @return The first and last log time (JSON)
    */
-  def getLogTimesForDateAndSet(dateStr: String, setNumber: String) = Action {
+  /*def getLogTimesForDateAndSet(dateStr: String, setNumber: String) = Action {
     val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
     val setNumberOpt = setNumber match {
       case "all" => None
@@ -243,5 +244,5 @@ trait GetApi extends ResponseFormatter {
     //Logger.warn("sets: "+setList)
     val jsList = Json.toJson(setList.map(sn => Json.toJson(sn)))
     Ok(Json.toJson(Map("sets" -> jsList, "count" -> Json.toJson(setList.length))))
-  }
+  }*/
 }

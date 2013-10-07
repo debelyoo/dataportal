@@ -3,11 +3,10 @@ package controllers
 import play.api._
 import play.api.mvc._
 import controllers.util.{DateFormatHelper, DataImporter}
-import models.spatial.{GpsLog}
 import play.api.libs.json.{JsValue, Json}
 import com.google.gson.{JsonArray, JsonObject, JsonElement}
 import scala.concurrent.ExecutionContext.Implicits.global
-import models.DataLogManager
+import controllers.modelmanager.DataLogManager
 
 object Application extends Controller with GetApi {
   
@@ -61,7 +60,7 @@ object Application extends Controller with GetApi {
     val dataType = request.body.dataParts("dataType").mkString(",").toLowerCase
     val date = request.body.dataParts("date").mkString(",").toLowerCase
     //println("Spatialization process [START] ...")
-    val res = DataLogManager.spatialize(dataType, date)
+    val res = "" //DataLogManager.spatialize(dataType, date)
     //println("Spatialization process [END]")
     Redirect(routes.Application.spatializeResult(res))
   }

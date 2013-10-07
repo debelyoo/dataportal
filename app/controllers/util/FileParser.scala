@@ -1,7 +1,6 @@
 package controllers.util
 
 import java.io.File
-import models.{DataLogManager, Device}
 import controllers.database.InsertionWorker
 import play.libs.Akka
 import akka.actor.Props
@@ -13,6 +12,8 @@ import play.api.libs.concurrent.Execution.Implicits._
 import scala.concurrent.Await
 import java.util.UUID
 import play.Logger
+import controllers.modelmanager.DataLogManager
+import models.Device
 
 // for the ExecutionContext
 
@@ -43,7 +44,7 @@ object FileParser {
           //println(chunksOnLine(0)+ " - "+ chunksOnLine(1))
           val addr = chunksOnLine(0)
           val name = chunksOnLine(1)
-          sensors += Tuple2(addr, Device(name, addr, ""))
+          sensors += Tuple2(addr, new Device(name, addr, ""))
         }
       }
       Some(sensors.toMap)

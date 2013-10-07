@@ -12,7 +12,7 @@ import javax.xml.transform.dom.DOMSource
 import play.api.mvc.Results.Ok
 import java.util.Date
 import play.api.Logger
-import models.spatial.{TrajectoryPoint, GpsLog}
+import models.spatial.TrajectoryPoint
 import com.google.gson.{Gson, JsonArray, JsonObject, JsonElement}
 
 trait ResponseFormatter {
@@ -123,7 +123,7 @@ trait ResponseFormatter {
    * @param logMap The list of gps logs to put in the GeoJson document
    * @return A GeoJson document
    */
-  def logsAsGeoJson(logMap: Map[String, List[GpsLog]]): JsValue = {
+  /*def logsAsGeoJson(logMap: Map[String, List[GpsLog]]): JsValue = {
 
     if (logMap.size > 1) Logger.warn("logsAsGmlLinestring() - logMap contains more than one log serie")
     val logList = logMap.head._2 // If multiple sensors are sent, take only the first serie
@@ -139,7 +139,7 @@ trait ResponseFormatter {
     dataJson.getAsJsonObject.addProperty("type", "FeatureCollection")
     dataJson.getAsJsonObject.add("features", featureArray)
     Json.toJson(Json.parse(dataJson.toString))
-  }
+  }*/
 
   /**
    * Create a GeoJson document with a list of TrajectoryPoint

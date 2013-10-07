@@ -7,10 +7,12 @@ import controllers.util.JPAUtil;
 import controllers.util.json.JsonSerializable;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
+import scala.Option;
 
 import javax.persistence.*;
+import java.util.Collection;
 import java.util.Date;
-import java.util.Set;
+import java.util.HashSet;
 
 @Entity
 @Table(name = "mission")
@@ -20,6 +22,7 @@ public class Mission implements JsonSerializable {
     @Id
     @GeneratedValue(generator="increment")
     @GenericGenerator(name="increment", strategy = "increment")
+    @Column(name = "id", unique = true, nullable = false)
     private Long id;
 
     private Date departureTime;
@@ -32,10 +35,17 @@ public class Mission implements JsonSerializable {
     @JoinColumn(name="vehicle_id")
     private Vehicle vehicle;
 
-    /*@ManyToMany(cascade = CascadeType.ALL)
-    @JoinTable(name = "equipment", joinColumns = { @JoinColumn(name = "mission_id") }, inverseJoinColumns = { @JoinColumn(name = "device_id") })
-    private Set<Device> devices;
-    */
+    @ManyToMany(
+            fetch=FetchType.EAGER,
+            targetEntity=Device.class,
+            cascade=CascadeType.ALL
+    )
+    @JoinTable(
+            name="equipment",
+            joinColumns=@JoinColumn(name="mission_id", referencedColumnName="id"),
+            inverseJoinColumns=@JoinColumn(name="device_id", referencedColumnName="id")
+    )
+    private Collection<Device> devices = new HashSet<>();
 
     public Mission() {
     }
@@ -72,13 +82,18 @@ public class Mission implements JsonSerializable {
         this.vehicle = v;
     }
 
-    /*public Set<Device> getDevices() {
-        return this.devices;
+    public Collection<Device> getDevices() {
+        return new HashSet<Device>(devices);
     }
 
-    public void setDevices(Set<Device> devs) {
+    /*public void setDevices(Set<Device> devs) {
         this.devices = devs;
     }*/
+
+    public void addDevice(Device dev) {
+        if (!this.devices.contains(dev))
+            this.devices.add(dev);
+    }
 
     public String toString() {
         return id + " -> date: " + departureTime + ", vehicle: " + vehicle.getName();
@@ -105,22 +120,26 @@ public class Mission implements JsonSerializable {
 
 
     /**
-     * Save the GpsLog in Postgres database
+     * Save the Mission in Postgres database
      */
-    public Boolean save() {
-        EntityManager em = JPAUtil.createEntityManager();
+    public Boolean save(Option<EntityManager> emOpt) {
+        EntityManager em; // = JPAUtil.createEntityManager();
+        if (emOpt.isEmpty()) {
+            em = JPAUtil.createEntityManager();
+        } else {
+            em = emOpt.get();
+        }
         Boolean res = false;
         try {
-            em.getTransaction().begin();
+            if(emOpt.isEmpty()) em.getTransaction().begin();
             em.persist(this);
-            em.getTransaction().commit();
+            if(emOpt.isEmpty()) em.getTransaction().commit();
             res = true;
         } catch (Exception ex) {
-            System.out.println("[WARNING] "+ ex.getMessage());
+            System.out.println("[WARNING][Mission.save()] "+ ex.getMessage());
         } finally {
-            em.close();
+            if(emOpt.isEmpty()) em.close();
         }
         return res;
     }
-
 }

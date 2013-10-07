@@ -4,8 +4,9 @@ import com.google.gson.*;
 import controllers.util.*;
 import controllers.util.DateFormatHelper;
 import controllers.util.json.JsonSerializable;
-import models.Device;
 import org.hibernate.annotations.GenericGenerator;
+import scala.None;
+import scala.Option;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -31,8 +32,14 @@ public class TemperatureLog implements JsonSerializable, SensorLog {
     @JoinColumn(name="mission_id")
     private Mission mission;
 
-    public TemperatureLog() {
+    public TemperatureLog(Device dev, Date ts, Double val, Mission m) {
+        this.device = dev;
+        this.timestamp = ts;
+        this.value = val;
+        this.mission = m;
     }
+
+    public TemperatureLog() {}
 
     @Override
     public Long getId() {
@@ -97,7 +104,7 @@ public class TemperatureLog implements JsonSerializable, SensorLog {
         public JsonElement serialize(TemperatureLog temperatureLog, java.lang.reflect.Type type, JsonSerializationContext context) {
             JsonElement logJson = new JsonObject();
             logJson.getAsJsonObject().addProperty("id", temperatureLog.getId());
-            logJson.getAsJsonObject().addProperty("device_id", temperatureLog.getDevice().id());
+            logJson.getAsJsonObject().addProperty("device_id", temperatureLog.getDevice().getId());
             logJson.getAsJsonObject().addProperty("mission_id", temperatureLog.getMission().getId());
             logJson.getAsJsonObject().addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(temperatureLog.getTimestamp()));
             logJson.getAsJsonObject().addProperty("value", temperatureLog.getValue());
@@ -108,19 +115,24 @@ public class TemperatureLog implements JsonSerializable, SensorLog {
     /**
      * Save the TemperatureLog in Postgres database
      */
-    public Boolean save() {
-        EntityManager em = JPAUtil.createEntityManager();
+    public Boolean save(Option<EntityManager> emOpt) {
+        EntityManager em;
+        if (emOpt.isEmpty()) {
+            em = JPAUtil.createEntityManager();
+        } else {
+            em = emOpt.get();
+        }
         Boolean res = false;
         try {
-            em.getTransaction().begin();
+            if (emOpt.isEmpty()) em.getTransaction().begin();
             em.persist(this);
-            em.getTransaction().commit();
+            if (emOpt.isEmpty()) em.getTransaction().commit();
             res = true;
         } catch (Exception ex) {
             // no need to rollback, hibernate does it automatically in case of error
             System.out.println("[WARNING] "+ ex.getMessage());
         } finally {
-            em.close();
+            if (emOpt.isEmpty()) em.close();
         }
         return res;
     }
