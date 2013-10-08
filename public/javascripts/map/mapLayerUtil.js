@@ -248,7 +248,7 @@ var MapLayerUtil = Backbone.Model.extend({
 			jsonData=jsonData[0];
 			jsonDevices=jsonDevices[0].devices;
 			for (j=0;j<jsonData.length;j++){
-				var raster = new OpenLayers.Layer.WMS(jsonDevices[j].name+" ("+ mission.date +" - "+mission.vehicle+")", "http://topopc12.epfl.ch:8080/geoserver/opengeo/wms",
+				var raster = new OpenLayers.Layer.WMS(jsonDevices[j].name+" ("+ mission.date +" - "+mission.vehicle+")", "http://ecolvm1.epfl.ch/geoserver/"+mission.vehicle+"/wms",
 					{
 						layers: jsonData[j].imagename,
 						transparent: true
