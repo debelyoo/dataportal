@@ -243,7 +243,7 @@ var MapLayerUtil = Backbone.Model.extend({
 	 */
 	addRasterLayer: function(mission) {
 		var self = this;
-		var datesURL = config.get('URL_PREFIX') +"/api/rasterdata/formission/"+mission.date;
+		var datesURL = config.get('URL_PREFIX') +"/api/rasterdata/formission/"+mission.id;
 		var devicesURL = config.get('URL_PREFIX') +"/api/devices/formission/"+mission.id;
 		$.when(
 			$.ajax(datesURL),			
