@@ -239,13 +239,16 @@ var MapLayerUtil = Backbone.Model.extend({
 	 */
 	addRasterLayer: function(mission) {
 		var self = this;
-		//var url = config.get('URL_PREFIX') +"/api/footage/fordate/"+mission.date;
-		var url = config.get('URL_PREFIX') +"/api/rasterdata/formission/"+mission.id;
-		$.ajax({
-			url: url
-		}).done(function( jsonData ) {
+		var datesURL = config.get('URL_PREFIX') +"/api/footage/fordate/"+mission.date;
+		var devicesURL = config.get('URL_PREFIX') +"/api/devices/formission/"+mission.id;
+		$.when(
+			$.ajax(datesURL),			
+			$.ajax(devicesURL)
+		).then(function(jsonData, jsonDevices){
+			jsonData=jsonData[0];
+			jsonDevices=jsonDevices[0].devices;
 			for (j=0;j<jsonData.length;j++){
-				var raster = new OpenLayers.Layer.WMS("layer "+ mission.date +"("+j+")", "http://topopc12.epfl.ch:8080/geoserver/opengeo/wms",
+				var raster = new OpenLayers.Layer.WMS(jsonDevices[j].name+" ("+ mission.date +" - "+mission.vehicle+")", "http://topopc12.epfl.ch:8080/geoserver/opengeo/wms",
 					{
 						layers: jsonData[j].imagename,
 						transparent: true
@@ -259,7 +262,7 @@ var MapLayerUtil = Backbone.Model.extend({
 
 				self.mapPanel.map.addLayers([raster])
 			}
-		});
+		})
 	},
 
 	/**
@@ -272,12 +275,8 @@ var MapLayerUtil = Backbone.Model.extend({
         $.ajax({
             url: config.get('URL_PREFIX') +"/api/pointsofinterest/formission/"+mission.id
         }).done(function( jsonData ) {
-            if(jsonData.features.length > 0) {
+            if(jsonData.features.length > 0)
                 self.addPointOfInterestLayer(mission, callback);
-            } else {
-                // if no points of interest are available, call callback anyway to enable highlight of trajectory points
-                callback();
-            }
         });
     },
 
@@ -455,7 +454,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		this.set({selected: false});
 	},
 	/**
-	 * Highlight a specific feature (called from graphD3.js)
+	 * Highlight a specific feature (called from graphD3.js
 	 * @param xpf The index of the feature to highlight as a fraction of the total nb of features
 	 */
 	highlightFeaturePoint: function(xpf) {
