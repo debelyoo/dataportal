@@ -28,7 +28,7 @@ public class PointOfInterest implements GeoJsonSerializable {
     @Type(type="org.hibernate.spatial.GeometryType")
     private Point coordinate;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name="mission_id")
     private Mission mission;
 

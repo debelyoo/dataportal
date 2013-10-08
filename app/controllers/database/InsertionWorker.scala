@@ -67,30 +67,33 @@ class InsertionWorker extends Actor {
         em.close()
       }
     }
-    case Message.InsertCompassLog(batchId, missionId, ts, sensor, compassValue) => {
+    case Message.InsertCompassLog(batchId, trajectoryPoints, ts, compassValue) => {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         em.getTransaction().begin()
-        val sensorInDb = DeviceManager.getByNameAndAddress(sensor.getName, sensor.getAddress)
-        assert(sensorInDb.isDefined, {println("[Message.InsertCompassLog] Sensor is not in Database !")})
+        //val sensorInDb = DeviceManager.getByNameAndAddress(sensor.getName, sensor.getAddress, Some(em))
+        //assert(sensorInDb.isDefined, {println("[Message.InsertCompassLog] Sensor is not in Database !")})
         //println("[RCV message] - insert compass log: "+compassValue+", "+ sensorInDb.get)
-        val uniqueString = createUniqueString(sensor.getAddress, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
-        val res = if (!logCache.contains(uniqueString)) {
-          val missionOpt = DataLogManager.getById[Mission](missionId)
-          missionOpt.get.addDevice(sensorInDb.get)
-          assert(missionOpt.isDefined, {println("[Message.InsertCompassLog] Mission is not in Database !")})
-          missionOpt.get.save(Some(em))
-          val cl = new CompassLog(sensorInDb.get, ts, compassValue, missionOpt.get)
-          val persisted = cl.save(Some(em)) // persist in DB
-          if (persisted) {
+        //val uniqueString = createUniqueString(sensor.getAddress, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
+        //if (!logCache.contains(uniqueString)) {
+          val ptOpt = DataLogManager.getClosestGpsLog(trajectoryPoints, ts, 1)
+          for (pt <- ptOpt) {
+            val p = DataLogManager.getById[TrajectoryPoint](pt.getId, Some(em)).get // need to reload the point in this entity manager to be persisted below
+            p.setHeading(compassValue)
+            p.save(Some(em))
+          }
+
+          //val cl = new CompassLog(sensorInDb.get, ts, compassValue, missionOpt.get)
+          //val persisted = cl.save(Some(em)) // persist in DB
+          /*if (persisted) {
             logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
             Some(true)
-          } else None
-        } else Some(false)
+          } else None*/
+        //} else Some(false)
         BatchManager.updateBatchProgress(batchId, "Insertion")
         em.getTransaction().commit()
       } catch {
-        case ae: AssertionError => None
+        case ex: Exception => ex.printStackTrace();None
       } finally {
         em.close()
       }
@@ -99,12 +102,12 @@ class InsertionWorker extends Actor {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         em.getTransaction().begin()
-        val sensorInDb = DeviceManager.getByNameAndAddress(sensor.getName, sensor.getAddress)
+        val sensorInDb = DeviceManager.getByNameAndAddress(sensor.getName, sensor.getAddress, Some(em))
         assert(sensorInDb.isDefined, {println("[Message.InsertWindLog] Sensor is not in Database !")})
         //println("[RCV message] - insert wind log: "+ windValue +", "+ sensorInDb.get)
         val uniqueString = createUniqueString(sensor.getAddress, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
         val res = if (!logCache.contains(uniqueString)) {
-          val missionOpt = DataLogManager.getById[Mission](missionId)
+          val missionOpt = DataLogManager.getById[Mission](missionId, Some(em))
           missionOpt.get.addDevice(sensorInDb.get)
           assert(missionOpt.isDefined, {println("[Message.InsertWindLog] Mission is not in Database !")})
           missionOpt.get.save(Some(em))
@@ -165,14 +168,14 @@ class InsertionWorker extends Actor {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         em.getTransaction().begin()
-        val sensorInDb = DeviceManager.getByNameAndAddress(sensor.getName, sensor.getAddress)
+        val sensorInDb = DeviceManager.getByNameAndAddress(sensor.getName, sensor.getAddress, Some(em))
         assert(sensorInDb.isDefined, {println("[Message.InsertRadiometerLog] Sensor is not in Database !")})
         //println("QUEUE -> "+logCache)
         val uniqueString = createUniqueString(sensor.getAddress, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
         if (!logCache.contains(uniqueString)) {
           //if (sensorInDb.get.name.contains("Pyrgeometer") || sensorInDb.get.name.contains("Pyranometer")) {
             //println("[RCV message] - insert radiometer log: "+ radiometerValue)
-          val missionOpt = DataLogManager.getById[Mission](missionId)
+          val missionOpt = DataLogManager.getById[Mission](missionId, Some(em))
           missionOpt.get.addDevice(sensorInDb.get)
           assert(missionOpt.isDefined, {println("[Message.InsertRadiometerLog] Mission is not in Database !")})
           missionOpt.get.save(Some(em))
@@ -233,7 +236,7 @@ class InsertionWorker extends Actor {
           gl.setSpeed(speed)
           val m = DataLogManager.getById[Mission](missionId)
           gl.setMission(m.get)
-          val persisted = gl.save() // persist in DB
+          val persisted = gl.save(None) // persist in DB
           if (persisted) {
             logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
             Some(true)
@@ -275,13 +278,13 @@ class InsertionWorker extends Actor {
         //println("[Message.InsertPointOfInterest] ")
         //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
         val geom = CoordinateHelper.wktToGeometry("POINT("+ longitude +" "+ latitude +" "+ altitude +")")
-        val poi = new TrajectoryPoint()
-        poi.setTimestamp(ts)
-        poi.setCoordinate(geom.asInstanceOf[Point])
+        val pt = new TrajectoryPoint()
+        pt.setTimestamp(ts)
+        pt.setCoordinate(geom.asInstanceOf[Point])
         //poi.setAltitude(altitude)
         val m = DataLogManager.getById[Mission](missionId)
-        poi.setMission(m.get)
-        val persisted = poi.save() // persist in DB
+        pt.setMission(m.get)
+        val persisted = pt.save(None) // persist in DB
         BatchManager.updateBatchProgress(batchId, "Insertion")
       } catch {
         case ae: AssertionError => None

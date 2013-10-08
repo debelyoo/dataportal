@@ -446,7 +446,7 @@ function getDatatypeAndDeviceId() {
 }
 
 function getDeviceData(datatype, missionId, deviceId) {
-	var url = config.get('URL_PREFIX') +"/api/data?data_type="+datatype+"&mission_id="+missionId+"&device_id="+deviceId
+	var url = config.get('URL_PREFIX') +"/api/data?data_type="+datatype+"&mission_id="+missionId+"&device_id="+deviceId+"&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH')
 	console.log(url);
 	var graphHeight = $('#graphPanel').height();
 	//console.log("graph height: "+graphHeight)

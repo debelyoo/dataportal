@@ -239,7 +239,8 @@ var MapLayerUtil = Backbone.Model.extend({
 	 */
 	addRasterLayer: function(mission) {
 		var self = this;
-		var url = config.get('URL_PREFIX') +"/api/footage/fordate/"+mission.date;
+		//var url = config.get('URL_PREFIX') +"/api/footage/fordate/"+mission.date;
+		var url = config.get('URL_PREFIX') +"/api/rasterdata/formission/"+mission.id;
 		$.ajax({
 			url: url
 		}).done(function( jsonData ) {
@@ -271,8 +272,12 @@ var MapLayerUtil = Backbone.Model.extend({
         $.ajax({
             url: config.get('URL_PREFIX') +"/api/pointsofinterest/formission/"+mission.id
         }).done(function( jsonData ) {
-            if(jsonData.features.length > 0)
+            if(jsonData.features.length > 0) {
                 self.addPointOfInterestLayer(mission, callback);
+            } else {
+                // if no points of interest are available, call callback anyway to enable highlight of trajectory points
+                callback();
+            }
         });
     },
 
@@ -450,7 +455,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		this.set({selected: false});
 	},
 	/**
-	 * Highlight a specific feature (called from graphD3.js
+	 * Highlight a specific feature (called from graphD3.js)
 	 * @param xpf The index of the feature to highlight as a fraction of the total nb of features
 	 */
 	highlightFeaturePoint: function(xpf) {

@@ -525,17 +525,21 @@ object DataLogManager {
    */
   def getAltitude(missionId: Long, maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
     val pointList = getTrajectoryPoints(missionId, maxNb)
-    val altitudeLogList = pointList.map(trajPt => AltitudeLog(trajPt.getId,
+    val altitudeLogList = pointList.map(trajPt =>
+      AltitudeLog(trajPt.getId,
       DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.getTimestamp),
-      trajPt.getCoordinate.getCoordinate.z))
+      trajPt.getCoordinate.getCoordinate.z)
+    )
     Map("altitude" -> altitudeLogList)
   }
 
   def getSpeed(missionId: Long, maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
     val pointList = getTrajectoryPoints(missionId, maxNb)
-    val speedLogList = pointList.map(trajPt => SpeedLog(trajPt.getId,
+    val speedLogList = pointList.map(trajPt =>
+      SpeedLog(trajPt.getId,
       DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.getTimestamp),
-      trajPt.getSpeed))
+      trajPt.getSpeed)
+    )
     Map("speed" -> speedLogList)
   }
 
@@ -614,7 +618,7 @@ object DataLogManager {
    * @param date The date of the footage to get
    * @return the footage coordinate (JSON)
    */
-  def getFootageForDate(date: Date): JsValue = {
+  /*def getFootageForDate(date: Date): JsValue = {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
@@ -648,6 +652,45 @@ object DataLogManager {
       em.getTransaction().commit()
       Json.toJson(Json.parse(jsArr.toString))
       //Json.parse(jsStr)
+    } catch {
+      case nre: NoResultException => Json.parse("{\"error\": \"no result\"}")
+      case ex: Exception => ex.printStackTrace; Json.parse("{\"error\": \"exception\"}")
+    } finally {
+      em.close()
+    }
+  }*/
+
+  /**
+   * Get the raster data for a specific mission
+   * @param missionId The id of the mission
+   * @return the raster data (JSON)
+   */
+  def getRasterDataForMission(missionId: Long): JsValue = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val nativeQuery = "SELECT imagename, ST_X(leftuppercorner) AS xlu, ST_Y(leftuppercorner) AS ylu, ST_X(leftlowercorner) AS xll, ST_Y(leftlowercorner) AS yll, " +
+        "ST_X(rightuppercorner) AS xru, ST_Y(rightuppercorner) AS yru, ST_X(rightlowercorner) AS xrl, ST_Y(rightlowercorner) AS yrl FROM rasterdata" +
+        " WHERE mission_id = "+missionId;
+      val q = em.createNativeQuery(nativeQuery)
+      val res = q.getResultList.map(_.asInstanceOf[Array[Object]])
+      val jsArr = new JsonArray
+      res.foreach(resultArray => {
+        val dataJson = (new JsonObject).asInstanceOf[JsonElement]
+        dataJson.getAsJsonObject.addProperty("imagename", resultArray(0).asInstanceOf[String])
+        dataJson.getAsJsonObject.addProperty("xlu", resultArray(1).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("ylu", resultArray(2).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("xll", resultArray(3).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("yll", resultArray(4).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("xru", resultArray(5).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("yru", resultArray(6).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("xrl", resultArray(7).asInstanceOf[Double])
+        dataJson.getAsJsonObject.addProperty("yrl", resultArray(8).asInstanceOf[Double])
+        jsArr.add(dataJson)
+      })
+
+      em.getTransaction().commit()
+      Json.toJson(Json.parse(jsArr.toString))
     } catch {
       case nre: NoResultException => Json.parse("{\"error\": \"no result\"}")
       case ex: Exception => ex.printStackTrace; Json.parse("{\"error\": \"exception\"}")
@@ -749,12 +792,12 @@ object DataLogManager {
 
   /**
    * Get the closest GPS log to a specified timestamp
-   * @param gpsLogs The GPS logs to search in
+   * @param trajectoryPoints The trajectory points to search in
    * @param ts The timestamp to match
    * @param marginInSeconds The margin +/- around the timestamp
-   * @return An option with the closest GPS log we found
+   * @return An option with the closest trajectory point found
    */
-  /*def getClosestGpsLog(gpsLogs: List[GpsLog], ts: Date, marginInSeconds: Int): Option[GpsLog] = {
+  def getClosestGpsLog(trajectoryPoints: List[TrajectoryPoint], ts: Date, marginInSeconds: Int): Option[TrajectoryPoint] = {
     //println("[DataLogManager] getClosestLog() - "+logs.head)
     val beforeDate = Calendar.getInstance()
     beforeDate.setTime(ts)
@@ -763,21 +806,21 @@ object DataLogManager {
     afterDate.setTime(ts)
     afterDate.add(Calendar.SECOND, marginInSeconds)
     //val closeLogs = getByTimeIntervalAndSensor[T](beforeDate.getTime, afterDate.getTime, sensorId, Some(em))
-    val closeLogs = gpsLogs.filter(log =>
-      (log.getTimestamp.getTime > beforeDate.getTime.getTime &&
-        log.getTimestamp.getTime < afterDate.getTime.getTime)
+    val closePoints = trajectoryPoints.filter(pt =>
+      (pt.getTimestamp.getTime > beforeDate.getTime.getTime &&
+        pt.getTimestamp.getTime < afterDate.getTime.getTime)
     )
-    if (closeLogs.nonEmpty) {
-      val (closestPoint, diff) = closeLogs.map(cl => {
+    if (closePoints.nonEmpty) {
+      val (closestPoint, diff) = closePoints.map(cl => {
         val timeDiff = math.abs(cl.getTimestamp.getTime - ts.getTime)
         (cl, timeDiff)
       }).minBy(_._2)
       Some(closestPoint)
     } else {
-      println("[WARNING] No close GPS log for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
+      println("[WARNING] No close trajectory point for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
       None
     }
-  }*/
+  }
 
   /**
    * Update the geo position

@@ -38,6 +38,7 @@ object DeviceManager {
    * Get a device by name and address
    * @param name The device name
    * @param address The device address
+   * @param emOpt An optional entity manager to avoid created many transactions for multiple consecutive queries
    * @return The device
    */
   def getByNameAndAddress(name: String, address: String, emOpt: Option[EntityManager] = None): Option[Device] = {

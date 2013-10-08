@@ -9,6 +9,7 @@ import controllers.util.json.GeoJsonSerializable;
 import models.Mission;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
+import scala.Option;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -34,6 +35,7 @@ public class TrajectoryPoint implements GeoJsonSerializable {
     private Mission mission;
 
     private Double speed;
+    private Double heading;
 
     public TrajectoryPoint() {
     }
@@ -78,6 +80,14 @@ public class TrajectoryPoint implements GeoJsonSerializable {
         this.speed = sp;
     }
 
+    public Double getHeading() {
+        return this.heading;
+    }
+
+    public void setHeading(Double h) {
+        this.heading = h;
+    }
+
     public String toString() {
         return id + " -> ts: " + timestamp + ", point: " + coordinate.toString();
     }
@@ -103,7 +113,8 @@ public class TrajectoryPoint implements GeoJsonSerializable {
             JsonObject propertiesObj = new JsonObject();
             propertiesObj.addProperty("id", point.getId());
             propertiesObj.addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(point.getTimestamp()));
-            //propertiesObj.addProperty("altitude", point.getAltitude());
+            propertiesObj.addProperty("speed", point.getSpeed());
+            propertiesObj.addProperty("heading", point.getHeading());
             if (point.getCoordinate() != null) {
                 double[] arr = ApproxSwissProj.WGS84toLV03(point.coordinate.getCoordinate().y, point.coordinate.getCoordinate().x, point.coordinate.getCoordinate().z);
                 propertiesObj.addProperty("coordinate_swiss", arr[0] + "," + arr[1] +","+arr[2]);
@@ -123,19 +134,23 @@ public class TrajectoryPoint implements GeoJsonSerializable {
     /**
      * Save the GpsLog in Postgres database
      */
-    public Boolean save() {
-        EntityManager em = JPAUtil.createEntityManager();
+    public Boolean save(Option<EntityManager> emOpt) {
+        EntityManager em;
+        if (emOpt.isEmpty()) {
+            em = JPAUtil.createEntityManager();
+        } else {
+            em = emOpt.get();
+        }
         Boolean res = false;
         try {
-            em.getTransaction().begin();
+            if(emOpt.isEmpty()) em.getTransaction().begin();
             em.persist(this);
-            em.getTransaction().commit();
+            if(emOpt.isEmpty()) em.getTransaction().commit();
             res = true;
         } catch (Exception ex) {
-            ex.printStackTrace();
-            System.out.println("[ERROR - TrajectoryPoint] "+ ex.getMessage());
+            System.out.println("[ERROR][TrajectoryPoint.save()] "+ ex.getMessage());
         } finally {
-            em.close();
+            if(emOpt.isEmpty()) em.close();
         }
         return res;
     }

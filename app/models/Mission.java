@@ -31,7 +31,7 @@ public class Mission implements JsonSerializable {
     @Type(type="org.hibernate.spatial.GeometryType")
     private LineString trajectory;
 
-    @OneToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name="vehicle_id")
     private Vehicle vehicle;
 
@@ -133,6 +133,7 @@ public class Mission implements JsonSerializable {
         try {
             if(emOpt.isEmpty()) em.getTransaction().begin();
             em.persist(this);
+            //persistDefensive(em);
             if(emOpt.isEmpty()) em.getTransaction().commit();
             res = true;
         } catch (Exception ex) {
@@ -142,4 +143,12 @@ public class Mission implements JsonSerializable {
         }
         return res;
     }
+
+    /*private void persistDefensive(EntityManager em) {
+        if (em.contains(this)) {
+            em.merge(this);
+        } else {
+            em.persist(this);
+        }
+    }*/
 }

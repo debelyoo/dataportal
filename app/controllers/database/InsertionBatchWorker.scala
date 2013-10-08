@@ -14,6 +14,7 @@ class InsertionBatchWorker extends Actor {
     case Message.Work(batchId, dataType, missionId) => {
       var setNumberOpt: Option[Int] = None
       insertionBatches.get(batchId).map { case (lines, sensors) =>
+        val trajectoryPoints = DataLogManager.getTrajectoryPoints(missionId, None) // for inserting compass value
         for ((line, ind) <- lines.zipWithIndex) {
           val chunksOnLine = if(dataType != DataImporter.Types.ULM_TRAJECTORY)
             line.split("\\t")
@@ -24,14 +25,21 @@ class InsertionBatchWorker extends Actor {
             val deviceOpt = sensors.get(chunksOnLine(0))
             val device = if (deviceOpt.isDefined) {
               val dev = new Device(deviceOpt.get.getName, deviceOpt.get.getAddress, dataType)
-              DataLogManager.insertionWorker ! Message.InsertDevice(dev)
+              if (dataType != DataImporter.Types.COMPASS) {
+                // persist device in DB. Not for compass because compass value is added to trajectory points
+                DataLogManager.insertionWorker ! Message.InsertDevice(dev)
+              }
               Some(dev)
             } else None
             val date = DateFormatHelper.labViewTsToJavaDate(chunksOnLine(1).toDouble) // if TS comes from labview
             dataType match {
               case DataImporter.Types.COMPASS => {
-                // address - timestamp - value
-                DataLogManager.insertionWorker ! Message.InsertCompassLog(batchId, missionId, date, device.get, chunksOnLine(2).toDouble)
+                if (chunksOnLine(0) == "41") {
+                  // address - timestamp - value
+                  DataLogManager.insertionWorker ! Message.InsertCompassLog(batchId, trajectoryPoints, date, chunksOnLine(2).toDouble)
+                } else {
+                  DataLogManager.insertionWorker ! Message.SkipLog(batchId) // necessary to update batch progress correctly (when GPS error logs are skipped)
+                }
               }
               case DataImporter.Types.TEMPERATURE => {
                 // address - timestamp - value
@@ -46,14 +54,15 @@ class InsertionBatchWorker extends Actor {
                 DataLogManager.insertionWorker ! Message.InsertRadiometerLog(batchId, missionId, date, device.get, chunksOnLine(2).toDouble)
               }
               case DataImporter.Types.GPS  => {
-                if (chunksOnLine.length == 5 && chunksOnLine(0) == "48") {
+                if (chunksOnLine(0) == "48") {
+                  val altitudeValue = if (chunksOnLine.length == 5) chunksOnLine(4).toDouble else 0.0
                   //println("--> handle GPS log ! "+ chunksOnLine(0))
                   // address - timestamp - latitude - longitude - elevation
                   if (setNumberOpt.isEmpty) setNumberOpt = DataLogManager.getNextSetNumber(date)
                   //val setNumberOpt = DataLogManager.getNextSetNumber[GpsLog](date)
                   setNumberOpt.foreach(setNumber => {
                     DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, missionId, date, setNumber, device.get,
-                      chunksOnLine(2).toDouble, chunksOnLine(3).toDouble, chunksOnLine(4).toDouble)
+                      chunksOnLine(2).toDouble, chunksOnLine(3).toDouble, altitudeValue)
                   })
                 } else {
                   DataLogManager.insertionWorker ! Message.SkipLog(batchId) // necessary to update batch progress correctly (when GPS error logs are skipped)

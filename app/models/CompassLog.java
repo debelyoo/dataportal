@@ -19,7 +19,7 @@ public class CompassLog implements JsonSerializable, SensorLog {
     @GenericGenerator(name="increment", strategy = "increment")
     private Long id;
 
-    @OneToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name="device_id")
     private Device device;
 
@@ -27,7 +27,7 @@ public class CompassLog implements JsonSerializable, SensorLog {
 
     private Double value;
 
-    @OneToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name="mission_id")
     private Mission mission;
 

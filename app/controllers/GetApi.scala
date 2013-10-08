@@ -214,12 +214,12 @@ trait GetApi extends ResponseFormatter {
   }
 
   /**
-   * Get footage for a specific date
-   * @return The coordinate of a footage (JSON)
+   * Get raster data for a specific mission
+   * @param idStr The id of the mission
+   * @return The coordinate of the raster (JSON)
    */
-  def getFootageForDate(dateStr: String) = Action {
-    val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
-    val resp = DataLogManager.getFootageForDate(date)
+  def getRasterDataForMission(idStr: String) = Action {
+    val resp = DataLogManager.getRasterDataForMission(idStr.toLong)
     Ok(resp)
   }
 
