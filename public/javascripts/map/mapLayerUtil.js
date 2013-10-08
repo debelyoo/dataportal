@@ -15,7 +15,9 @@ var MapLayerUtil = Backbone.Model.extend({
 		epsg900913: new OpenLayers.Projection("EPSG:900913"),
 		epsg4326: new OpenLayers.Projection("EPSG:4326"),
 		nbTrajectory: 0,
-		trajectoryLayers: {}
+		trajectoryLayers: {},
+		highlighting: false,
+		currentMousePosition: {}
 	}, 
 	initialize: function() { 
 		//this.map = new OpenLayers.Map("mapPanel");
@@ -58,6 +60,8 @@ var MapLayerUtil = Backbone.Model.extend({
 		
 		// disable 3D effect with google map
 		gmapLayer.mapObject.setTilt(0);
+
+		window.onmousemove = this.handleMouseMove;
 	},
 
 	/**
@@ -292,8 +296,11 @@ var MapLayerUtil = Backbone.Model.extend({
             renderIntent: "temporary",
             eventListeners: {
                 //beforefeaturehighlighted: printFeatureDetails,
-                featurehighlighted: this.printFeatureDetails
-                //featureunhighlighted: printFeatureDetails
+                featurehighlighted: this.printFeatureDetails,
+                featureunhighlighted: function() {
+                    mapLayerUtil.set({highlighting: false});
+                    $('#speedVectorPlaceholder').hide();
+                }
             }
         });
         this.mapPanel.map.addControl(this.highlightCtrl);
@@ -354,9 +361,9 @@ var MapLayerUtil = Backbone.Model.extend({
 			highlightOnly: true,
 			renderIntent: "temporary",
 			eventListeners: {
-				//beforefeaturehighlighted: printFeatureDetails,
+				//beforefeaturehighlighted: function() {},
 				featurehighlighted: this.printFeatureDetails
-				//featureunhighlighted: printFeatureDetails
+				//featureunhighlighted: function() {}
 			}
 		});
 
@@ -398,13 +405,19 @@ var MapLayerUtil = Backbone.Model.extend({
 		this.set({nbTrajectory: 0});
 	},
 	printFeatureDetails: function(e) {
-		//console.log(e.feature.layer);
+	    mapLayerUtil.set({highlighting: true});
+	    $('#speedVectorPlaceholder').show();
+	    console.log(e);
+	    mapLayerUtil.mapPanel.map.getViewPortPxFromLonLat([e.feature.geometry.x, e.feature.geometry.y])
+		//console.log(e.object.handlers.feature);
 		//console.log(mapLayerUtil.gmlLayer.features[0]); // e.feature['attributes'].id);
 		//updateInfoDiv("infoDiv", e.feature['attributes'], true);
 		var selectedLayer = e.feature.layer;
 		if (selectedLayer.name.indexOf("POI") == -1) {
+		    // not a POI layer
 		    if (mapLayerUtil.has('activeGraph')) {
 			    mapLayerUtil.updateHoverLine(e);
+			    mapLayerUtil.updateSpeedVector(e);
 		    }
 		}
 	},
@@ -510,5 +523,56 @@ var MapLayerUtil = Backbone.Model.extend({
 			containerElementId = "tooltipText";
 		}
 		return containerElementId;
-	}
+	},
+	updateSpeedVector: function(e) {
+	    //console.log("updateSpeedVector()", e.feature.attributes.heading);
+	    var vectorWidth = 40;
+	    var vectorHeight = 40;
+	    var heading = e.feature.attributes.heading;
+	    var mouseX = e.object.handlers.feature.evt.clientX
+	    var mouseY = e.object.handlers.feature.evt.clientY
+	    //var mouseX = this.get('currentMousePosition').mouseX;
+	    //var mouseY = this.get('currentMousePosition').mouseY;
+	    //mouseX = mouseX + Math.sin(heading) * vectorWidth;
+	    //mouseY = mouseY + Math.cos(heading) * vectorHeight;
+        $('#speedVectorPlaceholder').css({
+            top: mouseY,
+            left: mouseX,
+            'transform': 'rotate('+heading+'deg)',
+            '-webkit-transform': 'rotate('+heading+'deg)'
+        });
+	},
+	/**
+	 * Event handler on mouse move
+	 */
+	handleMouseMove: function(e) {
+	    if (mapLayerUtil.get('highlighting')) {
+            //console.log("handleMouseMove()", event);
+            var mouseXY = mapLayerUtil.getMouseXY(event);
+            //console.log(mouseXY);
+            mapLayerUtil.set({currentMousePosition: mouseXY});
+        }
+	},
+	/**
+     * Get X and Y position of mouse
+     */
+    getMouseXY: function(event) {
+        var graphXOffset = 0;
+        var graphYOffset = 0;
+        var offsetX, offsetY;
+        if(event.offsetX==undefined) {
+            // Firefox
+            offsetX = event.pageX; //-this.containerElement.offset().left;
+            offsetY = event.pageY; //-this.containerElement.offset().top;
+        } else {
+            // Chrome
+            offsetX = event.offsetX;
+            offsetY = event.offsetY;
+        }
+
+        var mouseX = offsetX - graphXOffset;
+        var mouseY = offsetY - graphYOffset;
+        //console.log("x: "+mouseX+", y: "+mouseY);
+        return {mouseX: mouseX, mouseY: mouseY};
+    }
 });

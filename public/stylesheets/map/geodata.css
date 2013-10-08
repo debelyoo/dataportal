@@ -35,7 +35,7 @@ body {
 	height: 20px;
 	/*border-radius: 5px;*/
 	border: 1px solid white;
-	background: url('/img/arrow-right.png');
+	background: url('../../images/arrow-right.png');
 	background-size: 20px 20px;
 	background-repeat: no-repeat;
 	background-position: center;
@@ -197,7 +197,7 @@ div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate
 	height: 20px;
 	/*border-radius: 5px;*/
 	border: 1px solid white;
-	background: url('/img/arrow-right.png');
+	background: url('../../images/arrow-right.png');
 	background-color: rgba(255, 255, 255, 0.6);
 	background-size: 20px 20px;
 	background-repeat: no-repeat;
@@ -212,7 +212,7 @@ div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate
 	height: 20px;
 	/*border-radius: 5px;*/
 	border: 1px solid white;
-	background: url('/img/zoom.png');
+	background: url('../../images/zoom.png');
 	background-color: rgba(0, 0, 0, 0.6);
 	background-size: 20px 20px;
 	background-repeat: no-repeat;
@@ -294,6 +294,18 @@ div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate
 .rotated270 {
 	transform:rotate(270deg);
 	-webkit-transform:rotate(270deg); /* Safari and Chrome */
+}
+
+#speedVectorPlaceholder {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 20px;
+    height: 20px;
+    /*border: 1px solid red;*/
+    background: url('../../images/arrow_turquoise.png');
+    background-size: 20px 20px;
+    display: none;
 }
 
 /* graph zoom elements */
