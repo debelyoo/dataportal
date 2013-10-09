@@ -224,6 +224,16 @@ trait GetApi extends ResponseFormatter {
   }
 
   /**
+   * Get the maximum speed for a specific mission
+   * @param idStr The id of the mission
+   * @return The max speed (JSON)
+   */
+  def getMaxSpeedForMission(idStr: String) = Action {
+    val resp = DataLogManager.getMaxSpeedForMission(idStr.toLong)
+    Ok(resp)
+  }
+
+  /**
    * Get the first and last log time for a specific date and set
    * @param dateStr The date to look for
    * @return The first and last log time (JSON)

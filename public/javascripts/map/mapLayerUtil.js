@@ -16,14 +16,12 @@ var MapLayerUtil = Backbone.Model.extend({
 		epsg4326: new OpenLayers.Projection("EPSG:4326"),
 		nbTrajectory: 0,
 		trajectoryLayers: {},
-		highlighting: false,
-		currentMousePosition: {}
+		maximumSpeed: 0.0
 	}, 
 	initialize: function() { 
 		//this.map = new OpenLayers.Map("mapPanel");
 		var position    = new OpenLayers.LonLat(6.566,46.519).transform('EPSG:4326', 'EPSG:3857'); // Google.v3 uses web mercator as projection, so we have to transform our coordinates
 		//var zoom        = 17;
-		console.log("position: "+position);
 		
 		this.styleMap = new OpenLayers.StyleMap({
 			'default': this.get('defaultStyle'),
@@ -107,7 +105,18 @@ var MapLayerUtil = Backbone.Model.extend({
 				pointRadius: 3,
 				strokeColor: color,
 				fillColor: color
-			})
+			}),
+			"temporary": new OpenLayers.Style({ // highlight is all transparent because we show speed cursor
+                pointRadius: 6,
+                //strokeColor: "rgb(255,255,255)",
+                strokeColor: "transparent",
+                fillColor: "transparent"
+            }),
+            "select": new OpenLayers.Style({
+                pointRadius: 3,
+                strokeColor: color,
+                fillColor: color
+            })
 		})
 		this.set({nbTrajectory: nbTraj});
 		var trajectoryLayer = new OpenLayers.Layer.Vector(layerTitle, {
@@ -295,7 +304,6 @@ var MapLayerUtil = Backbone.Model.extend({
                 //beforefeaturehighlighted: printFeatureDetails,
                 featurehighlighted: this.printFeatureDetails,
                 featureunhighlighted: function() {
-                    mapLayerUtil.set({highlighting: false});
                     $('#speedVectorPlaceholder').hide();
                 }
             }
@@ -402,11 +410,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		this.set({nbTrajectory: 0});
 	},
 	printFeatureDetails: function(e) {
-	    mapLayerUtil.set({highlighting: true});
 	    $('#speedVectorPlaceholder').show();
-	    //console.log("x: "+e.feature.geometry.x, "y: "+e.feature.geometry.y);
-	    //console.log("lat: "+ y2lat(e.feature.geometry.y));
-
 		//console.log(e.object.handlers.feature);
 		//console.log(mapLayerUtil.gmlLayer.features[0]); // e.feature['attributes'].id);
 		//updateInfoDiv("infoDiv", e.feature['attributes'], true);
@@ -526,30 +530,33 @@ var MapLayerUtil = Backbone.Model.extend({
 	    //console.log("updateSpeedVector()", e.feature.attributes.heading);
 	    var vectorWidth = $('#speedVectorPlaceholder').width();
 	    var vectorHeight = $('#speedVectorPlaceholder').height();
-	    var heading = e.feature.attributes.heading;
 	    // get x,y position on map from lon, lat properties of feature
 	    var lonLat = new OpenLayers.LonLat(e.feature.geometry.x, e.feature.geometry.y);
         var mapXY = mapLayerUtil.mapPanel.map.getViewPortPxFromLonLat(lonLat);
 	    var xPos = mapXY.x - vectorWidth/2; // + Math.sin(heading) * vectorWidth;
 	    var yPos = mapXY.y - vectorHeight/2; // + Math.cos(heading) * vectorHeight;
+	    var normalizedSpeed = 1.0;
+	    if (mapLayerUtil.get('maximumSpeed') > 0) {
+	        normalizedSpeed = e.feature.attributes.speed / (mapLayerUtil.get('maximumSpeed') / 1.7);
+	    }
         $('#speedVectorPlaceholder').css({
             top: yPos,
             left: xPos,
-            'transform': 'rotate('+heading+'deg)',
-            '-webkit-transform': 'rotate('+heading+'deg)'
+            'transform': 'rotate('+e.feature.attributes.heading+'deg) scale('+ normalizedSpeed +')',
+            '-webkit-transform': 'rotate('+e.feature.attributes.heading+'deg) scale('+ normalizedSpeed +')'
         });
 	},
 	/**
 	 * Event handler on mouse move
 	 */
-	handleMouseMove: function(e) {
+	/*handleMouseMove: function(e) {
 	    if (mapLayerUtil.get('highlighting')) {
             //console.log("handleMouseMove()", event);
             var mouseXY = mapLayerUtil.getMouseXY(event);
             //console.log(mouseXY);
             mapLayerUtil.set({currentMousePosition: mouseXY});
         }
-	},
+	},*/
 	/**
      * Get X and Y position of mouse
      */

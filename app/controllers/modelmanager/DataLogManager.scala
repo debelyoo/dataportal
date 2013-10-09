@@ -704,6 +704,30 @@ object DataLogManager {
   }
 
   /**
+   * Get the maximum speed for a specific mission
+   * @param missionId The id of the mission
+   * @return the max speed (JSON)
+   */
+  def getMaxSpeedForMission(missionId: Long): JsValue = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val query = "SELECT MAX(speed) FROM "+ classOf[TrajectoryPoint].getName +" WHERE mission_id = "+missionId;
+      val q = em.createQuery(query)
+      val maxSpeed = q.getSingleResult.asInstanceOf[Double]
+      em.getTransaction().commit()
+      val dataJson = (new JsonObject).asInstanceOf[JsonElement]
+      dataJson.getAsJsonObject.addProperty("max_speed", maxSpeed)
+      Json.toJson(Json.parse(dataJson.toString))
+    } catch {
+      case nre: NoResultException => Json.parse("{\"error\": \"no result\"}")
+      case ex: Exception => ex.printStackTrace; Json.parse("{\"error\": \"exception\"}")
+    } finally {
+      em.close()
+    }
+  }
+
+  /**
    * Get the first and last log time for a specific date
    * @param date The date
    * @return The first and last log time

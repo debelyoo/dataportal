@@ -193,8 +193,6 @@ function getMissionsForDates(dateArr) {
 					mapLayerUtil.addLayers(missions[j], mode);
 					//console.log("add points");
 				}
-				//getPoiForMission(missions[j]);
-				//mapLayerUtil.addRasterLayer(missions[j]);
 			}
 			if (nbMissionListReceived == nbSelectedDates) {			
 				createPathSelectForData(mode);
@@ -432,7 +430,7 @@ function createDeviceSelectForData(jsonData, missionId) {
 		getDeviceData(deviceTypeAndId[0], missionId, deviceTypeAndId[1]);
 	});
 	$('#deviceSelectRow').show();
-	/// show graph with altitude
+	/// show graph with altitude or speed (at load)
 	var deviceTypeAndId = getDatatypeAndDeviceId();
 	getDeviceData(deviceTypeAndId[0], $("#pathSelect").val(), deviceTypeAndId[1]);
 }
@@ -445,8 +443,17 @@ function getDatatypeAndDeviceId() {
     return deviceParts;
 }
 
+/**
+ * Get the data for the selected device
+ * @param datatype The type of data requested
+ * @param missionId The id of the mission
+ * @param deviceId The id of the device
+ */
 function getDeviceData(datatype, missionId, deviceId) {
-	var url = config.get('URL_PREFIX') +"/api/data?data_type="+datatype+"&mission_id="+missionId+"&device_id="+deviceId+"&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH')
+    if (datatype == "speed") {
+        getMissionMaximumSpeed(missionId);
+    }
+	var url = config.get('URL_PREFIX') +"/api/data?data_type="+datatype+"&mission_id="+missionId+"&device_id="+deviceId+"&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH');
 	console.log(url);
 	var graphHeight = $('#graphPanel').height();
 	//console.log("graph height: "+graphHeight)
@@ -459,6 +466,14 @@ function getDeviceData(datatype, missionId, deviceId) {
 	mapLayerUtil.set({activeGraph: embeddedGraph});
 	embeddedGraph.refreshSensorGraph(url, false);
 	$('#dataGraphPlaceholder').show();
+}
+
+function getMissionMaximumSpeed(missionId) {
+    $.ajax({
+        url: config.get('URL_PREFIX') +"/api/maxspeed/formission/"+ missionId
+    }).done(function( jsonData ) {
+        mapLayerUtil.set({maximumSpeed: jsonData.max_speed});
+    });
 }
 
 function refreshSensorField(date, startTime, endTime) {
