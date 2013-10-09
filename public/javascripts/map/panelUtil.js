@@ -150,8 +150,8 @@ function onLemanBtnClicked() {
 }
 
 function onBaikalBtnClicked() {
-    ptBaikal= new OpenLayers.LonLat(108.208923,53.585984).transform(mapLayerUtil.get('epsg4326'),mapLayerUtil.get('epsg900913'));
-    zoomBaikal=6;
+    ptBaikal= new OpenLayers.LonLat(106.7,52.10).transform(mapLayerUtil.get('epsg4326'),mapLayerUtil.get('epsg900913'));
+    zoomBaikal=10;
     mapLayerUtil.mapPanel.map.setCenter(ptBaikal,zoomBaikal);
 }
 

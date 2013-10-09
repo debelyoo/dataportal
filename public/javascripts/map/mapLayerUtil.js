@@ -70,9 +70,9 @@ var MapLayerUtil = Backbone.Model.extend({
 	 * @param mode
 	 */
 	addLayers: function(mission, mode) {
-	    this.addTrajectoryLayer(mission, mode);
 	    this.getPoiForMission(mission, this.addControls);
-        this.addRasterLayer(mission);
+	    this.addRasterLayer(mission);
+	    this.addTrajectoryLayer(mission, mode);
 	},
 
 	/**
