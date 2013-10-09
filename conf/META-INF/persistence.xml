@@ -10,7 +10,8 @@
             <!--<property name="hibernate.connection.url" value="jdbc:postgresql://localhost:5432:ecoldata"/>
             <property name="hibernate.connection.username" value="ecoldata"/>
             <property name="hibernate.connection.password" value="ecoliste"/>-->
-            <property name="hibernate.connection.url" value="jdbc:postgresql://localhost:5432/lemanbaikal"/>
+	    <!--<property name="hibernate.connection.url" value="jdbc:postgresql://localhost:5432/lemanbaikal"/>-->
+            <property name="hibernate.connection.url" value="jdbc:postgresql://ecolvm1.epfl.ch:5432/lemanbaikal"/>
             <property name="hibernate.connection.username" value="topo_reader"/>
             <property name="hibernate.connection.password" value="galileo29"/>
             <property name="hibernate.connection.pool_size" value="5"/>
