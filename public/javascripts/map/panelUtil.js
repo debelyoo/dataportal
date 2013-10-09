@@ -473,6 +473,7 @@ function getMissionMaximumSpeed(missionId) {
         url: config.get('URL_PREFIX') +"/api/maxspeed/formission/"+ missionId
     }).done(function( jsonData ) {
         mapLayerUtil.set({maximumSpeed: jsonData.max_speed});
+        mapLayerUtil.set({headingAvailable: jsonData.heading_available});
     });
 }
 

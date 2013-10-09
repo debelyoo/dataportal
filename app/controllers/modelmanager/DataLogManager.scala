@@ -708,16 +708,18 @@ object DataLogManager {
    * @param missionId The id of the mission
    * @return the max speed (JSON)
    */
-  def getMaxSpeedForMission(missionId: Long): JsValue = {
+  def getMaxSpeedAndHeadingForMission(missionId: Long): JsValue = {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
-      val query = "SELECT MAX(speed) FROM "+ classOf[TrajectoryPoint].getName +" WHERE mission_id = "+missionId;
+      val query = "SELECT MAX(speed) AS speed, MAX(heading) AS heading FROM "+ classOf[TrajectoryPoint].getName +" WHERE mission_id = "+missionId;
       val q = em.createQuery(query)
-      val maxSpeed = q.getSingleResult.asInstanceOf[Double]
+      val res = q.getSingleResult.asInstanceOf[Array[Object]]
       em.getTransaction().commit()
+      val headingAvailable = if (res(1).asInstanceOf[Double] > 0) true else false
       val dataJson = (new JsonObject).asInstanceOf[JsonElement]
-      dataJson.getAsJsonObject.addProperty("max_speed", maxSpeed)
+      dataJson.getAsJsonObject.addProperty("max_speed", res(0).asInstanceOf[Double])
+      dataJson.getAsJsonObject.addProperty("heading_available", headingAvailable)
       Json.toJson(Json.parse(dataJson.toString))
     } catch {
       case nre: NoResultException => Json.parse("{\"error\": \"no result\"}")

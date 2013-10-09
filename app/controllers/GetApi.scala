@@ -228,8 +228,8 @@ trait GetApi extends ResponseFormatter {
    * @param idStr The id of the mission
    * @return The max speed (JSON)
    */
-  def getMaxSpeedForMission(idStr: String) = Action {
-    val resp = DataLogManager.getMaxSpeedForMission(idStr.toLong)
+  def getMaxSpeedAndHeadingForMission(idStr: String) = Action {
+    val resp = DataLogManager.getMaxSpeedAndHeadingForMission(idStr.toLong)
     Ok(resp)
   }
 

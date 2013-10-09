@@ -33,7 +33,7 @@ GET     /api/data                                           controllers.Applicat
 GET     /api/missiondates                                   controllers.Application.getMissionDates
 GET     /api/missions/fordate/*date                         controllers.Application.getMissionsForDate(date)
 GET     /api/trajectory                                     controllers.Application.getTrajectory
-GET     /api/maxspeed/formission/*missionId                 controllers.Application.getMaxSpeedForMission(missionId)
+GET     /api/maxspeed/formission/*missionId                 controllers.Application.getMaxSpeedAndHeadingForMission(missionId)
 GET     /api/rasterdata/formission/*missionId               controllers.Application.getRasterDataForMission(missionId)
 #GET     /api/times/fordate/*date/andset/*set                controllers.Application.getLogTimesForDateAndSet(date, set)
 #GET     /api/sets/fordate/*date                             controllers.Application.getLogSetsForDate(date)

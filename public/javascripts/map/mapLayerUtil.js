@@ -16,7 +16,8 @@ var MapLayerUtil = Backbone.Model.extend({
 		epsg4326: new OpenLayers.Projection("EPSG:4326"),
 		nbTrajectory: 0,
 		trajectoryLayers: {},
-		maximumSpeed: 0.0
+		maximumSpeed: 0.0,      // specific to the selected trajectory (selected in the graph panel)
+		headingAvailable: false // specific to the selected trajectory (selected in the graph panel)
 	}, 
 	initialize: function() { 
 		//this.map = new OpenLayers.Map("mapPanel");
@@ -108,8 +109,8 @@ var MapLayerUtil = Backbone.Model.extend({
 			}),
 			"temporary": new OpenLayers.Style({ // highlight is all transparent because we show speed cursor
                 pointRadius: 6,
-                //strokeColor: "rgb(255,255,255)",
-                strokeColor: "transparent",
+                strokeColor: "rgb(255,255,255)",
+                //strokeColor: "transparent",
                 fillColor: "transparent"
             }),
             "select": new OpenLayers.Style({
@@ -284,8 +285,11 @@ var MapLayerUtil = Backbone.Model.extend({
         $.ajax({
             url: config.get('URL_PREFIX') +"/api/pointsofinterest/formission/"+mission.id
         }).done(function( jsonData ) {
-            if(jsonData.features.length > 0)
+            if(jsonData.features.length > 0) {
                 self.addPointOfInterestLayer(mission, callback);
+            } else {
+                callback();
+            }
         });
     },
 
@@ -410,11 +414,20 @@ var MapLayerUtil = Backbone.Model.extend({
 		this.set({nbTrajectory: 0});
 	},
 	printFeatureDetails: function(e) {
-	    $('#speedVectorPlaceholder').show();
+	    var selectedLayer = e.feature.layer;
+	    // show speed vector if there is a maximum speed, not otherwise
+	    if (mapLayerUtil.get('maximumSpeed') > 0 && mapLayerUtil.get('headingAvailable')) {
+	        $('#speedVectorPlaceholder').show();
+            var customStyle = new OpenLayers.Style({ // highlight is all transparent because we show speed cursor
+                pointRadius: 6,
+                strokeColor: "transparent",
+                fillColor: "transparent"
+            });
+	        selectedLayer.styleMap.styles.temporary = customStyle;
+	    }
 		//console.log(e.object.handlers.feature);
 		//console.log(mapLayerUtil.gmlLayer.features[0]); // e.feature['attributes'].id);
 		//updateInfoDiv("infoDiv", e.feature['attributes'], true);
-		var selectedLayer = e.feature.layer;
 		if (selectedLayer.name.indexOf("POI") == -1) {
 		    // not a POI layer
 		    if (mapLayerUtil.has('activeGraph')) {
