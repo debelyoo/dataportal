@@ -23,6 +23,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		//this.map = new OpenLayers.Map("mapPanel");
 		var position    = new OpenLayers.LonLat(6.566,46.519).transform('EPSG:4326', 'EPSG:3857'); // Google.v3 uses web mercator as projection, so we have to transform our coordinates
 		//var zoom        = 17;
+		console.log("position: "+position);
 		
 		this.styleMap = new OpenLayers.StyleMap({
 			'default': this.get('defaultStyle'),
@@ -80,14 +81,9 @@ var MapLayerUtil = Backbone.Model.extend({
 	 */
 	addControls: function() {
          var layers = new Array();
-         //var selectableLayers = new Array();
          var map = mapLayerUtil.get('trajectoryLayers');
          for (m in map) {
              layers.push(map[m]);
-             /*if (m.indexOf("POI") > -1) {
-                // selectable layers are only point of interest layers
-                selectableLayers.push(map[m]);
-             }*/
          }
          //console.log(layers);
          // layers for highlight and select must be the same (two sets of layers create a bug)
@@ -290,6 +286,7 @@ var MapLayerUtil = Backbone.Model.extend({
      * @param layers The array of layers impacted by this control
      */
     setHighlightCtrl: function(layers) {
+        console.log("setHighlightCtrl()", layers);
         this.highlightCtrl = new OpenLayers.Control.SelectFeature(layers, {
             hover: true,
             highlightOnly: true,
@@ -407,8 +404,9 @@ var MapLayerUtil = Backbone.Model.extend({
 	printFeatureDetails: function(e) {
 	    mapLayerUtil.set({highlighting: true});
 	    $('#speedVectorPlaceholder').show();
-	    console.log(e);
-	    mapLayerUtil.mapPanel.map.getViewPortPxFromLonLat([e.feature.geometry.x, e.feature.geometry.y])
+	    //console.log("x: "+e.feature.geometry.x, "y: "+e.feature.geometry.y);
+	    //console.log("lat: "+ y2lat(e.feature.geometry.y));
+
 		//console.log(e.object.handlers.feature);
 		//console.log(mapLayerUtil.gmlLayer.features[0]); // e.feature['attributes'].id);
 		//updateInfoDiv("infoDiv", e.feature['attributes'], true);
@@ -526,18 +524,17 @@ var MapLayerUtil = Backbone.Model.extend({
 	},
 	updateSpeedVector: function(e) {
 	    //console.log("updateSpeedVector()", e.feature.attributes.heading);
-	    var vectorWidth = 40;
-	    var vectorHeight = 40;
+	    var vectorWidth = $('#speedVectorPlaceholder').width();
+	    var vectorHeight = $('#speedVectorPlaceholder').height();
 	    var heading = e.feature.attributes.heading;
-	    var mouseX = e.object.handlers.feature.evt.clientX
-	    var mouseY = e.object.handlers.feature.evt.clientY
-	    //var mouseX = this.get('currentMousePosition').mouseX;
-	    //var mouseY = this.get('currentMousePosition').mouseY;
-	    //mouseX = mouseX + Math.sin(heading) * vectorWidth;
-	    //mouseY = mouseY + Math.cos(heading) * vectorHeight;
+	    // get x,y position on map from lon, lat properties of feature
+	    var lonLat = new OpenLayers.LonLat(e.feature.geometry.x, e.feature.geometry.y);
+        var mapXY = mapLayerUtil.mapPanel.map.getViewPortPxFromLonLat(lonLat);
+	    var xPos = mapXY.x - vectorWidth/2; // + Math.sin(heading) * vectorWidth;
+	    var yPos = mapXY.y - vectorHeight/2; // + Math.cos(heading) * vectorHeight;
         $('#speedVectorPlaceholder').css({
-            top: mouseY,
-            left: mouseX,
+            top: yPos,
+            left: xPos,
             'transform': 'rotate('+heading+'deg)',
             '-webkit-transform': 'rotate('+heading+'deg)'
         });

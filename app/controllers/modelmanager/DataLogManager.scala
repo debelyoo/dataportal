@@ -17,7 +17,7 @@ import play.api.libs.json.{Json, JsValue}
 import com.vividsolutions.jts.geom.Point
 import controllers.util.json.JsonSerializable
 import models.spatial.{PointOfInterest, TrajectoryPoint}
-import com.google.gson.{JsonArray, JsonElement, JsonObject}
+import com.google.gson.{Gson, JsonArray, JsonElement, JsonObject}
 import models.internal.{SpeedLog, AltitudeLog}
 
 object DataLogManager {
@@ -669,9 +669,10 @@ object DataLogManager {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
-      val nativeQuery = "SELECT imagename, ST_X(leftuppercorner) AS xlu, ST_Y(leftuppercorner) AS ylu, ST_X(leftlowercorner) AS xll, ST_Y(leftlowercorner) AS yll, " +
-        "ST_X(rightuppercorner) AS xru, ST_Y(rightuppercorner) AS yru, ST_X(rightlowercorner) AS xrl, ST_Y(rightlowercorner) AS yrl FROM rasterdata" +
-        " WHERE mission_id = "+missionId;
+      val nativeQuery = "SELECT imagename, ST_X(leftuppercorner) AS xlu, ST_Y(leftuppercorner) AS ylu, ST_X(leftlowercorner) AS xll, ST_Y(leftlowercorner) AS yll," +
+        " ST_X(rightuppercorner) AS xru, ST_Y(rightuppercorner) AS yru, ST_X(rightlowercorner) AS xrl, ST_Y(rightlowercorner) AS yrl," +
+        " device.id, device.name, device.address, device.datatype FROM rasterdata, device" +
+        " WHERE mission_id = "+missionId+" AND rasterdata.device_id = device.id";
       val q = em.createNativeQuery(nativeQuery)
       val res = q.getResultList.map(_.asInstanceOf[Array[Object]])
       val jsArr = new JsonArray
@@ -686,6 +687,9 @@ object DataLogManager {
         dataJson.getAsJsonObject.addProperty("yru", resultArray(6).asInstanceOf[Double])
         dataJson.getAsJsonObject.addProperty("xrl", resultArray(7).asInstanceOf[Double])
         dataJson.getAsJsonObject.addProperty("yrl", resultArray(8).asInstanceOf[Double])
+        val dev = new Device(resultArray(9).asInstanceOf[Int],resultArray(10).asInstanceOf[String],resultArray(11).asInstanceOf[String],resultArray(12).asInstanceOf[String])
+        val gson: Gson = new Gson
+        dataJson.getAsJsonObject.add("device", gson.fromJson(dev.toJson, classOf[JsonObject]));
         jsArr.add(dataJson)
       })
 
