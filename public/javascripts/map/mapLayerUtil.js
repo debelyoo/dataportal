@@ -107,10 +107,9 @@ var MapLayerUtil = Backbone.Model.extend({
 				strokeColor: color,
 				fillColor: color
 			}),
-			"temporary": new OpenLayers.Style({ // highlight is all transparent because we show speed cursor
+			"temporary": new OpenLayers.Style({
                 pointRadius: 6,
                 strokeColor: "rgb(255,255,255)",
-                //strokeColor: "transparent",
                 fillColor: "transparent"
             }),
             "select": new OpenLayers.Style({
