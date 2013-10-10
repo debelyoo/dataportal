@@ -18,7 +18,6 @@ import java.util.Date;
 @Table(name = "trajectorypoint")
 public class TrajectoryPoint implements GeoJsonSerializable {
 
-
     @Id
     @GeneratedValue(generator="increment")
     @GenericGenerator(name="increment", strategy = "increment")

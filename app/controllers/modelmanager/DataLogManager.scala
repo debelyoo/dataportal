@@ -712,10 +712,13 @@ object DataLogManager {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
-      val query = "SELECT MAX(speed) AS speed, MAX(heading) AS heading FROM "+ classOf[TrajectoryPoint].getName +" WHERE mission_id = "+missionId;
+      val query = "SELECT MAX(speed) AS speed, MAX(heading) AS heading FROM "+ classOf[TrajectoryPoint].getName +" WHERE mission_id = :missionId";
       val q = em.createQuery(query)
+      q.setParameter("missionId", missionId)
       val res = q.getSingleResult.asInstanceOf[Array[Object]]
       em.getTransaction().commit()
+      println(res.length)
+      res.foreach(item => println(item))
       val headingAvailable = if (res(1).asInstanceOf[Double] > 0) true else false
       val dataJson = (new JsonObject).asInstanceOf[JsonElement]
       dataJson.getAsJsonObject.addProperty("max_speed", res(0).asInstanceOf[Double])
