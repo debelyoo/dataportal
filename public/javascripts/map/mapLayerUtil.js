@@ -15,7 +15,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		epsg900913: new OpenLayers.Projection("EPSG:900913"),
 		epsg4326: new OpenLayers.Projection("EPSG:4326"),
 		nbTrajectory: 0,
-		trajectoryLayers: {},
+		interactiveLayers: {},
 		maximumSpeed: 0.0,      // specific to the selected trajectory (selected in the graph panel)
 		headingAvailable: false // specific to the selected trajectory (selected in the graph panel)
 	}, 
@@ -80,7 +80,7 @@ var MapLayerUtil = Backbone.Model.extend({
 	 */
 	addControls: function() {
          var layers = new Array();
-         var map = mapLayerUtil.get('trajectoryLayers');
+         var map = mapLayerUtil.get('interactiveLayers');
          for (m in map) {
              layers.push(map[m]);
          }
@@ -88,6 +88,12 @@ var MapLayerUtil = Backbone.Model.extend({
          // layers for highlight and select must be the same (two sets of layers create a bug)
          mapLayerUtil.setHighlightCtrl(layers);
          mapLayerUtil.setSelectCtrl(layers);
+	},
+
+	addLayerInInteractiveLayerMap: function(layerKey, layer) {
+        var map = this.get('interactiveLayers');
+        map[layerKey] = layer;
+        this.set({interactiveLayers: map});
 	},
 	
 	/**
@@ -133,27 +139,8 @@ var MapLayerUtil = Backbone.Model.extend({
 		
 		// Add layer to map
 		this.mapPanel.map.addLayer(trajectoryLayer);
-		var map = this.get('trajectoryLayers');
-		map[mission.id] = trajectoryLayer;
-		this.set({trajectoryLayers: map});
-		
-		/*if (mode == "points") {
-			this.highlightCtrl = new OpenLayers.Control.SelectFeature(trajectoryLayer, {
-				hover: true,
-				highlightOnly: true,
-				renderIntent: "temporary",
-				eventListeners: {
-					//beforefeaturehighlighted: printFeatureDetails,
-					featurehighlighted: this.printFeatureDetails
-					//featureunhighlighted: printFeatureDetails
-				}
-			});
-			// Add controls
-			this.mapPanel.map.addControl(this.highlightCtrl);
-			this.highlightCtrl.activate();
-			//this.map.addControl(new OpenLayers.Control.LayerSwitcher());
-			//this.testFeatures(this.gmlLayer, 0, callback);
-		}*/
+		if (mode == "points")
+		    this.addLayerInInteractiveLayerMap(mission.id, trajectoryLayer);
 	},
 
     /**
@@ -201,37 +188,11 @@ var MapLayerUtil = Backbone.Model.extend({
         // Add layer to map
         //console.log(poiLayer.features.length);
         this.mapPanel.map.addLayer(poiLayer);
-        var map = this.get('trajectoryLayers');
-        map[mission.id+"-POI"] = poiLayer;
-        this.set({trajectoryLayers: map});
+        // add POI layer in interactive layers map
+        this.addLayerInInteractiveLayerMap(mission.id+"-POI", poiLayer);
 
-        function highlightPoi() {
-            console.log("POI highlighted");
-        }
-
-        /*var highlightCtrl = new OpenLayers.Control.SelectFeature(poiLayer, {
-            hover: true,
-            highlightOnly: true,
-            renderIntent: "temporary",
-            eventListeners: {
-                //beforefeaturehighlighted: printFeatureDetails,
-                featurehighlighted: highlightPoi
-                //featureunhighlighted: printFeatureDetails
-            }
-        });
-        var selectCtrl = new OpenLayers.Control.SelectFeature(poiLayer, {
-            clickout: true,
-            onSelect: selectPoi,
-            //onUnselect: this.unselectData
-        });
-        */
         // Add controls
         callback();
-        /*this.mapPanel.map.addControl(highlightCtrl);
-        this.mapPanel.map.addControl(selectCtrl);
-        highlightCtrl.activate();
-        selectCtrl.activate();
-        */
     },
 
     selectPoi: function(ev) {
@@ -298,7 +259,7 @@ var MapLayerUtil = Backbone.Model.extend({
      * @param layers The array of layers impacted by this control
      */
     setHighlightCtrl: function(layers) {
-        console.log("setHighlightCtrl()", layers);
+        //console.log("setHighlightCtrl()", layers);
         this.highlightCtrl = new OpenLayers.Control.SelectFeature(layers, {
             hover: true,
             highlightOnly: true,
@@ -487,7 +448,7 @@ var MapLayerUtil = Backbone.Model.extend({
 	highlightFeaturePoint: function(xpf) {
 		this.highlightCtrl.unselectAll();
 		//console.log("highlightFeaturePoint() - "+xpf);
-		var map = this.get('trajectoryLayers');
+		var map = this.get('interactiveLayers');
 		var layerForGraph = map[$('#pathSelect').val()];
 		//var layerForGraph = this.mapPanel.map.getLayersByName(layerName)[0];
 		//console.log(layerForGraph.features.length);
