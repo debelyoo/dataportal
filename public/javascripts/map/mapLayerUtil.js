@@ -250,15 +250,12 @@ var MapLayerUtil = Backbone.Model.extend({
 	addRasterLayer: function(mission) {
 		var self = this;
 		var datesURL = config.get('URL_PREFIX') +"/api/rasterdata/formission/"+mission.id;
-		var devicesURL = config.get('URL_PREFIX') +"/api/devices/formission/"+mission.id;
-		$.when(
-			$.ajax(datesURL),			
-			$.ajax(devicesURL)
-		).then(function(jsonData, jsonDevices){
-			jsonData=jsonData[0];
-			jsonDevices=jsonDevices[0].devices;
+		$.ajax({
+			url:datesURL
+		}).done(function(jsonData){
+			jsonData=jsonData;
 			for (j=0;j<jsonData.length;j++){
-				var raster = new OpenLayers.Layer.WMS(jsonDevices[j].name+" ("+ mission.date +" - "+mission.vehicle+")", "http://ecolvm1.epfl.ch/geoserver/"+mission.vehicle+"/wms",
+				var raster = new OpenLayers.Layer.WMS(jsonData[j].device.name+" ("+ mission.date +" - "+mission.vehicle+")", "http://ecolvm1.epfl.ch/geoserver/"+mission.vehicle+"/wms",
 					{
 						layers: jsonData[j].imagename,
 						transparent: true
