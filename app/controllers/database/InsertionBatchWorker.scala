@@ -3,7 +3,7 @@ package controllers.database
 import akka.actor.Actor
 import controllers.util.{DateFormatHelper, DataImporter, Message}
 import controllers.database.BatchManager._
-import java.util.Date
+import java.util.{Calendar, Date}
 import controllers.modelmanager.DataLogManager
 import models.Device
 
@@ -33,7 +33,11 @@ class InsertionBatchWorker extends Actor {
               }
               Some(dev)
             } else None
-            val date = DateFormatHelper.labViewTs2JavaDate(chunksOnLine(1).toDouble) // if TS comes from labview
+            //val date = DateFormatHelper.labViewTs2JavaDate(chunksOnLine(1).toDouble) // if TS comes from labview
+            // timestamp with new Qt interface is already a unix TS in ms
+            val cal = Calendar.getInstance()
+            cal.setTimeInMillis(chunksOnLine(1).toLong)
+            val date = cal.getTime
             dataType match {
               case DataImporter.Types.COMPASS => {
                 if (chunksOnLine(0) == "41") {

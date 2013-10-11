@@ -20,6 +20,9 @@ class UtilSpec extends Specification {
         println(date)
         TimeZone.setDefault(defaultTz)
         println(date)
+        val cal = Calendar.getInstance()
+        cal.setTimeInMillis(1381327413754L)
+        println(cal.getTime)
         println("")
         date must not beNull
       }
