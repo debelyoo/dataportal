@@ -17,7 +17,7 @@ POST     /spatialize                controllers.Application.spatializeData
 
 # Get sensor logs (by id)
 GET     /devices/*dId               controllers.Application.getDeviceById(dId)
-#GET     /gpslogs/*gId               controllers.Application.getGpsLogById(gId)
+GET     /trajectorypoints/*tId      controllers.Application.getTrajectoryPointById(tId)
 GET     /compasslogs/*cId           controllers.Application.getCompassLogById(cId)
 GET     /temperaturelogs/*tId       controllers.Application.getTemperatureLogById(tId)
 GET     /radiometerlogs/*rId        controllers.Application.getRadiometerLogById(rId)

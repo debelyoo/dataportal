@@ -3,6 +3,7 @@ package controllers.util
 import java.io.File
 import play.api.mvc._
 import play.api.libs.Files
+import models.Device
 
 object DataImporter {
   object Types {
@@ -25,18 +26,21 @@ object DataImporter {
    * @param missionId The id of the mission
    * @return The number of imported values
    */
-  def importFromFile(dataType: String, addressFile: File, dataFile: File, missionId: Long): String = {
+  def importFromFile(dataType: String, addressFile: Option[File], dataFile: File, missionId: Long): String = {
     try {
       assert(dataFile.exists(), {println("File ["+ dataFile.getAbsolutePath +"] does not exist")})
-      assert(addressFile.exists(), {println("File ["+ addressFile.getAbsolutePath +"] does not exist")})
-      val sensors = FileParser.parseAddressFile(addressFile)
+      val sensors = if (addressFile.isDefined) {
+        assert(addressFile.get.exists(), {println("File ["+ addressFile.get.getAbsolutePath +"] does not exist")})
+        FileParser.parseAddressFile(addressFile.get)
+      } else Some(Map[String, Device]())
       assert(sensors.isDefined, {println("Wrong format in address file (2nb parameter)")})
       println("Importing... ")
       val batchId = FileParser.parseDataFile(dataType, dataFile, sensors.get, missionId)
       assert(batchId.isDefined, {println("Parsing of data file failed !")})
       //println("Import Successful !")
       // delete the files from /tmp folder
-      addressFile.delete()
+      if (addressFile.isDefined)
+        addressFile.get.delete()
       dataFile.delete()
       batchId.get
     } catch {

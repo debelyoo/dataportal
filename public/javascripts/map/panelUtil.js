@@ -164,6 +164,7 @@ function onResetClicked() {
 	//$('#dataSelectPanel').hide();
 	$('#calendar').DatePickerClear(); 
 	mapLayerUtil.removeLayers()
+	$('#speedVectorPlaceholder').hide();
 	$('#dataSelectPanel').hide();
 	$('#deviceSelectRow').hide();
 	$('#dataGraphPlaceholder').hide();
@@ -379,12 +380,14 @@ function createPathSelectForData(mode) {
 		if (missionId > 0) {
 			// get sensors for this trajectory
 			getDevicesForMission(missionId);
+			getMissionMaximumSpeed(missionId); // every time the selected trajectory changes -> get max speed and heading
 		} else {
 			$('#deviceSelectRow').hide();
 		}
 	});
 	if (dataGraphAvailable) {
 	    getDevicesForMission(currentMissions[0].id);
+	    getMissionMaximumSpeed(currentMissions[0].id);
 		$('#dataSelectPanel').show();
 		toggleGraphPanel();
 	}
@@ -450,20 +453,20 @@ function getDatatypeAndDeviceId() {
  * @param deviceId The id of the device
  */
 function getDeviceData(datatype, missionId, deviceId) {
-    if (datatype == "speed") {
-        getMissionMaximumSpeed(missionId);
-    }
 	var url = config.get('URL_PREFIX') +"/api/data?data_type="+datatype+"&mission_id="+missionId+"&device_id="+deviceId+"&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH');
 	console.log(url);
 	var graphHeight = $('#graphPanel').height();
-	//console.log("graph height: "+graphHeight)
-	var embeddedGraph = new GraphD3({
-		containerElementId: 'dataGraphPlaceholder', 
-		svgElementId: 'svgElement1',
-		linkWithGeoData: true,
-		heightContainer: graphHeight
-	});
-	mapLayerUtil.set({activeGraph: embeddedGraph});
+	var embeddedGraph = mapLayerUtil.get('activeGraph')
+	if(!embeddedGraph) {
+	    console.log("create embedded graph !");
+        embeddedGraph = new GraphD3({
+            containerElementId: 'dataGraphPlaceholder',
+            svgElementId: 'svgElement1',
+            linkWithGeoData: true,
+            heightContainer: graphHeight
+        });
+        mapLayerUtil.set({activeGraph: embeddedGraph});
+    }
 	embeddedGraph.refreshSensorGraph(url, false);
 	$('#dataGraphPlaceholder').show();
 }

@@ -3,7 +3,7 @@ package controllers.modelmanager
 import controllers.util._
 import javax.persistence.{Query, EntityManager, TemporalType, NoResultException}
 import scala.reflect.{ClassTag, classTag}
-import java.util.{UUID, Calendar, Date}
+import java.util.{TimeZone, UUID, Calendar, Date}
 import scala.collection.JavaConversions._
 import models._
 import controllers.database._
@@ -524,12 +524,16 @@ object DataLogManager {
    * @return A map with the altitude logs
    */
   def getAltitude(missionId: Long, maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
+    val tz = getById[Mission](missionId).map(m => TimeZone.getTimeZone(m.getTimeZone)).getOrElse(TimeZone.getDefault)
+    val formatter = DateFormatHelper.postgresTimestampWithMilliFormatter
+    formatter.setTimeZone(tz) // format TS with mission timezone
     val pointList = getTrajectoryPoints(missionId, maxNb)
     val altitudeLogList = pointList.map(trajPt =>
       AltitudeLog(trajPt.getId,
-      DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.getTimestamp),
+      formatter.format(trajPt.getTimestamp),
       trajPt.getCoordinate.getCoordinate.z)
     )
+    formatter.setTimeZone(TimeZone.getDefault) // reset formatter timezone to default
     Map("altitude" -> altitudeLogList)
   }
 
@@ -717,8 +721,6 @@ object DataLogManager {
       q.setParameter("missionId", missionId)
       val res = q.getSingleResult.asInstanceOf[Array[Object]]
       em.getTransaction().commit()
-      println(res.length)
-      res.foreach(item => println(item))
       val headingAvailable = if (res(1).asInstanceOf[Double] > 0) true else false
       val dataJson = (new JsonObject).asInstanceOf[JsonElement]
       dataJson.getAsJsonObject.addProperty("max_speed", res(0).asInstanceOf[Double])

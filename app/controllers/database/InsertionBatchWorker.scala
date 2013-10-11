@@ -15,6 +15,7 @@ class InsertionBatchWorker extends Actor {
       var setNumberOpt: Option[Int] = None
       insertionBatches.get(batchId).map { case (lines, sensors) =>
         val trajectoryPoints = DataLogManager.getTrajectoryPoints(missionId, None) // for inserting compass value
+        var inc = 0;
         for ((line, ind) <- lines.zipWithIndex) {
           val chunksOnLine = if(dataType != DataImporter.Types.ULM_TRAJECTORY)
             line.split("\\t")
@@ -22,6 +23,7 @@ class InsertionBatchWorker extends Actor {
             line.split(",")
           if (chunksOnLine.nonEmpty) {
             //println(chunksOnLine.toList)
+            inc += 1
             val deviceOpt = sensors.get(chunksOnLine(0))
             val device = if (deviceOpt.isDefined) {
               val dev = new Device(deviceOpt.get.getName, deviceOpt.get.getAddress, dataType)
@@ -31,7 +33,7 @@ class InsertionBatchWorker extends Actor {
               }
               Some(dev)
             } else None
-            val date = DateFormatHelper.labViewTsToJavaDate(chunksOnLine(1).toDouble) // if TS comes from labview
+            val date = DateFormatHelper.labViewTs2JavaDate(chunksOnLine(1).toDouble) // if TS comes from labview
             dataType match {
               case DataImporter.Types.COMPASS => {
                 if (chunksOnLine(0) == "41") {
@@ -61,7 +63,7 @@ class InsertionBatchWorker extends Actor {
                   if (setNumberOpt.isEmpty) setNumberOpt = DataLogManager.getNextSetNumber(date)
                   //val setNumberOpt = DataLogManager.getNextSetNumber[GpsLog](date)
                   setNumberOpt.foreach(setNumber => {
-                    DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, missionId, date, setNumber, device.get,
+                    DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, missionId, date, setNumber,
                       chunksOnLine(2).toDouble, chunksOnLine(3).toDouble, altitudeValue)
                   })
                 } else {
@@ -70,16 +72,15 @@ class InsertionBatchWorker extends Actor {
               }
               case DataImporter.Types.POINT_OF_INTEREST => {
                 // timestamp - latitude - longitude - elevation
-                val tsDate = DateFormatHelper.labViewTsToJavaDate(chunksOnLine(0).toDouble) // if TS comes from labview
+                val tsDate = DateFormatHelper.labViewTs2JavaDate(chunksOnLine(0).toDouble) // if TS comes from labview
                 DataLogManager.insertionWorker ! Message.InsertPointOfInterest(batchId, missionId, tsDate,
                   chunksOnLine(1).toDouble, chunksOnLine(2).toDouble, chunksOnLine(3).toDouble)
               }
               case DataImporter.Types.ULM_TRAJECTORY => {
                 // latitude - longitude - elevation - ts
-                val tsDate = DateFormatHelper.ulmKmlTimestampFormatter.parse(chunksOnLine(3))
-                println(tsDate)
-                DataLogManager.insertionWorker ! Message.InsertUlmTrajectory(batchId, missionId, tsDate,
-                  chunksOnLine(1).toDouble, chunksOnLine(0).toDouble, chunksOnLine(2).toDouble)
+                val (tsDate, timeZone) = DateFormatHelper.ulmTs2JavaDate(chunksOnLine(3))
+                DataLogManager.insertionWorker ! Message.InsertUlmTrajectory(batchId, missionId, tsDate, timeZone,
+                  chunksOnLine(0).toDouble, chunksOnLine(1).toDouble, chunksOnLine(2).toDouble)
               }
               case _  => println("Unknown data type ! ["+ dataType +"]")
             }

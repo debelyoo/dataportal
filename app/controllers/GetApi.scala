@@ -155,10 +155,10 @@ trait GetApi extends ResponseFormatter {
   }*/
 
   /// Getters for log details (used mainly for tests)
-  /*def getGpsLogById(gId: String) = Action {
-    val logOpt = DataLogManager.getById[GpsLog](gId.toLong)
-    logOpt.map(gl => Ok(gl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'gId' exists
-  }*/
+  def getTrajectoryPointById(tId: String) = Action {
+    val logOpt = DataLogManager.getById[TrajectoryPoint](tId.toLong)
+    logOpt.map(gl => Ok(gl.toGeoJson)).getOrElse(NotFound) // return Not Found if no log with id 'gId' exists
+  }
   def getCompassLogById(cId: String) = Action {
     val logOpt = DataLogManager.getById[CompassLog](cId.toLong)
     logOpt.map(cl => Ok(cl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'cId' exists

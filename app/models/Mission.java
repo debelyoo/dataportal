@@ -13,6 +13,7 @@ import javax.persistence.*;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.TimeZone;
 
 @Entity
 @Table(name = "mission")
@@ -26,6 +27,7 @@ public class Mission implements JsonSerializable {
     private Long id;
 
     private Date departureTime;
+    private String timeZone; // GMT+2 for leman, GMT+9 for baikal
 
     @Column(name="trajectory")
     @Type(type="org.hibernate.spatial.GeometryType")
@@ -66,6 +68,14 @@ public class Mission implements JsonSerializable {
         this.departureTime = d;
     }
 
+    public String getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(String tz) {
+        this.timeZone = tz;
+    }
+
     public LineString getTrajectory() {
         return this.trajectory;
     }
@@ -86,10 +96,6 @@ public class Mission implements JsonSerializable {
         return new HashSet<Device>(devices);
     }
 
-    /*public void setDevices(Set<Device> devs) {
-        this.devices = devs;
-    }*/
-
     public void addDevice(Device dev) {
         if (!this.devices.contains(dev))
             this.devices.add(dev);
@@ -105,7 +111,7 @@ public class Mission implements JsonSerializable {
     }
 
     /**
-     * Custom JSON Serializer for GPS log
+     * Custom JSON Serializer
      */
     public static class MissionSerializer implements JsonSerializer<Mission> {
         @Override
@@ -113,6 +119,7 @@ public class Mission implements JsonSerializable {
             JsonElement missionJson = new JsonObject();
             missionJson.getAsJsonObject().addProperty("id", mission.getId());
             missionJson.getAsJsonObject().addProperty("date", DateFormatHelper.selectYearFormatter().format(mission.getDepartureTime()));
+            missionJson.getAsJsonObject().addProperty("timezone", mission.getTimeZone());
             missionJson.getAsJsonObject().addProperty("vehicle", mission.getVehicle().getName());
             return missionJson;
         }

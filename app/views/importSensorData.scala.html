@@ -4,15 +4,9 @@
     @helper.form(action = routes.Application.importData, 'enctype -> "multipart/form-data") {
         <div class="form-horizontal">
             <div class="control-group">
-                <label class="control-label" for="inputAddressFile">Address file</label>
+                <label class="control-label">Mission</label>
                 <div class="controls">
-                    <input type="file" id="inputAddressFile" name="addressFile">
-                </div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="inputDataFile">Data file</label>
-                <div class="controls">
-                    <input type="file" id="inputDataFile" name="dataFile">
+                    <span id="missionSelectPlaceholder"></span>
                 </div>
             </div>
             <div class="control-group">
@@ -29,10 +23,16 @@
                     </select>
                 </div>
             </div>
-            <div class="control-group">
-                <label class="control-label" for="selectDataType">Mission</label>
+            <div id="addressFileSelectContainer" class="control-group">
+                <label class="control-label" for="inputAddressFile">Address file</label>
                 <div class="controls">
-                    <span id="missionSelectPlaceholder"></span>
+                    <input type="file" id="inputAddressFile" name="addressFile">
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="inputDataFile">Data file</label>
+                <div class="controls">
+                    <input type="file" id="inputDataFile" name="dataFile">
                 </div>
             </div>
             <script>
@@ -54,6 +54,15 @@
 
                     var pathSelect = "<select id=\"pathSelect\" name=\"missionId\">" + options + "</select>";
                     $('#missionSelectPlaceholder').html(pathSelect);
+
+                    $('#selectDataType').change(function(val) {
+                        var datatype = $('#selectDataType').val();
+                        if (datatype == 'gps' || datatype == 'point_of_interest' || datatype == 'ulm_trajectory' || datatype == 'compass') {
+                            $('#addressFileSelectContainer').hide();
+                        } else {
+                            $('#addressFileSelectContainer').show();
+                        }
+                    });
                 }
             </script>
             <div class="control-group">

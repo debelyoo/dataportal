@@ -9,7 +9,7 @@ import com.vividsolutions.jts.geom.{Geometry, Point}
 import scala.collection.immutable.Queue
 import controllers.database.BatchManager._
 import scala.Some
-import java.util.Date
+import java.util.{TimeZone, Date}
 import play.api.Logger
 import scala.Some
 import org.hibernate.Hibernate
@@ -209,39 +209,34 @@ class InsertionWorker extends Actor {
         em.close()
       }
     }
-    case Message.InsertGpsLog(batchId, missionId, ts, setNumber, sensor, latitude, longitude, altitude) => {
+    case Message.InsertGpsLog(batchId, missionId, ts, setNumber, latitude, longitude, altitude) => {
       try {
         //println("[Message.InsertGpsLog] "+sensor.address)
-        val sensorInDb = DeviceManager.getByNameAndAddress(sensor.getName, sensor.getAddress)
-        assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
-        val uniqueString = createUniqueString(sensor.getAddress, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
-        val res = if (!logCache.contains(uniqueString)) {
-          val (lat, lon, alt) = if (math.abs(latitude) > 90 || math.abs(longitude) > 180) {
-            // east coordinate comes as longitude var, north coordinate comes as latitude var
-            val arr = ApproxSwissProj.LV03toWGS84(longitude, latitude, altitude).toList
-            //val latitude = arr(0)
-            //val longitude = arr(1)
-            (arr(0), arr(1), arr(2))
-          } else {
-            (latitude, longitude, altitude)
-          }
-          //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
-          val geom = CoordinateHelper.wktToGeometry("POINT("+ lon +" "+ lat +" "+ alt +")")
-          val pt = geom.asInstanceOf[Point]
-          val speed = computeSpeed(ts, pt, setNumber)
-          //Logger.info("Insert point: "+pt.getCoordinate.x+", "+pt.getCoordinate.y+", "+pt.getCoordinate.z)
-          val gl = new TrajectoryPoint()
-          gl.setTimestamp(ts)
-          gl.setCoordinate(pt)
-          gl.setSpeed(speed)
-          val m = DataLogManager.getById[Mission](missionId)
-          gl.setMission(m.get)
-          val persisted = gl.save(None) // persist in DB
-          if (persisted) {
-            logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
-            Some(true)
-          } else None
-        } else Some(false)
+        //val sensorInDb = DeviceManager.getByNameAndAddress(sensor.getName, sensor.getAddress)
+        //assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
+        //val uniqueString = createUniqueString(sensor.getAddress, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
+        //if (!logCache.contains(uniqueString)) {
+        val (lat, lon, alt) = if (math.abs(latitude) > 90 || math.abs(longitude) > 180) {
+          // east coordinate comes as longitude var, north coordinate comes as latitude var
+          val arr = ApproxSwissProj.LV03toWGS84(longitude, latitude, altitude).toList
+          //val latitude = arr(0)
+          //val longitude = arr(1)
+          (arr(0), arr(1), arr(2))
+        } else {
+          (latitude, longitude, altitude)
+        }
+        //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
+        val geom = CoordinateHelper.wktToGeometry("POINT("+ lon +" "+ lat +" "+ alt +")")
+        val pt = geom.asInstanceOf[Point]
+        val speed = computeSpeed(ts, pt, setNumber)
+        //Logger.info("Insert point: "+pt.getCoordinate.x+", "+pt.getCoordinate.y+", "+pt.getCoordinate.z)
+        val gl = new TrajectoryPoint()
+        gl.setTimestamp(ts)
+        gl.setCoordinate(pt)
+        gl.setSpeed(speed)
+        val m = DataLogManager.getById[Mission](missionId)
+        gl.setMission(m.get)
+        gl.save(None) // persist in DB
         BatchManager.updateBatchProgress(batchId, "Insertion")
       } catch {
         case ae: AssertionError => None
@@ -273,19 +268,29 @@ class InsertionWorker extends Actor {
         case ae: AssertionError => None
       }
     }
-    case Message.InsertUlmTrajectory(batchId, missionId, ts, latitude, longitude, altitude) => {
+    case Message.InsertUlmTrajectory(batchId, missionId, ts, timeZone, latitude, longitude, altitude) => {
       try {
         //println("[Message.InsertPointOfInterest] ")
         //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
-        val geom = CoordinateHelper.wktToGeometry("POINT("+ longitude +" "+ latitude +" "+ altitude +")")
-        val pt = new TrajectoryPoint()
-        pt.setTimestamp(ts)
-        pt.setCoordinate(geom.asInstanceOf[Point])
-        //poi.setAltitude(altitude)
-        val m = DataLogManager.getById[Mission](missionId)
-        pt.setMission(m.get)
-        val persisted = pt.save(None) // persist in DB
+        // create unique string with second precision so that only one point is inserted per second
+        //val defaultTz = TimeZone.getDefault
+        //TimeZone.setDefault(timeZone)
+        val uniqueString = createUniqueString("ulmTs", DateFormatHelper.postgresTimestampFormatter.format(ts))
+        if (!logCache.contains(uniqueString)) {
+          val geom = CoordinateHelper.wktToGeometry("POINT("+ longitude +" "+ latitude +" "+ altitude +")")
+          val pt = new TrajectoryPoint()
+          pt.setTimestamp(ts)
+          pt.setCoordinate(geom.asInstanceOf[Point])
+          val m = DataLogManager.getById[Mission](missionId)
+          pt.setMission(m.get)
+          val persisted = pt.save(None) // persist in DB
+          if (persisted) {
+            logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
+          }
+        }
         BatchManager.updateBatchProgress(batchId, "Insertion")
+        //TimeZone.setDefault(defaultTz)
+
       } catch {
         case ae: AssertionError => None
       }

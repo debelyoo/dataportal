@@ -12,7 +12,10 @@ import org.hibernate.annotations.Type;
 import scala.Option;
 
 import javax.persistence.*;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.TimeZone;
 
 @Entity
 @Table(name = "trajectorypoint")
@@ -108,10 +111,11 @@ public class TrajectoryPoint implements GeoJsonSerializable {
             String str = "["+point.coordinate.getCoordinate().x +","+point.coordinate.getCoordinate().y+","+ point.coordinate.getCoordinate().z +"]";
             JsonArray jArr = gson.fromJson(str, JsonArray.class);
             geometryObj.add("coordinates", jArr);
-
             JsonObject propertiesObj = new JsonObject();
             propertiesObj.addProperty("id", point.getId());
-            propertiesObj.addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(point.getTimestamp()));
+            SimpleDateFormat formatter = DateFormatHelper.postgresTimestampWithMilliFormatter();
+            formatter.setTimeZone(TimeZone.getTimeZone(point.getMission().getTimeZone()));
+            propertiesObj.addProperty("timestamp", formatter.format(point.getTimestamp()));
             propertiesObj.addProperty("speed", point.getSpeed());
             propertiesObj.addProperty("heading", point.getHeading());
             if (point.getCoordinate() != null) {

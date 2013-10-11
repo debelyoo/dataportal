@@ -130,13 +130,10 @@ div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate
 
 #infoDiv {
 	width: 230px;
-	/*border-radius: 5px;*/
 	border: 1px solid white;
-	background-color: rgba(0, 0, 0, 0.6);
 	padding: 5px;
-	color: white;
-	display: none;
-	z-index: 999;
+	margin: 5px;
+	float: right;
 }
 
 #graphPanelContainer {

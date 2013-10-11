@@ -58,7 +58,7 @@ object FileParser {
    * Parse a data file
    * @param dataType The type of data to store
    * @param file The name of the data file
-   * @param devices The sensors defined in the address file
+   * @param devices The devices defined in the address file
    * @return The nb of inserted values
    */
   def parseDataFile(dataType: String, file: File, devices: Map[String, Device], missionId: Long): Option[String] = {

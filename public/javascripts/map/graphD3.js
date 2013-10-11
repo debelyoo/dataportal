@@ -213,12 +213,10 @@ var GraphD3 = Backbone.Model.extend({
 			this.resetZoomBounds();
 			$('#'+this.get('svgElementId')).remove(); // remove SVG element if already present
 			var svg = this.createSvgElement();
-			//var url = "http://localhost/playproxy/api/data?data_type=temperature&from_date=20130613-152603&to_date=20130613-160019&sensor_id=3";
 			d3.json(url, function(error, data) {
 			  //console.log(error);
 			  //console.log(data);
 			  var sensorNames = data.logs.map(function(serie) {return serie["sensor"]});
-			  //console.log(sensorNames);
 			  self.color.domain(sensorNames);
 			  data.logs.forEach(function(serie) {
 				serie.values.forEach(function(d) {
@@ -228,11 +226,20 @@ var GraphD3 = Backbone.Model.extend({
 
 			  self.sensorLogs = self.color.domain().map(function(name, ind) {
 				//console.log("name: "+name+", index: "+ind);
-				//console.log(data.logs[ind].values.length);
+				//console.log(data.logs[ind].values);
+				/* TEST to keep order
+				var valueArray = new Array();
+				for (var i = 0; i < data.logs[ind].values.length; i++) {
+                    var d = data.logs[ind].values[i];
+                    //console.log(d.id);
+                    valueArray.push({date: d.date, logValue: d.value, coordinate_swiss: d.coordinate_swiss, speed: d.speed})
+				}
+				return {name: name, values: valueArray};
+				*/
 				return {
 				  name: name,
 				  values: data.logs[ind].values.map(function(d) {
-					//console.log(d);
+					//console.log("[graphD3.js - 233]", d.date);
 					return {date: d.date, logValue: d.value, coordinate_swiss: d.coordinate_swiss, speed: d.speed};
 					//return {date: d.date, temperature: +d[name]};
 				  })
