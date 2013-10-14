@@ -32,7 +32,7 @@ var GraphD3 = Backbone.Model.extend({
 			//this.xAxis = d3.svg.axis().scale(this.x).orient("bottom").ticks(d3.time.minutes, this.get('ticksIntervalX'));
 			//this.xAxis = d3.svg.axis().scale(this.x).orient("bottom").ticks(d3.time.minutes, 10);
 			this.yAxis = d3.svg.axis().scale(this.y).orient("left").ticks(this.get('nbTicksY'));
-			this.line = d3.svg.line().interpolate("basis").x(function(d) { return this.x(d.date); }).y(function(d) { return this.y(d.logValue); });
+			this.line = d3.svg.line().interpolate("basis").x(function(d) { return this.x(d.date); }).y(function(d) { return this.y(d.value); });
 			this.formatDate = d3.time.format("%Y-%m-%d %H:%M:%S.%L")
 			this.formatDateUrl = d3.time.format("%Y%m%d-%H%M%S")
 			this.parseDate = this.formatDate.parse
@@ -188,7 +188,8 @@ var GraphD3 = Backbone.Model.extend({
 			//console.log("xPos: "+ xPosition +", index: "+index);
 			var v = d[index];
 
-			return {value: v.logValue, timestamp: this.formatDate(v.date), xPosFraction: xpf, coordinate_swiss: v.coordinate_swiss, speed: v.speed};
+			//return {value: v.value, timestamp: this.formatDate(v.date), xPosFraction: xpf, coordinate_swiss: v.coordinate_swiss, speed: v.speed};
+			return {value: v.value, timestamp: this.formatDate(v.date), xPosFraction: xpf};
 		},
 		
 		/**
@@ -206,7 +207,12 @@ var GraphD3 = Backbone.Model.extend({
 				this.tooltip.attr("transform", "translate("+ xPosTt  +","+ this.get('tooltip').y +")");
 			}
 		},
-		
+
+		/**
+		 * Refresh the plot with new data - called from panelUtil.js
+		 * @param url The url from whom to get the new data
+		 * @param zoomed Indicates if the current graph is the zoomed one
+		 */
 		refreshSensorGraph: function(url, zoomed) {		
 			//console.log("refreshSensorGraph() - "+url);
 			var self = this;
@@ -220,29 +226,21 @@ var GraphD3 = Backbone.Model.extend({
 			  self.color.domain(sensorNames);
 			  data.logs.forEach(function(serie) {
 				serie.values.forEach(function(d) {
-				  d.date = self.parseDate(d.timestamp);
+				  d.date = self.parseDate(d.timestamp); // parse timestamp to date (D3 takes date in X axis)
 				})
 			  });
 
 			  self.sensorLogs = self.color.domain().map(function(name, ind) {
 				//console.log("name: "+name+", index: "+ind);
 				//console.log(data.logs[ind].values);
-				/* TEST to keep order
-				var valueArray = new Array();
-				for (var i = 0; i < data.logs[ind].values.length; i++) {
-                    var d = data.logs[ind].values[i];
-                    //console.log(d.id);
-                    valueArray.push({date: d.date, logValue: d.value, coordinate_swiss: d.coordinate_swiss, speed: d.speed})
-				}
-				return {name: name, values: valueArray};
-				*/
 				return {
 				  name: name,
-				  values: data.logs[ind].values.map(function(d) {
-					//console.log("[graphD3.js - 233]", d.date);
-					return {date: d.date, logValue: d.value, coordinate_swiss: d.coordinate_swiss, speed: d.speed};
-					//return {date: d.date, temperature: +d[name]};
-				  })
+				  values: data.logs[ind].values
+				  /*values: data.logs[ind].values.map(function(d) {
+					//console.log("[graphD3.js - 242]", d);
+					return {date: self.parseDate(d.timestamp), logValue: d.value};
+					//return {date: self.parseDate(d.timestamp), logValue: d.value, coordinate_swiss: d.coordinate_swiss, speed: d.speed};
+				  })*/
 				};
 			  });
 			  
@@ -263,12 +261,12 @@ var GraphD3 = Backbone.Model.extend({
 			  } else {
 				self.xAxis = d3.svg.axis().scale(self.x).orient("bottom").ticks(d3.time.seconds, tickIntervalSec);
 			  }
-				
-			  self.x.domain(d3.extent(data.logs[0].values, function(d) { return d.date; }));
+
+			  self.x.domain(d3.extent(self.sensorLogs[0].values, function(d) { return d.date; }));
 
 			  self.y.domain([
-				d3.min(self.sensorLogs, function(c) { return d3.min(c.values, function(v) { return v.logValue; }); }),
-				d3.max(self.sensorLogs, function(c) { return d3.max(c.values, function(v) { return v.logValue; }); })
+				d3.min(self.sensorLogs, function(c) { return d3.min(c.values, function(v) { return v.value; }); }),
+				d3.max(self.sensorLogs, function(c) { return d3.max(c.values, function(v) { return v.value; }); })
 			  ]);
 
 			  svg.append("g")
@@ -299,7 +297,7 @@ var GraphD3 = Backbone.Model.extend({
 
 			  sl.append("text")
 				  .datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; })
-				  .attr("transform", function(d) { return "translate(" + self.x(d.value.date) + "," + self.y(d.value.logValue) + ")"; })
+				  .attr("transform", function(d) { return "translate(" + self.x(d.value.date) + "," + self.y(d.value.value) + ")"; })
 				  .attr("x", 3)
 				  .attr("dy", ".35em")
 				  .style("stroke", "black")

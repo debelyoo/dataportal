@@ -67,12 +67,19 @@ var MapLayerUtil = Backbone.Model.extend({
 	/**
 	 * Add all the layers related to a mission (trajectory, raster, POI)
 	 * @param mission
-	 * @param mode
+	 * @param isUlmMission
 	 */
-	addLayers: function(mission, mode) {
+	addLayers: function(mission) {
 	    this.getPoiForMission(mission, this.addControls);
 	    this.addRasterLayer(mission);
-	    this.addTrajectoryLayer(mission, mode);
+	    if (isUlmMission(mission)) {
+	        // for ULM mission, add line + points (trajectory)
+	        this.addTrajectoryLayer(mission, config.get('MODE_LINESTRING'));
+	        this.addTrajectoryLayer(mission, config.get('MODE_POINTS'));
+	    } else {
+	        // for catamaran mission add only points (trajectory)
+	        this.addTrajectoryLayer(mission, config.get('MODE_POINTS'));
+	    }
 	},
 
 	/**
@@ -104,26 +111,12 @@ var MapLayerUtil = Backbone.Model.extend({
 	addTrajectoryLayer: function(mission, mode) {
 		var geojsonUrl = config.get('URL_PREFIX') +"/api/trajectory?max_nb="+config.get('MAX_NB_DATA_POINTS_ON_MAP')+"&format=geojson&mode="+mode+"&mission_id="+mission.id;
 		console.log(geojsonUrl);
-		var layerTitle = mission.date + " - " + mission.vehicle;
+		var suffix = "";
+		if (mode == config.get('MODE_LINESTRING'))
+		    suffix = " (Line)"
+		var layerTitle = mission.date + " - " + mission.vehicle + suffix;
 		var nbTraj = this.get('nbTrajectory') + 1;
 		var color = "rgb(255,"+Math.floor(175/nbTraj)+",0)";
-		var customStyleMap = new OpenLayers.StyleMap({
-			"default": new OpenLayers.Style({
-				pointRadius: 3,
-				strokeColor: color,
-				fillColor: color
-			}),
-			"temporary": new OpenLayers.Style({
-                pointRadius: 6,
-                strokeColor: "rgb(255,255,255)",
-                fillColor: "transparent"
-            }),
-            "select": new OpenLayers.Style({
-                pointRadius: 3,
-                strokeColor: color,
-                fillColor: color
-            })
-		})
 		this.set({nbTrajectory: nbTraj});
 		var trajectoryLayer = new OpenLayers.Layer.Vector(layerTitle, {
 			strategies: [new OpenLayers.Strategy.Fixed()],
@@ -134,7 +127,7 @@ var MapLayerUtil = Backbone.Model.extend({
 				    ignoreExtraDims: true // necessary to ignore 3rd coordinate (z) in geojson points
 				})
 			}),
-			styleMap: customStyleMap
+			styleMap: this.getStyleMap(mode, isUlmMission(mission), color)
 		});
 		
 		// Add layer to map
@@ -230,6 +223,55 @@ var MapLayerUtil = Backbone.Model.extend({
 				self.mapPanel.map.addLayers([raster])
 			}
 		})
+	},
+
+	/**
+	 * Get the styleMap according to the type of mission and trajectory display mode
+	 * @param mode
+	 * @param isUlmMission
+	 * @param color
+	 */
+	getStyleMap: function(mode, isUlmMission, color) {
+	    var styleMap;
+	    if (mode == config.get('MODE_POINTS') && isUlmMission) {
+	        // if it is a ULM mission and the trajectory is shown as points -> make them transparent
+	        styleMap = new OpenLayers.StyleMap({
+                "default": new OpenLayers.Style({
+                  pointRadius: 3,
+                  strokeColor: "transparent",
+                  fillColor: "transparent"
+                }),
+                "temporary": new OpenLayers.Style({
+                  pointRadius: 6,
+                  strokeColor: "rgb(255,255,255)",
+                  fillColor: "transparent"
+                }),
+                "select": new OpenLayers.Style({
+                  pointRadius: 3,
+                  strokeColor: color,
+                  fillColor: color
+                })
+            })
+	    } else {
+            styleMap = new OpenLayers.StyleMap({
+                "default": new OpenLayers.Style({
+                    pointRadius: 3,
+                    strokeColor: color,
+                    fillColor: color
+                }),
+                "temporary": new OpenLayers.Style({
+                    pointRadius: 6,
+                    strokeColor: "rgb(255,255,255)",
+                    fillColor: "transparent"
+                }),
+                "select": new OpenLayers.Style({
+                    pointRadius: 3,
+                    strokeColor: color,
+                    fillColor: color
+                })
+            })
+        }
+        return styleMap;
 	},
 
 	/**

@@ -183,20 +183,14 @@ function getMissionsForDates(dateArr) {
 			url: config.get('URL_PREFIX') +"/api/missions/fordate/"+dateArr[i]
 		}).done(function( missions ) {
 			nbMissionListReceived++;
-			var mode = $("#selectMode").val();
+			//var mode = $("#selectMode").val();
 			for (var j=0;j<missions.length;j++){
 				currentMissions.push(missions[j]);
-				// add path for each outings
-				if (mode == "points" || isCatamaranMission(missions[j])) { // currently catamaran has only points mode
-					mapLayerUtil.addLayers(missions[j], "points");
-					//console.log("add linestring");
-				} else {
-					mapLayerUtil.addLayers(missions[j], mode);
-					//console.log("add points");
-				}
+				// add path for each mission
+				mapLayerUtil.addLayers(missions[j]);
 			}
 			if (nbMissionListReceived == nbSelectedDates) {			
-				createPathSelectForData(mode);
+				createPathSelectForData();
 			}
 		});
 	}	
@@ -359,7 +353,7 @@ function refreshSetField(date) {
 	});
 }*/
 
-function createPathSelectForData(mode) {
+function createPathSelectForData() {
 	//console.log("createPathSelectForData()", missions);
 	var dataGraphAvailable = false;
 	var options = "";
@@ -367,10 +361,8 @@ function createPathSelectForData(mode) {
 	for (var i = 0; i < currentMissions.length; i++) {
 		mission = currentMissions[i];
 		var missionName = mission.date + " - " + mission.vehicle
-		if (isCatamaranMission(mission) || (isUlmMission(mission) && mode == "points")) {
-			dataGraphAvailable = true;
-			options += "<option value="+ mission.id +">"+ missionName +"</option>"
-		}
+        dataGraphAvailable = true;
+        options += "<option value="+ mission.id +">"+ missionName +"</option>";
 	}
 	
 	var pathSelect = "<select id=\"pathSelect\">" + options + "</select>";
