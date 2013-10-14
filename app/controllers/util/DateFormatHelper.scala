@@ -13,14 +13,28 @@ object DateFormatHelper {
   //val ulmKmlTimestampFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HHmmss.SSS")
 
   /**
-   * Convert a labview timestamp to Java Date (in time zone UTC+01:00)
+   * Convert a labview timestamp to Java Date
    * @param labviewTs The timestamp in labview time reference (nb of seconds from 1.1.1904) UTC
    * @return The corresponding date in Java time reference
    */
-  def labViewTs2JavaDate(labviewTs: Double): Date = {
-    val labviewEpoch = dateTimeFormatter.parse("19040101-000000") // 1.1.1904
-    val newTs = labviewEpoch.getTime() + math.round(labviewTs * 1000)
-    new Date(newTs)
+  def labViewTs2JavaDate(labviewTs: String): Option[Date] = {
+    try {
+      val labviewEpoch = dateTimeFormatter.parse("19040101-000000") // 1.1.1904
+      val newTs = labviewEpoch.getTime() + math.round(labviewTs.toDouble * 1000)
+      Some(new Date(newTs))
+    } catch {
+      case ex: Exception => None
+    }
+  }
+
+  def unixTs2JavaDate(unixTs: String): Option[Date] = {
+    try {
+      val cal = Calendar.getInstance()
+      cal.setTimeInMillis(unixTs.toLong)
+      Some(cal.getTime)
+    } catch {
+      case ex: Exception => None
+    }
   }
 
   def ulmTs2JavaDate(ulmTs: String): (Date, TimeZone) = {

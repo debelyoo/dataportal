@@ -70,8 +70,6 @@ var MapLayerUtil = Backbone.Model.extend({
 	 * @param isUlmMission
 	 */
 	addLayers: function(mission) {
-	    this.getPoiForMission(mission, this.addControls);
-	    this.addRasterLayer(mission);
 	    if (isUlmMission(mission)) {
 	        // for ULM mission, add line + points (trajectory)
 	        this.addTrajectoryLayer(mission, config.get('MODE_LINESTRING'));
@@ -80,6 +78,8 @@ var MapLayerUtil = Backbone.Model.extend({
 	        // for catamaran mission add only points (trajectory)
 	        this.addTrajectoryLayer(mission, config.get('MODE_POINTS'));
 	    }
+	    this.getPoiForMission(mission, this.addControls);
+        this.addRasterLayer(mission);
 	},
 
 	/**
@@ -280,7 +280,8 @@ var MapLayerUtil = Backbone.Model.extend({
      * @param callback The callback to call when layer is loaded
      */
     getPoiForMission: function(mission, callback) {
-    var self = this;
+        //console.log("getPoiForMission()", mission);
+        var self = this;
         $.ajax({
             url: config.get('URL_PREFIX') +"/api/pointsofinterest/formission/"+mission.id
         }).done(function( jsonData ) {

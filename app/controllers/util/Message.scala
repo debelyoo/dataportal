@@ -11,7 +11,7 @@ object Message {
   case class InsertWindLog (batchId: String, missionId: Long, ts: Date, device: Device, windVal: Double)
   case class InsertGpsLog (batchId: String, missionId: Long, ts: Date, setNumber: Int, latitude: Double, longitude: Double, altitude: Double)
   case class InsertPointOfInterest (batchId: String, missionId: Long, ts: Date, latitude: Double, longitude: Double, altitude: Double)
-  case class InsertUlmTrajectory (batchId: String, missionId: Long, ts: Date, tz: TimeZone, latitude: Double, longitude: Double, altitude: Double)
+  case class InsertUlmTrajectory (batchId: String, missionId: Long, ts: Date, latitude: Double, longitude: Double, altitude: Double)
   case class InsertRadiometerLog (batchId: String, missionId: Long, ts: Date, device: Device, radiometerVal: Double)
   case class InsertDevice (device: Device)
   case class SkipLog (batchId: String)

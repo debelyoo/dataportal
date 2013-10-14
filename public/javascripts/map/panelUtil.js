@@ -450,7 +450,7 @@ function getDeviceData(datatype, missionId, deviceId) {
 	var graphHeight = $('#graphPanel').height();
 	var embeddedGraph = mapLayerUtil.get('activeGraph')
 	if(!embeddedGraph) {
-	    console.log("create embedded graph !");
+	    //console.log("create embedded graph !");
         embeddedGraph = new GraphD3({
             containerElementId: 'dataGraphPlaceholder',
             svgElementId: 'svgElement1',

@@ -9,6 +9,7 @@ import controllers.util.json.GeoJsonSerializable;
 import models.Mission;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
+import scala.Option;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -111,18 +112,23 @@ public class PointOfInterest implements GeoJsonSerializable {
     /**
      * Save the GpsLog in Postgres database
      */
-    public Boolean save() {
-        EntityManager em = JPAUtil.createEntityManager();
+    public Boolean save(Option<EntityManager> emOpt) {
+        EntityManager em;
+        if (emOpt.isEmpty()) {
+            em = JPAUtil.createEntityManager();
+        } else {
+            em = emOpt.get();
+        }
         Boolean res = false;
         try {
-            em.getTransaction().begin();
+            if(emOpt.isEmpty()) em.getTransaction().begin();
             em.persist(this);
-            em.getTransaction().commit();
+            if(emOpt.isEmpty()) em.getTransaction().commit();
             res = true;
         } catch (Exception ex) {
-            System.out.println("[WARNING] "+ ex.getMessage());
+            System.out.println("[ERROR][PointOfInterest.save()] "+ ex.getMessage());
         } finally {
-            em.close();
+            if(emOpt.isEmpty()) em.close();
         }
         return res;
     }

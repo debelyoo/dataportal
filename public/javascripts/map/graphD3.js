@@ -22,7 +22,7 @@ var GraphD3 = Backbone.Model.extend({
 			originalDataUrl: ""
 		}, 
 		initialize: function() { 
-			//console.log("GraphD3 model - initialize()"); 
+			//console.log("GraphD3 model - initialize()");
 			//console.log(this);
 			this.set({width: this.get('widthContainer') - this.get('margin').left - this.get('margin').right});
 			this.set({height: this.get('heightContainer') - this.get('margin').top - this.get('margin').bottom});

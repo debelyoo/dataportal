@@ -8,17 +8,8 @@ import models._
 import com.vividsolutions.jts.geom.{Geometry, Point}
 import scala.collection.immutable.Queue
 import controllers.database.BatchManager._
-import scala.Some
 import java.util.{TimeZone, Date}
-import play.api.Logger
-import scala.Some
-import org.hibernate.Hibernate
-import scala.Some
 import controllers.modelmanager.{DeviceManager, DataLogManager}
-import scala.Some
-import scala.Some
-import scala.Some
-import scala.Some
 import scala.Some
 import javax.persistence.EntityManager
 
@@ -204,13 +195,15 @@ class InsertionWorker extends Actor {
         BatchManager.updateBatchProgress(batchId, "Insertion")
         em.getTransaction().commit()
       } catch {
-        case ae: AssertionError => sender ! None
+        case ae: AssertionError => None
       } finally {
         em.close()
       }
     }
     case Message.InsertGpsLog(batchId, missionId, ts, setNumber, latitude, longitude, altitude) => {
+      val em: EntityManager = JPAUtil.createEntityManager
       try {
+        em.getTransaction.begin()
         //println("[Message.InsertGpsLog] "+sensor.address)
         //val sensorInDb = DeviceManager.getByNameAndAddress(sensor.getName, sensor.getAddress)
         //assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
@@ -234,16 +227,21 @@ class InsertionWorker extends Actor {
         gl.setTimestamp(ts)
         gl.setCoordinate(pt)
         gl.setSpeed(speed)
-        val m = DataLogManager.getById[Mission](missionId)
+        val m = DataLogManager.getById[Mission](missionId, Some(em))
         gl.setMission(m.get)
-        gl.save(None) // persist in DB
+        gl.save(Some(em)) // persist in DB
         BatchManager.updateBatchProgress(batchId, "Insertion")
+        em.getTransaction.commit()
       } catch {
         case ae: AssertionError => None
+      } finally {
+        em.close()
       }
     }
     case Message.InsertPointOfInterest(batchId, missionId, ts, latitude, longitude, altitude) => {
+      val em: EntityManager = JPAUtil.createEntityManager
       try {
+        em.getTransaction.begin()
         //println("[Message.InsertPointOfInterest] ")
         val (lat, lon, alt) = if (math.abs(latitude) > 90 || math.abs(longitude) > 180) {
           // east coordinate comes as longitude var, north coordinate comes as latitude var
@@ -259,40 +257,42 @@ class InsertionWorker extends Actor {
         val poi = new PointOfInterest()
         poi.setTimestamp(ts)
         poi.setCoordinate(geom.asInstanceOf[Point])
-        //poi.setAltitude(altitude)
-        val m = DataLogManager.getById[Mission](missionId)
-        poi.setMission(m.get)
-        val persisted = poi.save() // persist in DB
+        val missionOpt = DataLogManager.getById[Mission](missionId, Some(em))
+        poi.setMission(missionOpt.get)
+        val persisted = poi.save(Some(em)) // persist in DB
         BatchManager.updateBatchProgress(batchId, "Insertion")
+        em.getTransaction.commit()
       } catch {
         case ae: AssertionError => None
+      } finally {
+        em.close()
       }
     }
-    case Message.InsertUlmTrajectory(batchId, missionId, ts, timeZone, latitude, longitude, altitude) => {
+    case Message.InsertUlmTrajectory(batchId, missionId, ts, latitude, longitude, altitude) => {
+      val em: EntityManager = JPAUtil.createEntityManager
       try {
-        //println("[Message.InsertPointOfInterest] ")
+        em.getTransaction.begin()
         //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
         // create unique string with second precision so that only one point is inserted per second
-        //val defaultTz = TimeZone.getDefault
-        //TimeZone.setDefault(timeZone)
         val uniqueString = createUniqueString("ulmTs", DateFormatHelper.postgresTimestampFormatter.format(ts))
         if (!logCache.contains(uniqueString)) {
           val geom = CoordinateHelper.wktToGeometry("POINT("+ longitude +" "+ latitude +" "+ altitude +")")
           val pt = new TrajectoryPoint()
           pt.setTimestamp(ts)
           pt.setCoordinate(geom.asInstanceOf[Point])
-          val m = DataLogManager.getById[Mission](missionId)
+          val m = DataLogManager.getById[Mission](missionId, Some(em))
           pt.setMission(m.get)
-          val persisted = pt.save(None) // persist in DB
+          val persisted = pt.save(Some(em)) // persist in DB
           if (persisted) {
             logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
           }
         }
         BatchManager.updateBatchProgress(batchId, "Insertion")
-        //TimeZone.setDefault(defaultTz)
-
+        em.getTransaction.commit()
       } catch {
         case ae: AssertionError => None
+      } finally {
+        em.close()
       }
     }
     case Message.InsertDevice(device) => {
