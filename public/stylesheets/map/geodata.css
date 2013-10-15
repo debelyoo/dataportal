@@ -300,8 +300,6 @@ div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate
 	position: absolute;
 	top: 5%;
 	left: 10%;
-	color: white;
-	/*border: 1px solid red;*/
 }
 
 #graphZoomPlaceholder {
