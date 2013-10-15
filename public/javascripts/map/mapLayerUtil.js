@@ -15,7 +15,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		epsg900913: new OpenLayers.Projection("EPSG:900913"),
 		epsg4326: new OpenLayers.Projection("EPSG:4326"),
 		nbTrajectory: 0,
-		interactiveLayers: {},
+		interactiveLayers: {},  // map of objects {'layer':layer, 'mission': mission}
 		maximumSpeed: 0.0,      // specific to the selected trajectory (selected in the graph panel)
 		headingAvailable: false // specific to the selected trajectory (selected in the graph panel)
 	}, 
@@ -70,6 +70,8 @@ var MapLayerUtil = Backbone.Model.extend({
 	 * @param isUlmMission
 	 */
 	addLayers: function(mission) {
+	    this.set({interactiveLayers: {}}); // reset map when loading new layers
+	    this.addRasterLayer(mission);
 	    if (isUlmMission(mission)) {
 	        // for ULM mission, add line + points (trajectory)
 	        this.addTrajectoryLayer(mission, config.get('MODE_LINESTRING'));
@@ -79,7 +81,7 @@ var MapLayerUtil = Backbone.Model.extend({
 	        this.addTrajectoryLayer(mission, config.get('MODE_POINTS'));
 	    }
 	    this.getPoiForMission(mission, this.addControls);
-        this.addRasterLayer(mission);
+	    this.testFeatures(0, createPathSelectForData);
 	},
 
 	/**
@@ -89,7 +91,7 @@ var MapLayerUtil = Backbone.Model.extend({
          var layers = new Array();
          var map = mapLayerUtil.get('interactiveLayers');
          for (m in map) {
-             layers.push(map[m]);
+             layers.push(map[m].layer);
          }
          //console.log(layers);
          // layers for highlight and select must be the same (two sets of layers create a bug)
@@ -97,9 +99,9 @@ var MapLayerUtil = Backbone.Model.extend({
          mapLayerUtil.setSelectCtrl(layers);
 	},
 
-	addLayerInInteractiveLayerMap: function(layerKey, layer) {
+	addLayerInInteractiveLayerMap: function(layerKey, layer, mission) {
         var map = this.get('interactiveLayers');
-        map[layerKey] = layer;
+        map[layerKey] = {'layer':layer, 'mission': mission};
         this.set({interactiveLayers: map});
 	},
 	
@@ -133,7 +135,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		// Add layer to map
 		this.mapPanel.map.addLayer(trajectoryLayer);
 		if (mode == "points")
-		    this.addLayerInInteractiveLayerMap(mission.id, trajectoryLayer);
+		    this.addLayerInInteractiveLayerMap(mission.id, trajectoryLayer, mission);
 	},
 
     /**
@@ -394,7 +396,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		this.testFeatures(this.gmlLayer, 0, callback);
 	},
 	/**
-	 * Remove the gml layer (data)
+	 * Remove the gml layer (data) - NO MORE USED
 	 */
 	removeGmlLayer: function() {
 		if (this.gmlLayer) {	
@@ -438,37 +440,69 @@ var MapLayerUtil = Backbone.Model.extend({
 	},
 	/**
 	 * Check that the features are loaded
-	 * @param layer The data layer to check
 	 * @param inc The nb of times we checked (check is done every 500ms, 40x at most -> 20s max)
 	 * @param callback The callback function to call when the features are loaded
 	 */
-	testFeatures: function(layer, inc, callback) {
+	testFeatures: function(inc, callback) {
 		var self = this;
-		var nb = layer.features.length;
-		if (inc < 40 && nb == 0) {
-			setTimeout(function() {self.testFeatures(layer, inc + 1, callback)}, 500)
+		//var nb = layer.features.length;
+		if (inc < 40 && !this.featuresAreLoaded()) {
+			setTimeout(function() {self.testFeatures(inc + 1, callback)}, 500)
 		} else {
-			if (nb > 0) {
-				console.log("Features are loaded ["+ nb +"]");
+			if (self.featuresAreLoaded()) {
+				//console.log("Features are loaded [All]");
+				$('#loadingGifPlaceholder').hide();
 				//console.log(layer.features[0]);
-				var offset = 300; // use an offset to set the first point a bit on the top right (because of graph on the left)
-				var x = layer.features[0].geometry.x + offset;
-				//var x = layer.features[0].geometry.components[0].x + offset; // if trajectory is linestring
-				var y = layer.features[0].geometry.y - offset;
-				//var y = layer.features[0].geometry.components[0].y - offset; // if trajectory is linestring
-				var newPos = new OpenLayers.LonLat(x,y); //.transform('EPSG:4326', 'EPSG:3857');
-				this.mapPanel.map.setCenter(newPos, 17);
-				$('#infoDiv').show();
+				self.centerOnLoadedFeatures();
+				//$('#infoDiv').show();
 				// call the function to load the data for the embedded graph 
 				if (callback != undefined) {
 					callback();
-				} else {
-					$('#loadingGifPlaceholder').hide();
 				}
 			} else {
 				console.log("Features loading took too much time !");
 			}
 		}
+	},
+	/**
+	 * Check that features of all interactive layers are loaded
+	 */
+	featuresAreLoaded: function() {
+	    var loaded = true;
+        var map = mapLayerUtil.get('interactiveLayers');
+        for (m in map) {
+            if (map[m].layer.features.length == 0) {
+                // if one layer is not loaded yet, set loaded to false
+                loaded = false;
+            }
+        }
+        return loaded;
+	},
+	/**
+	 * Center map on selected trajectory
+	 */
+	centerOnLoadedFeatures: function() {
+	    var map = mapLayerUtil.get('interactiveLayers');
+	    //console.log("centerOnLoadedFeatures()", Object.size(map), first(map));
+	    //if (Object.size(map) == 1) {
+	        var layerObj = first(map);
+            var offset = 300; // use an offset to set the first point a bit on the top right (because of graph on the left)
+            var x = layerObj.layer.features[0].geometry.x + offset;
+            var y = layerObj.layer.features[0].geometry.y - offset;
+            var newPos = new OpenLayers.LonLat(x,y); //.transform('EPSG:4326', 'EPSG:3857');
+            var zoom;
+            if (isUlmMission(layerObj.mission)) {
+                zoom = config.get('ZOOM_LEVEL_ULM');
+            } else {
+                zoom = config.get('ZOOM_LEVEL_CATAMARAN');
+            }
+            try {
+                // sometimes get an exception from GeoExt.js, so catch it
+                mapLayerUtil.mapPanel.map.setCenter(newPos, zoom);
+            } catch (err) {
+                //console.log("[WARNING] "+err.message)
+            }
+        //}
 	},
 	selectData: function(e) {
 		//console.log("Click: "+e['attributes'].value);
@@ -489,7 +523,7 @@ var MapLayerUtil = Backbone.Model.extend({
 		this.highlightCtrl.unselectAll();
 		//console.log("highlightFeaturePoint() - "+xpf);
 		var map = this.get('interactiveLayers');
-		var layerForGraph = map[$('#pathSelect').val()];
+		var layerForGraph = map[$('#pathSelect').val()].layer;
 		//var layerForGraph = this.mapPanel.map.getLayersByName(layerName)[0];
 		//console.log(layerForGraph.features.length);
 		var index = Math.round(xpf * layerForGraph.features.length);

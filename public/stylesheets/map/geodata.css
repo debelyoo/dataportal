@@ -78,7 +78,7 @@ body {
 }
 
 #selectDiv .centered {
-    width: 70%;
+    width: 80%;
     margin-right: auto;
     margin-left: auto;
 }
@@ -235,17 +235,6 @@ div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate
 	margin: 5px 0;
 }
 
-/*#updateBtn {
-	width: 50px;
-	border: solid 1px white;
-	float: right;
-	padding: 5px;
-	background-color: gray;
-	border-radius: 8px;
-	margin-right: 20px;
-	cursor: pointer;
-}*/
-
 .buttonRow {
 	height: 40px;
 }
@@ -265,7 +254,6 @@ div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate
 	height: 30px;
 	float: left;
 	padding: 5px;
-	margin-right: 15px;
 	display: none;
 }
 

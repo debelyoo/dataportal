@@ -7,7 +7,9 @@ var Config = Backbone.Model.extend({
 		CAT_DATE_CLASSNAME: 'catDate',
 		ULM_CAT_DATE_CLASSNAME: 'ulmCatDate',
 		MODE_LINESTRING: 'linestring',
-		MODE_POINTS: 'points'
+		MODE_POINTS: 'points',
+		ZOOM_LEVEL_ULM: 10,
+		ZOOM_LEVEL_CATAMARAN: 16,
 	},
 	initialize: function() {
 	}

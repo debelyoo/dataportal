@@ -176,7 +176,10 @@ function onResetClicked() {
  * @param dateArr The list of date
  */
 function getMissionsForDates(dateArr) {
-	nbSelectedDates = dateArr.length;
+	//nbSelectedDates = dateArr.length;
+	if (dateArr.length > 0) {
+	    $('#loadingGifPlaceholder').show();
+	}
 	nbMissionListReceived = 0;
 	for (var i=0; i < dateArr.length; i++) {
 		$.ajax({
@@ -188,9 +191,6 @@ function getMissionsForDates(dateArr) {
 				currentMissions.push(missions[j]);
 				// add path for each mission
 				mapLayerUtil.addLayers(missions[j]);
-			}
-			if (nbMissionListReceived == nbSelectedDates) {			
-				createPathSelectForData();
 			}
 		});
 	}	
@@ -332,29 +332,11 @@ function refreshSetField(date) {
 }
 
 /**
- * Create the date select field
- * @param jsonData The available dates (JSON)
+ * Create the field (drop down list) to select the trajectory for which we want the devices graph
+ * This function is called as a called from mapLayerUtil.js when all layer features are loaded
  */
-/*function createDateSelect(jsonData) {
-	var dates = jsonData['dates'];
-	//console.log(dates);
-	
-	var options = "";
-	dates.map(function(d) {
-		options += "<option value=\""+ d +"\">"+ d +"</option>"
-	});
-	var dateSelect = "<select id=\"dateSelect\">" + options + "</select>";
-	$('#dateSelectPlaceholder').html(dateSelect);	
-	refreshSetField(dates[0]);
-	// event listener
-	$('#dateSelect').change(function() {
-		var date = $("#dateSelect").val();
-		refreshSetField(date);
-	});
-}*/
-
 function createPathSelectForData() {
-	//console.log("createPathSelectForData()", missions);
+	//console.log("createPathSelectForData()", currentMissions.length);
 	var dataGraphAvailable = false;
 	var options = "";
 	//var options = "<option value=0>Select a trajectory</option>"; // default value
