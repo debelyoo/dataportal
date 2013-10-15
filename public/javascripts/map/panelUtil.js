@@ -555,7 +555,7 @@ function zoomGraph(datatype, mid, sid) {
 				withTooltip: true
 			});
 		} else {
-			zoomedGraph.set({datatype: datatype, sensorId: sid});
+			zoomedGraph.set({datatype: datatype, sensorId: sid, missionId: mid});
 		}
 		var dataJsonUrlZoomedGraph = dataJsonUrl + "&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH')
 		zoomedGraph.refreshSensorGraph(dataJsonUrlZoomedGraph);

@@ -159,6 +159,16 @@ object DataLogManager {
     }
   }
 
+  /**
+   * Get the device data by mission. It is called from getData() (in GetApi.scala)
+   * @param datatype The type of data to get
+   * @param missionId The id of the mission
+   * @param deviceIdList The list of deivec to get
+   * @param startDate The start date (optional)
+   * @param endDate The end date (optional)
+   * @param maxNb The maximum number of logs (optional)
+   * @return A map with the logs by device
+   */
   def getDataByMission(
                      datatype: String,
                      missionId: Long,
@@ -180,10 +190,10 @@ object DataLogManager {
         getByMissionAndDevice[RadiometerLog](missionId, deviceIdList, startDate, endDate, maxNb)
       }
       case DataImporter.Types.ALTITUDE => {
-        getAltitude(missionId, maxNb)
+        getAltitude(missionId, startDate, endDate, maxNb)
       }
       case DataImporter.Types.SPEED => {
-        getSpeed(missionId, maxNb)
+        getSpeed(missionId, startDate, endDate, maxNb)
       }
       case _ => {
         println("GET data - Unknown data type")
@@ -283,16 +293,17 @@ object DataLogManager {
       //println(queryStr)
       val q = em.createQuery(queryStr)
       if (startTime.isDefined && endTime.isDefined) {
+        //println("Time condition: "+ startTime.get + " - "+ endTime.get)
         q.setParameter("start", startTime.get, TemporalType.TIMESTAMP)
         q.setParameter("end", endTime.get, TemporalType.TIMESTAMP)
       }
       //println(q.getResultList)
       val start = new Date
-      val logs = q.getResultList.map(_.asInstanceOf[T]).toList
+      val logList = q.getResultList.map(_.asInstanceOf[T]).toList
       val diff = (new Date).getTime - start.getTime
-      println("Nb of logs queried: "+logs.length + " ["+ diff +"ms]")
+      println("Nb of logs queried: "+logList.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
-      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getDevice.getId)
+      val logsMapBySensorId = logList.map(_.asInstanceOf[SensorLog]).groupBy(_.getDevice.getId)
       logsMapBySensorId.map { case (sId, logs) => {
         val reducedLogList = if (maxNb.isDefined && logs.length > maxNb.get) {
           val moduloFactor = math.ceil(logs.length.toDouble / maxNb.get.toDouble).toInt
@@ -522,22 +533,23 @@ object DataLogManager {
    * @param maxNb The maximum number of points to get
    * @return A map with the altitude logs
    */
-  def getAltitude(missionId: Long, maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
+  def getAltitude(missionId: Long, startTime: Option[Date], endTime: Option[Date], maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
     val tz = getById[Mission](missionId).map(m => TimeZone.getTimeZone(m.getTimeZone)).getOrElse(TimeZone.getDefault)
-    val formatter = DateFormatHelper.postgresTimestampWithMilliFormatter
-    formatter.setTimeZone(tz) // format TS with mission timezone
-    val pointList = getTrajectoryPoints(missionId, maxNb)
+    val dateFormatter = DateFormatHelper.postgresTimestampWithMilliFormatter
+    dateFormatter.setTimeZone(tz) // format TS with mission timezone
+    val pointList = getTrajectoryPoints(missionId, startTime, endTime, maxNb)
     val altitudeLogList = pointList.map(trajPt =>
       AltitudeLog(trajPt.getId,
-      formatter.format(trajPt.getTimestamp),
-      trajPt.getCoordinate.getCoordinate.z)
+        dateFormatter.format(trajPt.getTimestamp),
+        trajPt.getCoordinate.getCoordinate.z
+      )
     )
-    formatter.setTimeZone(TimeZone.getDefault) // reset formatter timezone to default
+    //formatter.setTimeZone(TimeZone.getDefault) // reset formatter timezone to default
     Map("altitude" -> altitudeLogList)
   }
 
-  def getSpeed(missionId: Long, maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
-    val pointList = getTrajectoryPoints(missionId, maxNb)
+  def getSpeed(missionId: Long, startTime: Option[Date], endTime: Option[Date], maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
+    val pointList = getTrajectoryPoints(missionId, startTime, endTime, maxNb)
     val speedLogList = pointList.map(trajPt =>
       SpeedLog(trajPt.getId,
       DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.getTimestamp),
@@ -554,14 +566,22 @@ object DataLogManager {
    * @return A list of trajectory points
    */
   def getTrajectoryPoints(missionId: Long,
+                          startTime: Option[Date],
+                          endTime: Option[Date],
                           maxNb: Option[Int],
                           emOpt: Option[EntityManager] = None): List[TrajectoryPoint] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
-      val queryStr = "FROM "+ classOf[TrajectoryPoint].getName +" tp WHERE tp.mission.id = "+ missionId +" ORDER BY timestamp"
+      val timeCondition = if (startTime.isDefined && endTime.isDefined) " AND timestamp BETWEEN :start AND :end " else ""
+      val queryStr = "FROM "+ classOf[TrajectoryPoint].getName +" tp WHERE tp.mission.id = "+ missionId + timeCondition +"ORDER BY timestamp"
       //println(queryStr)
       val q = em.createQuery(queryStr, classOf[TrajectoryPoint])
+      if (startTime.isDefined && endTime.isDefined) {
+        //println("Time condition: "+ startTime.get + " - "+ endTime.get)
+        q.setParameter("start", startTime.get, TemporalType.TIMESTAMP)
+        q.setParameter("end", endTime.get, TemporalType.TIMESTAMP)
+      }
       //println(q.getResultList)
       val start = new Date
       val pointList = q.getResultList.toList

@@ -15,7 +15,7 @@ class InsertionBatchWorker extends Actor {
       var setNumberOpt: Option[Int] = None
       insertionBatches.get(batchId).map { case (lines, sensors) =>
         val trajectoryPoints = if (dataType == DataImporter.Types.COMPASS) {
-          DataLogManager.getTrajectoryPoints(missionId, None) // for inserting compass value
+          DataLogManager.getTrajectoryPoints(missionId, None, None, None) // for inserting compass value
         } else List()
         var inc = 0;
         for ((line, ind) <- lines.zipWithIndex) {

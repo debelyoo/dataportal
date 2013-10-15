@@ -5,9 +5,9 @@ import java.text.SimpleDateFormat
 
 object DateFormatHelper {
 
-  val dateTimeFormatter = new SimpleDateFormat("yyyyMMdd-HHmmss")
+  def dateTimeFormatter: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss")
   val postgresTimestampFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-  val postgresTimestampWithMilliFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
+  def postgresTimestampWithMilliFormatter: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
   val selectYearFormatter = new SimpleDateFormat("yyyy-MM-dd")
   val selectTimeFormatter = new SimpleDateFormat("HH:mm:ss")
   //val ulmKmlTimestampFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HHmmss.SSS")

@@ -8,6 +8,7 @@ import play.api.Logger
 import models._
 import scala.Some
 import controllers.modelmanager.{DeviceManager, DataLogManager}
+import java.util.TimeZone
 
 trait GetApi extends ResponseFormatter {
   this: Controller =>
@@ -27,18 +28,23 @@ trait GetApi extends ResponseFormatter {
         val datatype = map.get("data_type").get
         Logger.info("[GetApi] getData() - "+ datatype + " <"+ format +">")
         assert(map.contains("mission_id"), {println("Missing mission_id parameter")})
-        val missionId = map.get("mission_id").map(_.toLong)
-        val startDate = map.get("from_date").map(DateFormatHelper.dateTimeFormatter.parse(_))
-        val endDate = map.get("to_date").map(DateFormatHelper.dateTimeFormatter.parse(_))
+        val missionId = map.get("mission_id").map(_.toLong).get
+        val mission = DataLogManager.getById[Mission](missionId)
+        assert(mission.isDefined, {println("Mission does not exist")})
+        val dateFormatter = DateFormatHelper.dateTimeFormatter
+        dateFormatter.setTimeZone(TimeZone.getTimeZone(mission.get.getTimeZone()))
+        //println("From Date: "+map.get("from_date")+" - time zone: "+mission.get.getTimeZone())
+        val startDate = map.get("from_date").map(dateFormatter.parse(_))
+        val endDate = map.get("to_date").map(dateFormatter.parse(_))
         assert(map.contains("device_id"), {println("Missing device_id parameter")})
         //val sensorIdList = map.get("sensor_id").map(_.toLong).toList // TODO handle multi Ids (by parsing string)
 
         val maxNb = map.get("max_nb").map(_.toInt)
         val deviceIdList = map.get("device_id").map {
-          case "all" => DeviceManager.getForMission(missionId.get, map.get("data_type")).map(_.getId.toLong)
+          case "all" => DeviceManager.getForMission(missionId, map.get("data_type")).map(_.getId.toLong)
           case _ => List(map.get("device_id").get.toLong)
         }.get
-        val logMap = DataLogManager.getDataByMission(datatype, missionId.get, deviceIdList, startDate, endDate, maxNb)
+        val logMap = DataLogManager.getDataByMission(datatype, missionId, deviceIdList, startDate, endDate, maxNb)
         formatResponse(format, logMap)
       } catch {
         case ae: AssertionError => BadRequest
@@ -92,7 +98,7 @@ trait GetApi extends ResponseFormatter {
         val resp = if (mode == GIS_LINESTRING) {
           DataLogManager.getTrajectoryLinestring(missionId.get)
         } else {
-          val trajectoryPoints = DataLogManager.getTrajectoryPoints(missionId.get, maxNb)
+          val trajectoryPoints = DataLogManager.getTrajectoryPoints(missionId.get, None, None, maxNb)
           pointsAsGeoJson(trajectoryPoints)
         }
         Ok(resp)
