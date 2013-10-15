@@ -5,7 +5,8 @@ var zoomedGraph;
 var dataJsonUrl;
 var dateList = {}; // map containing the mission dates
 var currentMissions = new Array();
-var nbSelectedDates, nbMissionListReceived = 0;
+//var nbSelectedDates, nbMissionListReceived = 0;
+var dataGraphAvailable = false;
 
 /**
  * Initialize the select panel (right). It is the first function to be called when document is ready.
@@ -116,6 +117,7 @@ function onAddLayersClicked() {
 
 function onResetClicked() {
 	currentMissions = new Array(); // reset array
+	dataGraphAvailable = false;
 	//$('#dataSelectPanel').hide();
 	$('#calendar').DatePickerClear(); 
 	mapLayerUtil.removeLayers()
@@ -135,12 +137,12 @@ function getMissionsForDates(dateArr) {
 	if (dateArr.length > 0) {
 	    $('#loadingGifPlaceholder').show();
 	}
-	nbMissionListReceived = 0;
+	//nbMissionListReceived = 0;
 	for (var i=0; i < dateArr.length; i++) {
 		$.ajax({
 			url: config.get('URL_PREFIX') +"/api/missions/fordate/"+dateArr[i]
 		}).done(function( missions ) {
-			nbMissionListReceived++;
+			//nbMissionListReceived++;
 			//var mode = $("#selectMode").val();
 			for (var j=0;j<missions.length;j++){
 				currentMissions.push(missions[j]);
@@ -292,7 +294,6 @@ function refreshSetField(date) {
  */
 function createPathSelectForData() {
 	//console.log("createPathSelectForData()", currentMissions.length);
-	var dataGraphAvailable = false;
 	var options = "";
 	//var options = "<option value=0>Select a trajectory</option>"; // default value
 	for (var i = 0; i < currentMissions.length; i++) {
@@ -489,32 +490,34 @@ var updateInfoDiv = function(containerElementId, attr, withDay) {
 function toggleControlPanel() {
 	//var slideDistance = 430;
 	//console.log($("#graphPanel").position().left);
-	if (!$("#controlPanelHideBtnPlaceholder").hasClass('rotated180')) {
-		$("#controlPanelHideBtnPlaceholder").addClass('rotated180');
-		$("#controlPanelHideBtnPlaceholder").animate({left: '+=95%'}, 1000)
-		$("#controlPanel").animate({left: '+=100%'}, 1000)
-	} else {
-		$("#controlPanelHideBtnPlaceholder").removeClass('rotated180');
-		$("#controlPanelHideBtnPlaceholder").animate({left: '-=95%'}, 1000)
-		$("#controlPanel").animate({left: '-=100%'}, 1000)
-	}
+    if (!$("#controlPanelHideBtnPlaceholder").hasClass('rotated180')) {
+        $("#controlPanelHideBtnPlaceholder").addClass('rotated180');
+        $("#controlPanelHideBtnPlaceholder").animate({left: '+=95%'}, 1000)
+        $("#controlPanel").animate({left: '+=100%'}, 1000)
+    } else {
+        $("#controlPanelHideBtnPlaceholder").removeClass('rotated180');
+        $("#controlPanelHideBtnPlaceholder").animate({left: '-=95%'}, 1000)
+        $("#controlPanel").animate({left: '-=100%'}, 1000)
+    }
 }
 
 function toggleGraphPanel() {
 	//console.log("toggleGraphPanel()");
 	//console.log($("#graphPanelContainer").position().top);
 	//console.log($("#mapPanel").height());
-	var maxTop = $("#mapPanel").height() - 50;
-	//if ($("#graphPanelContainer").position().top < maxTop) {
-	if (!$("#graphPanelHideBtnPlaceholder").hasClass('rotated270')) {
-	$("#graphPanelHideBtnPlaceholder").removeClass('rotated90');
-		$("#graphPanelHideBtnPlaceholder").addClass('rotated270');
-		$("#graphPanelContainer").animate({top: '+=25%'}, 1000)
-	} else {
-		$("#graphPanelHideBtnPlaceholder").removeClass('rotated270');
-		$("#graphPanelHideBtnPlaceholder").addClass('rotated90');
-		$("#graphPanelContainer").animate({top: '-=25%'}, 1000)
-	}
+	if (dataGraphAvailable) {
+        var maxTop = $("#mapPanel").height() - 50;
+        //if ($("#graphPanelContainer").position().top < maxTop) {
+        if (!$("#graphPanelHideBtnPlaceholder").hasClass('rotated270')) {
+        $("#graphPanelHideBtnPlaceholder").removeClass('rotated90');
+            $("#graphPanelHideBtnPlaceholder").addClass('rotated270');
+            $("#graphPanelContainer").animate({top: '+=25%'}, 1000)
+        } else {
+            $("#graphPanelHideBtnPlaceholder").removeClass('rotated270');
+            $("#graphPanelHideBtnPlaceholder").addClass('rotated90');
+            $("#graphPanelContainer").animate({top: '-=25%'}, 1000)
+        }
+    }
 }
 
 function closeGraphPanel() {
