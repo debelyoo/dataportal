@@ -31,7 +31,6 @@ trait GetApi extends ResponseFormatter {
         val startDate = map.get("from_date").map(DateFormatHelper.dateTimeFormatter.parse(_))
         val endDate = map.get("to_date").map(DateFormatHelper.dateTimeFormatter.parse(_))
         assert(map.contains("device_id"), {println("Missing device_id parameter")})
-        //val geoOnly = map.get("geo_only").getOrElse("true").toBoolean
         //val sensorIdList = map.get("sensor_id").map(_.toLong).toList // TODO handle multi Ids (by parsing string)
 
         val maxNb = map.get("max_nb").map(_.toInt)
@@ -39,7 +38,7 @@ trait GetApi extends ResponseFormatter {
           case "all" => DeviceManager.getForMission(missionId.get, map.get("data_type")).map(_.getId.toLong)
           case _ => List(map.get("device_id").get.toLong)
         }.get
-        val logMap = DataLogManager.getDataByMission(datatype, missionId.get, deviceIdList, maxNb)
+        val logMap = DataLogManager.getDataByMission(datatype, missionId.get, deviceIdList, startDate, endDate, maxNb)
         formatResponse(format, logMap)
       } catch {
         case ae: AssertionError => BadRequest

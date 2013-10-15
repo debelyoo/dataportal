@@ -163,32 +163,22 @@ object DataLogManager {
                      datatype: String,
                      missionId: Long,
                      deviceIdList: List[Long],
+                     startDate: Option[Date],
+                     endDate: Option[Date],
                      maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
     datatype match {
       case DataImporter.Types.TEMPERATURE => {
-        getByMissionAndDevice[TemperatureLog](missionId, deviceIdList, maxNb)
+        getByMissionAndDevice[TemperatureLog](missionId, deviceIdList, startDate, endDate, maxNb)
       }
       case DataImporter.Types.WIND => {
-        getByMissionAndDevice[WindLog](missionId, deviceIdList, maxNb)
+        getByMissionAndDevice[WindLog](missionId, deviceIdList, startDate, endDate, maxNb)
       }
       case DataImporter.Types.COMPASS => {
-        getByMissionAndDevice[CompassLog](missionId, deviceIdList, maxNb)
+        getByMissionAndDevice[CompassLog](missionId, deviceIdList, startDate, endDate, maxNb)
       }
       case DataImporter.Types.RADIOMETER => {
-        getByMissionAndDevice[RadiometerLog](missionId, deviceIdList, maxNb)
+        getByMissionAndDevice[RadiometerLog](missionId, deviceIdList, startDate, endDate, maxNb)
       }
-      /*case DataImporter.Types.GPS => {
-        val gpsLogsNative = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false, maxNb)
-        val gpsLogs = if (coordinateFormat == "swiss") {
-          gpsLogsNative.map(gl => {
-            val arr = ApproxSwissProj.WGS84toLV03(gl.getGeoPos.getY, gl.getGeoPos.getX, 0L).toList // get east, north, height
-            val geom = CoordinateHelper.wktToGeometry("POINT("+ arr(0) +" "+ arr(1) +")")
-            gl.setGeoPos(geom.asInstanceOf[Point])
-            gl
-          })
-        } else gpsLogsNative
-        Map("gps sensor" -> gpsLogs)
-      }*/
       case DataImporter.Types.ALTITUDE => {
         getAltitude(missionId, maxNb)
       }
@@ -267,6 +257,8 @@ object DataLogManager {
    * Get data log by mission and device
    * @param missionId The id of the mission
    * @param deviceIdList The list of devices we are interested in
+   * @param startTime
+   * @param endTime
    * @param maxNb The maximum number of logs to return
    * @param emOpt An optional entity manager
    * @tparam T The type of log to get
@@ -275,6 +267,8 @@ object DataLogManager {
   private def getByMissionAndDevice[T: ClassTag](
                                                missionId: Long,
                                                deviceIdList: List[Long],
+                                               startTime: Option[Date],
+                                               endTime: Option[Date],
                                                maxNb: Option[Int],
                                                emOpt: Option[EntityManager] = None): Map[String, List[T]] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
@@ -282,11 +276,16 @@ object DataLogManager {
       if (emOpt.isEmpty) em.getTransaction().begin()
       val devices = DeviceManager.getById(deviceIdList, emOpt)
       val clazz = classTag[T].runtimeClass
-      val deviceCondition = if (deviceIdList.nonEmpty) "AND log.device.id IN ("+ deviceIdList.mkString(",") +") " else ""
-      val queryStr = "FROM "+ clazz.getName +" log WHERE log.mission.id = " + missionId + deviceCondition +
+      val deviceCondition = if (deviceIdList.nonEmpty) " AND log.device.id IN ("+ deviceIdList.mkString(",") +") " else ""
+      val timeCondition = if (startTime.isDefined && endTime.isDefined) "AND timestamp BETWEEN :start AND :end " else ""
+      val queryStr = "FROM "+ clazz.getName +" log WHERE log.mission.id = " + missionId + deviceCondition + timeCondition +
         "ORDER BY timestamp"
       //println(queryStr)
       val q = em.createQuery(queryStr)
+      if (startTime.isDefined && endTime.isDefined) {
+        q.setParameter("start", startTime.get, TemporalType.TIMESTAMP)
+        q.setParameter("end", endTime.get, TemporalType.TIMESTAMP)
+      }
       //println(q.getResultList)
       val start = new Date
       val logs = q.getResultList.map(_.asInstanceOf[T]).toList

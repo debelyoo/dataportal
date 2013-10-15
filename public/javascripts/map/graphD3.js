@@ -7,6 +7,7 @@ var GraphD3 = Backbone.Model.extend({
 			height: 0,
 			datatype: "",
 			sensorId: "",
+			missionId: "",
 			ticksIntervalX: 15, // minutes
 			nbTicksX: 4,
 			nbTicksY: 7,
@@ -87,7 +88,9 @@ var GraphD3 = Backbone.Model.extend({
 				if (this.get('nbZoomLines') == 2) {
 					this.set({zoomUpperBound: ts})
 					$("#graphZoomZoomBtn").show();
-					var dataUrlZoom = config.get('URL_PREFIX') +"/api/data?data_type="+ this.get('datatype') +"&from_date="+ this.get('zoomLowerBound') +"&to_date="+ this.get('zoomUpperBound') +"&sensor_id="+this.get('sensorId')+"&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH');
+					var dataUrlZoom = config.get('URL_PREFIX') +"/api/data?data_type="+ this.get('datatype');
+					dataUrlZoom += "&from_date="+ this.get('zoomLowerBound') +"&to_date="+ this.get('zoomUpperBound');
+					dataUrlZoom += "&mission_id="+ this.get('missionId') +"&device_id="+this.get('sensorId')+"&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH')
 					$("#graphZoomZoomBtn").attr("onclick", "zoomedGraph.refreshSensorGraph('"+ dataUrlZoom +"', true);");
 				} else {
 					this.set({zoomLowerBound: ts})

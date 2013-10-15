@@ -1,10 +1,6 @@
 var config = new Config();
 var mapLayerUtil = new MapLayerUtil();
-var embeddedGraph = new GraphD3({
-	containerElementId: 'graphPlaceholder', 
-	svgElementId: 'svgElement1',
-	linkWithGeoData: true
-});
+var embeddedGraph; // reference to the graph in bottom part of interface
 var zoomedGraph;
 var dataJsonUrl;
 var dateList = {}; // map containing the mission dates
@@ -15,47 +11,6 @@ var nbSelectedDates, nbMissionListReceived = 0;
  * Initialize the select panel (right). It is the first function to be called when document is ready.
  */
 function initSelectPanel() {
-	/*$('.timeField').change(function() {
-		//alert('Handler for .change() called.');
-		//console.log($("#startTimeField").val());
-		//console.log($("#endTimeField").val());
-		//console.log($("#dateSelect").val());
-		var date = $("#dateSelect").val();
-		var st = $("#startTimeField").val();
-		var et = $("#endTimeField").val();
-		//refreshSensorField(date, st, et);
-	});*/
-	
-	
-	
-	/*$('#updateBtn').click(function() {
-		var sensorId = $("#sensorSelect").val();
-		var sensorParts = sensorId.split('--');
-		var datatype = sensorParts[0];
-		var sid = sensorParts[1];
-		var date = $("#dateSelect").val()
-		var startTime = $("#startTimeField").val()
-		var endTime = $("#endTimeField").val()
-		var dateNoDash = date.replace(/-/g, "");
-		var stNoColumn = startTime.replace(/:/g, "");
-		var etNoColumn = endTime.replace(/:/g, "");
-		var startDate = dateNoDash+"-"+stNoColumn;
-		var endDate = dateNoDash+"-"+etNoColumn;
-		var gmlUrl = config.get('URL_PREFIX') +"/api/data?data_type="+ datatype +"&from_date="+ startDate +"&to_date="+ endDate +"&sensor_id="+sid+"&max_nb="+config.get('MAX_NB_DATA_POINTS_ON_MAP')+"&format=gml";
-		var geojsonUrl = config.get('URL_PREFIX') +"/api/gpsdata?from_date="+ startDate +"&to_date="+ endDate +"&max_nb="+config.get('MAX_NB_DATA_POINTS_ON_MAP')+"&format=geojson";
-		dataJsonUrl = config.get('URL_PREFIX') +"/api/data?data_type="+ datatype +"&from_date="+ startDate +"&to_date="+ endDate +"&sensor_id="+sid;
-		var dataJsonUrlEmbeddedGraph = dataJsonUrl + "&max_nb="+config.get('MAX_NB_DATA_POINTS_ON_MAP')
-		var callback;
-		if (datatype != "gps") {
-			callback = function() {
-				embeddedGraph.refreshSensorGraph(dataJsonUrlEmbeddedGraph, false);
-				$("#graphPanelZoomBtnPlaceholder").attr("onclick", "zoomGraph('"+ datatype +"','"+ sid +"')");
-			};
-			mapLayerUtil.set({activeGraph: embeddedGraph});
-		}
-		mapLayerUtil.refreshDataLayer(geojsonUrl, datatype, callback);
-		$('#graphPanel').hide();
-	});*/
 	
 	createLayerTreeControls();
 	
@@ -427,10 +382,12 @@ function getDatatypeAndDeviceId() {
  * @param deviceId The id of the device
  */
 function getDeviceData(datatype, missionId, deviceId) {
-	var url = config.get('URL_PREFIX') +"/api/data?data_type="+datatype+"&mission_id="+missionId+"&device_id="+deviceId+"&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH');
+    dataJsonUrl = config.get('URL_PREFIX') +"/api/data?data_type="+ datatype +"&mission_id="+missionId+"&device_id="+deviceId;
+	var url = dataJsonUrl + "&max_nb="+config.get('MAX_NB_DATA_POINTS_ON_MAP')
+	//var url = config.get('URL_PREFIX') +"/api/data?data_type="+datatype+"&mission_id="+missionId+"&device_id="+deviceId+"&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH');
 	console.log(url);
 	var graphHeight = $('#graphPanel').height();
-	var embeddedGraph = mapLayerUtil.get('activeGraph')
+	embeddedGraph = mapLayerUtil.get('activeGraph')
 	if(!embeddedGraph) {
 	    //console.log("create embedded graph !");
         embeddedGraph = new GraphD3({
@@ -442,6 +399,7 @@ function getDeviceData(datatype, missionId, deviceId) {
         mapLayerUtil.set({activeGraph: embeddedGraph});
     }
 	embeddedGraph.refreshSensorGraph(url, false);
+	$("#graphPanelZoomBtnPlaceholder").attr("onclick", "zoomGraph('"+ datatype +"','"+ missionId +"','"+ deviceId +"')");
 	$('#dataGraphPlaceholder').show();
 }
 
@@ -566,8 +524,13 @@ function closeGraphPanel() {
 	}
 }
 
-
-function zoomGraph(datatype, sid) {
+/**
+ * Create the zoomed graph and show it
+ * @param datatype The type of data displayed
+ * @param mid The mission id
+ * @param sid The device id
+ */
+function zoomGraph(datatype, mid, sid) {
 	// disable zoom if multiple sets are selected, because zoomed graph is buggy
 	if ($("#setSelect").val() == "all") {
 		alert("Zoom is not available on multiple sets. Please select only one set.");
@@ -583,6 +546,7 @@ function zoomGraph(datatype, sid) {
 				heightContainer: $("#graphZoomPlaceholder").height(),
 				datatype: datatype,
 				sensorId: sid,
+				missionId: mid,
 				zoomable: true,
 				ticksIntervalX: 5,
 				nbTicksX: 10,
