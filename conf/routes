@@ -15,6 +15,10 @@ GET     /contact                        controllers.Application.contact
 POST     /import                    controllers.Application.importData
 POST     /spatialize                controllers.Application.spatializeData
 
+# POST sensor logs
+POST    /api/mission                controllers.Application.postMission
+POST    /api/data                   controllers.Application.postData
+
 # Get sensor logs (by id)
 GET     /devices/*dId               controllers.Application.getDeviceById(dId)
 GET     /trajectorypoints/*tId      controllers.Application.getTrajectoryPointById(tId)
@@ -40,6 +44,7 @@ GET     /api/rasterdata/formission/*missionId               controllers.Applicat
 #GET     /api/sensors/from/*startDate/to/*endDate            controllers.Application.getSensorByDatetime(startDate, endDate)
 GET     /api/devices/formission/*missionId                  controllers.Application.getDeviceForMission(missionId)
 GET     /api/pointsofinterest/formission/*missionId         controllers.Application.getPointOfInterestForMission(missionId)
+GET     /api/ping                                           controllers.Application.ping
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

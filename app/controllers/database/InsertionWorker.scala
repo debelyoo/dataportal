@@ -9,9 +9,10 @@ import com.vividsolutions.jts.geom.{Geometry, Point}
 import scala.collection.immutable.Queue
 import controllers.database.BatchManager._
 import java.util.{TimeZone, Date}
-import controllers.modelmanager.{DeviceManager, DataLogManager}
+import controllers.modelmanager.{VehicleManager, MissionManager, DeviceManager, DataLogManager}
 import scala.Some
 import javax.persistence.EntityManager
+import play.api.libs.json.{Json, JsNumber, JsObject}
 
 class InsertionWorker extends Actor {
   implicit def queue2finitequeue[A](q: Queue[A]) = new FiniteQueue[A](q)
@@ -27,6 +28,9 @@ class InsertionWorker extends Actor {
       batchProgress(batchId) = (filename, lines.length, 0)
       //Logger.info("insertionBatches: "+insertionBatches.size)
       DataLogManager.insertionBatchWorker ! Message.Work(batchId, dataType, missionId)
+    }
+    case Message.SetInsertionBatchJson(batchId, dataType, nbOfItems) => {
+      batchProgress(batchId) = (dataType, nbOfItems, 0)
     }
     case Message.InsertTemperatureLog(batchId, missionId, ts, sensor, temperatureValue) => {
       val em: EntityManager = JPAUtil.createEntityManager
@@ -117,44 +121,6 @@ class InsertionWorker extends Actor {
         em.close()
       }
     }
-    /*case Message.InsertGpsLog(batchId, ts, setNumber, sensor, latitude, longitude) => {
-      try {
-        //println("[Message.InsertGpsLog] "+sensor.address)
-        val sensorInDb = Device.getByNameAndAddress(sensor.name, sensor.address)
-        assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
-        // ALTERNATIVE - create unique string, use timestamp format with seconds (and not milli) --> import only one GPS point per second
-        val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
-        val res = if (!logCache.contains(uniqueString)) {
-          val (lat, lon) = if (math.abs(latitude) > 90 || math.abs(longitude) > 180) {
-            // east coordinate comes as longitude var, north coordinate comes as latitude var
-            val arr = ApproxSwissProj.LV03toWGS84(longitude, latitude, 0L).toList
-            //val latitude = arr(0)
-            //val longitude = arr(1)
-            (arr(0), arr(1))
-          } else {
-            (latitude, longitude)
-          }
-          //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
-          val geom = CoordinateHelper.wktToGeometry("POINT("+ lon +" "+ lat +")")
-          val speed = computeSpeed(ts, geom, setNumber)
-          val gl = new GpsLog()
-          gl.setSensor(sensorInDb.get)
-          gl.setTimestamp(ts)
-          gl.setGeoPos(geom.asInstanceOf[Point])
-          gl.setSpeed(speed)
-          gl.setSetNumber(setNumber)
-          val persisted = gl.save() // persist in DB
-          if (persisted) {
-            logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
-            Some(true)
-          } else None
-        } else Some(false)
-        BatchManager.updateBatchProgress(batchId, "Insertion")
-        //sender ! res
-      } catch {
-        case ae: AssertionError => None
-      }
-    }*/
     case Message.InsertRadiometerLog(batchId, missionId, ts, sensor, radiometerValue) => {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
@@ -200,7 +166,7 @@ class InsertionWorker extends Actor {
         em.close()
       }
     }
-    case Message.InsertGpsLog(batchId, missionId, ts, setNumber, latitude, longitude, altitude) => {
+    case Message.InsertGpsLog(batchId, missionId, ts, latitude, longitude, altitude, headingOpt) => {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         em.getTransaction.begin()
@@ -221,12 +187,13 @@ class InsertionWorker extends Actor {
         //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
         val geom = CoordinateHelper.wktToGeometry("POINT("+ lon +" "+ lat +" "+ alt +")")
         val pt = geom.asInstanceOf[Point]
-        val speed = computeSpeed(ts, pt, setNumber)
+        val speed = computeSpeed(ts, pt)
         //Logger.info("Insert point: "+pt.getCoordinate.x+", "+pt.getCoordinate.y+", "+pt.getCoordinate.z)
         val gl = new TrajectoryPoint()
         gl.setTimestamp(ts)
         gl.setCoordinate(pt)
         gl.setSpeed(speed)
+        headingOpt.foreach(heading => gl.setHeading(heading))
         val m = DataLogManager.getById[Mission](missionId, Some(em))
         gl.setMission(m.get)
         gl.save(Some(em)) // persist in DB
@@ -297,7 +264,28 @@ class InsertionWorker extends Actor {
     }
     case Message.InsertDevice(device) => {
       //println("[RCV message] - insert sensor: "+sensor)
-      sender ! device.save
+      device.save
+    }
+    case Message.InsertMission(departureTime, timezone, vehicleName) => {
+      val em: EntityManager = JPAUtil.createEntityManager
+      try {
+        em.getTransaction.begin()
+        val vehicle = VehicleManager.getByName(vehicleName, Some(em)).getOrElse(new Vehicle(vehicleName))
+        val missionOpt = MissionManager.getByDatetime(departureTime)
+        val missionId = if (missionOpt.isEmpty) {
+          (new Mission(departureTime, timezone, vehicle)).save(Some(em))
+          MissionManager.getByDatetime(departureTime, Some(em)).get.getId
+        } else {
+          // mission already in DB
+          missionOpt.get.getId
+        }
+        em.getTransaction.commit()
+        sender ! Json.obj("mission_id" -> BigDecimal(missionId))
+      } catch {
+        case ex: Exception => ex.printStackTrace()
+      } finally {
+        em.close()
+      }
     }
     case Message.SkipLog(batchId) => {
       val batchNumbers = batchProgress.get(batchId)
@@ -312,14 +300,11 @@ class InsertionWorker extends Actor {
    * Compute the instantaneous speed in one GPS point
    * @param ts The timestamp of the GPS point
    * @param point The GPS point
-   * @param setNumber The set number of the GPS point
    * @return The speed in m/s
    */
-  private def computeSpeed(ts: Date, point: Point, setNumber: Int): Double = {
+  private def computeSpeed(ts: Date, point: Point): Double = {
     val INTERVAL_BETWEEN_SPEED_POINTS = 1000L // milliseconds (it means that we compute speed every 1000 ms)
     val timeDiff = lastSpeedPoint.map(gpsLog => ts.getTime - gpsLog.getTimestamp.getTime) // time difference (ms) between gps points
-    //val lastSetNumber = lastSpeedPoint.map(gpsLog => gpsLog.getSetNumber)
-    //if (lastSetNumber.isDefined && lastSetNumber.get != setNumber) lastSpeedPoint = None // reset lastSpeedPoint if set number has changed
     //val point = geom.asInstanceOf[Point]
     if (lastSpeedPoint.isEmpty) {
       val speed = 0.0
@@ -327,7 +312,6 @@ class InsertionWorker extends Actor {
       gl.setTimestamp(ts)
       gl.setCoordinate(point)
       gl.setSpeed(speed)
-      //gl.setSetNumber(setNumber)
       lastSpeedPoint = Some(gl)
       speed
     } else if (lastSpeedPoint.isDefined && timeDiff.get >= INTERVAL_BETWEEN_SPEED_POINTS) {
@@ -339,7 +323,6 @@ class InsertionWorker extends Actor {
       gl.setTimestamp(ts)
       gl.setCoordinate(point)
       gl.setSpeed(speed)
-      //gl.setSetNumber(setNumber)
       lastSpeedPoint = Some(gl)
       speed
     } else {

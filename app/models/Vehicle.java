@@ -17,6 +17,9 @@ public class Vehicle {
 
     private String name;
 
+    public Vehicle(String vName) {
+        this.name = vName;
+    }
     public Vehicle() {
     }
 

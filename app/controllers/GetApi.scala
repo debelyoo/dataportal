@@ -128,9 +128,6 @@ trait GetApi extends ResponseFormatter {
   def getPointOfInterestForMission(missionId: String) = Action {
     val poiList = DataLogManager.getPointOfInterest(missionId.toLong)
     Ok(pointsAsGeoJson(poiList))
-    //val jsList = Json.toJson(poiList.map(d => Json.parse(d.toGeoJson)))
-    // build return JSON obj with array and count
-    //Ok(Json.toJson(Map("points_of_interest" -> jsList, "count" -> Json.toJson(poiList.length))))
   }
 
 
@@ -236,6 +233,14 @@ trait GetApi extends ResponseFormatter {
   def getMaxSpeedAndHeadingForMission(idStr: String) = Action {
     val resp = DataLogManager.getMaxSpeedAndHeadingForMission(idStr.toLong)
     Ok(resp)
+  }
+
+  /**
+   * A ping service util
+   * @return 200 OK
+   */
+  def ping = Action {
+    Ok
   }
 
   /**

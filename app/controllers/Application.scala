@@ -8,7 +8,7 @@ import com.google.gson.{JsonArray, JsonObject, JsonElement}
 import scala.concurrent.ExecutionContext.Implicits.global
 import controllers.modelmanager.DataLogManager
 
-object Application extends Controller with GetApi {
+object Application extends Controller with GetApi with PostApi {
   
   def index = Action {
     Ok(views.html.index("Your new application is ready."))

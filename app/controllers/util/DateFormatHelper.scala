@@ -15,7 +15,7 @@ object DateFormatHelper {
   /**
    * Convert a labview timestamp to Java Date
    * @param labviewTs The timestamp in labview time reference (nb of seconds from 1.1.1904) UTC
-   * @return The corresponding date in Java time reference
+   * @return The corresponding date in Java format
    */
   def labViewTs2JavaDate(labviewTs: String): Option[Date] = {
     try {
@@ -27,10 +27,26 @@ object DateFormatHelper {
     }
   }
 
-  def unixTs2JavaDate(unixTs: String): Option[Date] = {
+  /**
+   * Convert a unix timestamp (in ms) to Java Date
+   * @param unixTs The timestamp in unix time reference (ms from 1.1.1970)
+   * @return The corresponding date in Java format
+   */
+  def unixTsMilli2JavaDate(unixTs: String): Option[Date] = {
     try {
       val cal = Calendar.getInstance()
       cal.setTimeInMillis(unixTs.toLong)
+      Some(cal.getTime)
+    } catch {
+      case ex: Exception => None
+    }
+  }
+
+  def unixTs2JavaDate(unixTs: Double): Option[Date] = {
+    try {
+      val cal = Calendar.getInstance()
+      val tsMilli = math.round(unixTs * 1000).toLong
+      cal.setTimeInMillis(tsMilli)
       Some(cal.getTime)
     } catch {
       case ex: Exception => None

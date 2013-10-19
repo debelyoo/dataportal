@@ -12,7 +12,7 @@ class InsertionBatchWorker extends Actor {
 
   def receive = {
     case Message.Work(batchId, dataType, missionId) => {
-      var setNumberOpt: Option[Int] = None
+      //var setNumberOpt: Option[Int] = None
       insertionBatches.get(batchId).map { case (lines, sensors) =>
         val trajectoryPoints = if (dataType == DataImporter.Types.COMPASS) {
           DataLogManager.getTrajectoryPoints(missionId, None, None, None) // for inserting compass value
@@ -40,7 +40,7 @@ class InsertionBatchWorker extends Actor {
               DateFormatHelper.labViewTs2JavaDate(chunksOnLine(1))
             } else {
               // timestamp with new Qt interface is already a unix TS in ms
-              DateFormatHelper.unixTs2JavaDate(chunksOnLine(1))
+              DateFormatHelper.unixTsMilli2JavaDate(chunksOnLine(1))
             }
             assert(date.isDefined || dataType == DataImporter.Types.ULM_TRAJECTORY, {println("Date is not parsable")})
 
@@ -70,12 +70,10 @@ class InsertionBatchWorker extends Actor {
                   val altitudeValue = if (chunksOnLine.length == 5) chunksOnLine(4).toDouble else 0.0
                   //println("--> handle GPS log ! "+ chunksOnLine(0))
                   // address - timestamp - latitude - longitude - elevation
-                  if (setNumberOpt.isEmpty) setNumberOpt = DataLogManager.getNextSetNumber(date.get)
+                  //if (setNumberOpt.isEmpty) setNumberOpt = DataLogManager.getNextSetNumber(date.get)
                   //val setNumberOpt = DataLogManager.getNextSetNumber[GpsLog](date)
-                  setNumberOpt.foreach(setNumber => {
-                    DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, missionId, date.get, setNumber,
-                      chunksOnLine(2).toDouble, chunksOnLine(3).toDouble, altitudeValue)
-                  })
+                  DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, missionId, date.get,
+                    chunksOnLine(2).toDouble, chunksOnLine(3).toDouble, altitudeValue, None)
                 } else {
                   DataLogManager.insertionWorker ! Message.SkipLog(batchId) // necessary to update batch progress correctly (when GPS error logs are skipped)
                 }
