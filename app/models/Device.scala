@@ -33,7 +33,7 @@ class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "device",cascade=Array(CascadeType.ALL))
   var sensorLogs: util.Collection[SensorLog] = new util.HashSet[SensorLog]()
 
-  override def toString = id + " -> name: "+ name +", address: "+ address +", type: " + deviceType.name
+  override def toString = "[Device] id: "+id + " -> name: "+ name +", address: "+ address +", type: " + deviceType.name
 
   def this() = this("", "", null) // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
 
@@ -152,6 +152,7 @@ object Device {
       val query = "SELECT DISTINCT d FROM "+ classOf[Device].getName +" d JOIN d.missions m WHERE m.id = "+ missionId + typeCondition + addressCondition+ " ORDER BY d.name"
       val q = em.createQuery(query, classOf[Device])
       val devices = q.getResultList.toList.map(d => {
+        println("-- "+d)
         if (!typeMap.contains(d.deviceType.name)) {
           typeMap += d.deviceType.name -> 1
         } else {

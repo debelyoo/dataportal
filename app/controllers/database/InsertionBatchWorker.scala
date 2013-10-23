@@ -27,12 +27,12 @@ class InsertionBatchWorker extends Actor {
             //println(chunksOnLine.toList)
             inc += 1
             val device = devices.get(chunksOnLine(0))
-            /*val device = if (deviceOpt.isDefined) {
+            //val device = if (deviceOpt.isDefined) {
               if (dataType != DataImporter.Types.COMPASS) {
                 // persist device in DB. Not for compass because compass value is added to trajectory points
-                DataLogManager.insertionWorker ! Message.InsertDevice(dev)
+                DataLogManager.insertionWorker ! Message.InsertDevice(device.get)
               }
-              Some(dev)
+              /*Some(dev)
             } else None*/
             val date = if (chunksOnLine(1).contains(".") && dataType != DataImporter.Types.ULM_TRAJECTORY) {
               // if TS comes from labview
@@ -54,15 +54,18 @@ class InsertionBatchWorker extends Actor {
               }
               case DataImporter.Types.TEMPERATURE => {
                 // address - timestamp - value
-                DataLogManager.insertionWorker ! Message.InsertTemperatureLog(batchId, missionId, date.get, device.get, chunksOnLine(2).toDouble)
+                //DataLogManager.insertionWorker ! Message.InsertTemperatureLog(batchId, missionId, date.get, device.get, chunksOnLine(2).toDouble)
+                DataLogManager.insertionWorker ! Message.InsertSensorLog(batchId, missionId, date.get, chunksOnLine(2).toDouble, chunksOnLine(0))
               }
               case DataImporter.Types.WIND => {
                 // address - timestamp - value
-                DataLogManager.insertionWorker ! Message.InsertWindLog(batchId, missionId, date.get, device.get, chunksOnLine(2).toDouble)
+                //DataLogManager.insertionWorker ! Message.InsertWindLog(batchId, missionId, date.get, device.get, chunksOnLine(2).toDouble)
+                DataLogManager.insertionWorker ! Message.InsertSensorLog(batchId, missionId, date.get, chunksOnLine(2).toDouble, chunksOnLine(0))
               }
               case DataImporter.Types.RADIOMETER  => {
                 // address - timestamp - value
-                DataLogManager.insertionWorker ! Message.InsertRadiometerLog(batchId, missionId, date.get, device.get, chunksOnLine(2).toDouble)
+                //DataLogManager.insertionWorker ! Message.InsertRadiometerLog(batchId, missionId, date.get, device.get, chunksOnLine(2).toDouble)
+                DataLogManager.insertionWorker ! Message.InsertSensorLog(batchId, missionId, date.get, chunksOnLine(2).toDouble, chunksOnLine(0))
               }
               case DataImporter.Types.GPS  => {
                 if (chunksOnLine(0) == "48") {
