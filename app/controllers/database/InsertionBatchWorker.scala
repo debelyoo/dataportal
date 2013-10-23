@@ -13,11 +13,11 @@ class InsertionBatchWorker extends Actor {
   def receive = {
     case Message.Work(batchId, dataType, missionId) => {
       //var setNumberOpt: Option[Int] = None
-      insertionBatches.get(batchId).map { case (lines, sensors) =>
+      insertionBatches.get(batchId).map { case (lines, devices) =>
         val trajectoryPoints = if (dataType == DataImporter.Types.COMPASS) {
           DataLogManager.getTrajectoryPoints(missionId, None, None, None) // for inserting compass value
         } else List()
-        var inc = 0;
+        var inc = 0
         for ((line, ind) <- lines.zipWithIndex) {
           val chunksOnLine = if(dataType != DataImporter.Types.ULM_TRAJECTORY)
             line.split("\\t")
@@ -26,7 +26,7 @@ class InsertionBatchWorker extends Actor {
           if (chunksOnLine.nonEmpty) {
             //println(chunksOnLine.toList)
             inc += 1
-            val deviceOpt = sensors.get(chunksOnLine(0))
+            val deviceOpt = devices.get(chunksOnLine(0))
             val device = if (deviceOpt.isDefined) {
               val dev = new Device(deviceOpt.get.getName, deviceOpt.get.getAddress, dataType)
               if (dataType != DataImporter.Types.COMPASS) {

@@ -3,9 +3,9 @@ package controllers
 import play.api.mvc.{Action, Controller}
 import play.api.libs.json.{JsObject, JsArray}
 import controllers.util.{DateFormatHelper, Message, DataImporter}
-import controllers.modelmanager.{VehicleManager, DataLogManager}
+import controllers.modelmanager.{DeviceManager, VehicleManager, DataLogManager}
 import java.util.UUID
-import models.{Vehicle, Mission}
+import models.{Device, Vehicle, Mission}
 import scala.concurrent.duration.Duration
 import akka.util.Timeout
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -25,17 +25,20 @@ trait PostApi {
       val ts = (request.body \ "departure_time").as[Double]
       val tz = (request.body \ "timezone").as[String]
       val vName = (request.body \ "vehicle").as[String]
-      val vehicle = VehicleManager.getByName(vName).getOrElse(new Vehicle(vName))
+      val devices = (request.body \ "devices").as[JsArray]
+      //val vehicle = VehicleManager.getByName(vName).getOrElse(new Vehicle(vName))
       val departureTime = DateFormatHelper.unixTs2JavaDate(ts).get
-      val mission = new Mission(departureTime, tz, vehicle)
+      //val mission = new Mission(departureTime, tz, vehicle)
+      val reply = DataLogManager.insertionWorker ? Message.InsertMission(departureTime, tz, vName, devices)
 
-      val reply = DataLogManager.insertionWorker ? Message.InsertMission(departureTime, tz, vName)
-
-      reply.mapTo[JsObject].map { response => Ok(response)}
+      reply.mapTo[JsObject].map(response => {
+        Ok(response)
+      })
     }
   }
 
   def postData = Action(parse.json) { request =>
+    println(request.body)
     // handle POST data as JSON
     val dataType = (request.body \ "datatype").as[String]
     val jsArray = (request.body \ "items").asInstanceOf[JsArray]
@@ -53,19 +56,17 @@ trait PostApi {
           val heading = (item \ "heading").asOpt[Double]
           DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, missionId, date, lat, lon, alt, heading)
         }
-        case DataImporter.Types.TEMPERATURE => {
+        case _ => {
           val missionId = (item \ "mission_id").as[Long]
           val ts = (item \ "timestamp").as[Double]
           val date = DateFormatHelper.unixTs2JavaDate(ts).get
           val value = (item \ "value").as[Double]
-
-          //DataLogManager.insertionWorker ! Message.InsertTemperatureLog(batchId, missionId, date, device.get, value)
+          val deviceType = (item \ "sensor_type").as[String]
+          val deviceAddress = (item \ "sensor_address").as[String]
+          DataLogManager.insertionWorker ! Message.InsertSensorLog(batchId, missionId, date, value, deviceAddress)
         }
-        case _  => println("Unknown data type ! ["+ dataType +"]")
       }
     })
-
-    println(request.body)
     Ok
   }
 

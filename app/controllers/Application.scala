@@ -7,6 +7,7 @@ import play.api.libs.json.{JsValue, Json}
 import com.google.gson.{JsonArray, JsonObject, JsonElement}
 import scala.concurrent.ExecutionContext.Implicits.global
 import controllers.modelmanager.DataLogManager
+import models.DeviceType
 
 object Application extends Controller with GetApi with PostApi {
   
@@ -36,6 +37,27 @@ object Application extends Controller with GetApi with PostApi {
 
   def contact = Action {
     Ok(views.html.contact())
+  }
+
+  def setDeviceType = Action {
+    Ok(views.html.setDeviceType())
+  }
+
+  def addDeviceType = Action(parse.multipartFormData) { request =>
+    val deviceTypeName = request.body.dataParts("deviceType").mkString(",")
+    if (deviceTypeName != "") {
+      if (DeviceType(deviceTypeName).save) {
+        Redirect(routes.Application.setDeviceType())
+      } else {
+        Redirect(routes.Application.index).flashing(
+          "error" -> "Empty device type !"
+        )
+      }
+    } else {
+      Redirect(routes.Application.index).flashing(
+        "error" -> "Empty device type !"
+      )
+    }
   }
 
   /*

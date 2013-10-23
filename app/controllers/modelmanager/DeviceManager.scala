@@ -21,11 +21,9 @@ object DeviceManager {
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
       val q = em.createQuery("from "+ classOf[Device].getName +" WHERE id IN ("+ sIdList.mkString(",") +")")
-      //q.setParameter("id",sId)
       val devices = q.getResultList.map(_.asInstanceOf[Device]).map(s => (s.getId.toLong, s)).toMap
       if (emOpt.isEmpty) em.getTransaction().commit()
       devices
-      //Some(sensor)
     } catch {
       case nre: NoResultException => Map()
       case ex: Exception => ex.printStackTrace; Map()
@@ -57,14 +55,23 @@ object DeviceManager {
     }
   }
 
-  def getForMission(missionId: Long, datatype: Option[String]): List[Device] = {
-    val em = JPAUtil.createEntityManager()
+  /**
+   * Get the devices that are associated with a mission
+   * @param missionId The id of the mission
+   * @param datatype The type of data to get
+   * @param address The address of the device
+   * @param emOpt An optional entity manager to avoid created many transactions for multiple consecutive queries
+   * @return A list of devices
+   */
+  def getForMission(missionId: Long, datatype: Option[String], address: Option[String], emOpt: Option[EntityManager] = None): List[Device] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     val typeMap = collection.mutable.Map[String, Int]()
     try {
-      em.getTransaction().begin()
+      if (emOpt.isEmpty) em.getTransaction().begin()
       // TODO - improve many to many request
       val typeCondition = if (datatype.isDefined) " AND d.datatype = '"+ datatype.get +"'" else ""
-      val query = "SELECT d.id, d.name FROM equipment AS e, device AS d WHERE e.mission_id = "+ missionId +" AND e.device_id = d.id"+ typeCondition +" ORDER BY name"
+      val addressCondition = if (address.isDefined) " AND d.address = '"+ address.get +"'" else ""
+      val query = "SELECT d.id, d.name FROM equipment AS e, device AS d WHERE e.mission_id = "+ missionId +" AND e.device_id = d.id"+ typeCondition + addressCondition+ " ORDER BY name"
       val q = em.createNativeQuery(query)
       val devices = q.getResultList.map(_.asInstanceOf[Array[Object]]).toList.map(obj => {
         val dId = obj(0).asInstanceOf[Int]
@@ -83,13 +90,13 @@ object DeviceManager {
       } yield {
         new Device(0, t._1, "", t._1)
       }
-      em.getTransaction().commit()
+      if (emOpt.isEmpty) em.getTransaction().commit()
       devices ++ virtualDeviceList
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()
     } finally {
-      em.close()
+      if (emOpt.isEmpty) em.close()
     }
   }
 
@@ -110,7 +117,6 @@ object DeviceManager {
       val temperatureSensors = getActiveSensorByTimeInterval[TemperatureLog](from, to, false, Some(em))
       val windSensors = getActiveSensorByTimeInterval[WindLog](from, to, false, Some(em))
       val radiometerSensors = getActiveSensorByTimeInterval[RadiometerLog](from, to, false, Some(em))
-      val compassSensors = getActiveSensorByTimeInterval[CompassLog](from, to, false, Some(em))
       val temperatureType = if (temperatureSensors.nonEmpty && dataType.isEmpty) {
         // add a virtual sensor that will appear as "All temperature" in map interface
         val typeSensor = new Device(0, "temperature", "", DataImporter.Types.TEMPERATURE)
@@ -121,7 +127,7 @@ object DeviceManager {
         val typeSensor = new Device(0, "radiometer", "", DataImporter.Types.RADIOMETER)
         List(typeSensor)
       } else List()
-      val devices = temperatureSensors ++ temperatureType ++ windSensors ++ radiometerSensors ++ radiometerType ++ compassSensors
+      val devices = temperatureSensors ++ temperatureType ++ windSensors ++ radiometerSensors ++ radiometerType
 
       em.getTransaction().commit()
       val filteredDevices = if (dataType.isDefined) devices.filter(_.getDatatype == dataType.get) else devices

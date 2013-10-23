@@ -264,24 +264,62 @@ class InsertionWorker extends Actor {
     }
     case Message.InsertDevice(device) => {
       //println("[RCV message] - insert sensor: "+sensor)
-      device.save
+      device.save(None)
     }
-    case Message.InsertMission(departureTime, timezone, vehicleName) => {
+    case Message.InsertMission(departureTime, timezone, vehicleName, devices) => {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         em.getTransaction.begin()
         val vehicle = VehicleManager.getByName(vehicleName, Some(em)).getOrElse(new Vehicle(vehicleName))
-        val missionOpt = MissionManager.getByDatetime(departureTime)
-        val missionId = if (missionOpt.isEmpty) {
+        val missionOpt = MissionManager.getByDatetime(departureTime, Some(em))
+        val mission = if (missionOpt.isEmpty) {
           (new Mission(departureTime, timezone, vehicle)).save(Some(em))
-          MissionManager.getByDatetime(departureTime, Some(em)).get.getId
+          MissionManager.getByDatetime(departureTime, Some(em)).get
         } else {
           // mission already in DB
-          missionOpt.get.getId
+          missionOpt.get
         }
+        //println(devices)
+        devices.value.foreach(jsDev => {
+          val address = (jsDev \ "address").as[String]
+          val name = (jsDev \ "name").as[String]
+          val datatype = (jsDev \ "datatype").as[String]
+
+          val deviceOpt = DeviceManager.getByNameAndAddress(name, address, Some(em))
+          val device = if (deviceOpt.isEmpty) {
+            val dev = new Device(name, address, datatype)
+            dev.save(Some(em))
+            dev
+          } else {
+            // device already in DB
+            deviceOpt.get
+          }
+          mission.addDevice(device)
+        })
+        mission.save(Some(em))
         em.getTransaction.commit()
-        sender ! Json.obj("mission_id" -> BigDecimal(missionId))
+        sender ! Json.obj("mission_id" -> BigDecimal(mission.getId))
       } catch {
+        case ex: Exception => ex.printStackTrace()
+      } finally {
+        em.close()
+      }
+    }
+    case Message.InsertSensorLog(batchId, missionId, timestamp, value, deviceAddress) => {
+      println("[InsertSensorLog]")
+      val em: EntityManager = JPAUtil.createEntityManager
+      try {
+        em.getTransaction.begin()
+        val mission = DataLogManager.getById[Mission](missionId, Some(em))
+        assert(mission.isDefined, {println("[InsertSensorLog] Mission does not exist")})
+        val devices = DeviceManager.getForMission(missionId, None, Some(deviceAddress), Some(em))
+        assert(devices.length == 1, {println("[InsertSensorLog] Device does not exist")})
+        // create sensor log record
+        val log = new SensorLog(mission.get, devices.head, timestamp, value)
+        log.save(Some(em))
+        em.getTransaction.commit()
+      } catch {
+        case ae: AssertionError => ae.printStackTrace()
         case ex: Exception => ex.printStackTrace()
       } finally {
         em.close()

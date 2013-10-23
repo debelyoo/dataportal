@@ -13,7 +13,7 @@ import java.util.Date;
 
 @Entity
 @Table(name = "temperaturelog", uniqueConstraints = @UniqueConstraint(columnNames = {"device_id", "timestamp"}))
-public class TemperatureLog implements JsonSerializable, SensorLog {
+public class TemperatureLog implements JsonSerializable, ISensorLog {
 
     @Id
     @GeneratedValue(generator="increment")

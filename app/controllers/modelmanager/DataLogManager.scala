@@ -183,9 +183,6 @@ object DataLogManager {
       case DataImporter.Types.WIND => {
         getByMissionAndDevice[WindLog](missionId, deviceIdList, startDate, endDate, maxNb)
       }
-      case DataImporter.Types.COMPASS => {
-        getByMissionAndDevice[CompassLog](missionId, deviceIdList, startDate, endDate, maxNb)
-      }
       case DataImporter.Types.RADIOMETER => {
         getByMissionAndDevice[RadiometerLog](missionId, deviceIdList, startDate, endDate, maxNb)
       }
@@ -239,7 +236,7 @@ object DataLogManager {
       val diff = (new Date).getTime - start.getTime
       println("Nb of logs queried: "+logs.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
-      val logsMapBySensorId = logs.map(_.asInstanceOf[SensorLog]).groupBy(_.getDevice.getId)
+      val logsMapBySensorId = logs.map(_.asInstanceOf[ISensorLog]).groupBy(_.getDevice.getId)
       logsMapBySensorId.map { case (sId, logs) => {
           val reducedLogList = if (maxNb.isDefined && logs.length > maxNb.get) {
             val moduloFactor = math.ceil(logs.length.toDouble / maxNb.get.toDouble).toInt
@@ -303,7 +300,7 @@ object DataLogManager {
       val diff = (new Date).getTime - start.getTime
       println("Nb of logs queried: "+logList.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
-      val logsMapBySensorId = logList.map(_.asInstanceOf[SensorLog]).groupBy(_.getDevice.getId)
+      val logsMapBySensorId = logList.map(_.asInstanceOf[ISensorLog]).groupBy(_.getDevice.getId)
       logsMapBySensorId.map { case (sId, logs) => {
         val reducedLogList = if (maxNb.isDefined && logs.length > maxNb.get) {
           val moduloFactor = math.ceil(logs.length.toDouble / maxNb.get.toDouble).toInt
@@ -818,7 +815,7 @@ object DataLogManager {
     * @param sensorId The id of the sensor of interest
     * @return An option with the closest log we found
     */
-  def getClosestLog(logs: List[SensorLog], ts: Date, marginInSeconds: Int, sensorId: Long): Option[SensorLog] = {
+  def getClosestLog(logs: List[ISensorLog], ts: Date, marginInSeconds: Int, sensorId: Long): Option[ISensorLog] = {
     //println("[DataLogManager] getClosestLog() - "+logs.head)
     val beforeDate = Calendar.getInstance()
     beforeDate.setTime(ts)
@@ -969,7 +966,7 @@ object DataLogManager {
       q.setMaxResults(1)
       val lastLog = q.getSingleResult
       em.getTransaction().commit()
-      val diff = date.getTime - lastLog.asInstanceOf[SensorLog].getTimestamp.getTime
+      val diff = date.getTime - lastLog.asInstanceOf[ISensorLog].getTimestamp.getTime
       val newSetNumber = if (math.abs(diff) < MAX_TIME_DIFF_BETWEEN_SETS) {
         // if diff is smaller than threshold, keep same set number
         lastLog.getSetNumber

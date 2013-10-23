@@ -12,7 +12,7 @@ import java.util.Date;
 
 @Entity
 @Table(name = "radiometerlog", uniqueConstraints = @UniqueConstraint(columnNames = {"device_id", "timestamp"})) // uniqueness constraint
-public class RadiometerLog implements JsonSerializable, SensorLog {
+public class RadiometerLog implements JsonSerializable, ISensorLog {
 
     @Id
     @GeneratedValue(generator="increment")

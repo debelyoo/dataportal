@@ -41,7 +41,7 @@ trait GetApi extends ResponseFormatter {
 
         val maxNb = map.get("max_nb").map(_.toInt)
         val deviceIdList = map.get("device_id").map {
-          case "all" => DeviceManager.getForMission(missionId, map.get("data_type")).map(_.getId.toLong)
+          case "all" => DeviceManager.getForMission(missionId, map.get("data_type"), None).map(_.getId.toLong)
           case _ => List(map.get("device_id").get.toLong)
         }.get
         val logMap = DataLogManager.getDataByMission(datatype, missionId, deviceIdList, startDate, endDate, maxNb)
@@ -114,7 +114,7 @@ trait GetApi extends ResponseFormatter {
    * @return
    */
   def getDeviceForMission(missionId: String) = Action {
-    val deviceList = DeviceManager.getForMission(missionId.toLong, None)
+    val deviceList = DeviceManager.getForMission(missionId.toLong, None, None)
     val jsList = Json.toJson(deviceList.map(d => Json.parse(d.toJson)))
     // build return JSON obj with array and count
     Ok(Json.toJson(Map("devices" -> jsList, "count" -> Json.toJson(deviceList.length))))
@@ -160,10 +160,6 @@ trait GetApi extends ResponseFormatter {
   def getTrajectoryPointById(tId: String) = Action {
     val logOpt = DataLogManager.getById[TrajectoryPoint](tId.toLong)
     logOpt.map(gl => Ok(gl.toGeoJson)).getOrElse(NotFound) // return Not Found if no log with id 'gId' exists
-  }
-  def getCompassLogById(cId: String) = Action {
-    val logOpt = DataLogManager.getById[CompassLog](cId.toLong)
-    logOpt.map(cl => Ok(cl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'cId' exists
   }
 
   def getTemperatureLogById(tId: String) = Action {

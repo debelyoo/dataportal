@@ -1,0 +1,23 @@
+@import models.DeviceType
+
+@main("configure device types", true) {
+
+    <h2>Configure device types</h2>
+    <div id="listContainer">
+        <ul class="unstyled">
+        @for(dt <- DeviceType.getAll) {
+            <li>@dt.name</li>
+        }
+        </ul>
+    </div>
+    @helper.form(action = routes.Application.addDeviceType, 'enctype -> "multipart/form-data") {
+    <div class="form-horizontal">
+        <div class="control-group">
+            <div class="controls">
+                <input type="text" id="inputDeviceType" name="deviceType">
+                <button type="submit" class="btn">Add</button>
+            </div>
+        </div>
+    </div>
+    }
+}

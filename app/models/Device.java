@@ -25,7 +25,10 @@ public class Device implements JsonSerializable {
 
     private String name;
     private String address;
-    private String datatype;
+
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name="devicetype_id")
+    private DeviceType devicetype;
 
     @ManyToMany(
             cascade = CascadeType.ALL,
@@ -35,18 +38,18 @@ public class Device implements JsonSerializable {
     private Collection<Mission> missions = new HashSet<>();
 
     // constructor to create virtual device (fake id)
-    public Device(Long id, String n, String a, String d) {
+    public Device(Long id, String n, String a, DeviceType d) {
         this.id = id;
         this.name = n;
         this.address = a;
-        this.datatype = d;
+        this.devicetype = d;
     }
 
     // constructor to create real device, id will be set when inserted
-    public Device(String n, String a, String d) {
+    public Device(String n, String a, DeviceType d) {
         this.name = n;
         this.address = a;
-        this.datatype = d;
+        this.devicetype = d;
     }
 
     public Device(){} // default constructor
@@ -63,18 +66,20 @@ public class Device implements JsonSerializable {
         return address;
     }
 
-    public String getDatatype() {
-        return datatype;
+    public DeviceType getDeviceType() {
+        return devicetype;
     }
 
     public Collection<Mission> getMissions() {
         return new HashSet<Mission>(missions);
     }
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "device")
+    protected Collection<SensorLog> sensorLogs;
 
 
     public String toString() {
-        return id + " -> name: " + this.name + ", address: " + this.address +", datatype: "+this.datatype;
+        return id + " -> name: " + this.name + ", address: " + this.address +", devicetype: "+this.devicetype.name();
     }
 
     @Override
@@ -92,7 +97,7 @@ public class Device implements JsonSerializable {
             missionJson.getAsJsonObject().addProperty("id", device.getId());
             missionJson.getAsJsonObject().addProperty("name", device.getName());
             missionJson.getAsJsonObject().addProperty("address", device.getAddress());
-            missionJson.getAsJsonObject().addProperty("datatype", device.getDatatype());
+            missionJson.getAsJsonObject().addProperty("devicetype", device.getDeviceType().name());
             return missionJson;
         }
     }
@@ -100,12 +105,16 @@ public class Device implements JsonSerializable {
     /**
      * Save the Device in Postgres database
      */
-    public Boolean save() {
-        EntityManager em = JPAUtil.createEntityManager();
+    public Boolean save(Option<EntityManager> emOpt) {
+        EntityManager em; // = JPAUtil.createEntityManager();
+        if (emOpt.isEmpty()) {
+            em = JPAUtil.createEntityManager();
+        } else {
+            em = emOpt.get();
+        }
         Boolean res = false;
         try {
-            em.getTransaction().begin();
-            Option<EntityManager> emOpt = Option.apply(em);
+            if(emOpt.isEmpty()) em.getTransaction().begin();
             Option<Device> sensorInDb = DeviceManager.getByNameAndAddress(this.name, this.address, emOpt);
             if (sensorInDb.isEmpty()) {
                 em.persist(this);
@@ -113,11 +122,11 @@ public class Device implements JsonSerializable {
             } else {
                 res = true;
             }
-            em.getTransaction().commit();
+            if(emOpt.isEmpty()) em.getTransaction().commit();
         } catch (Exception ex) {
             System.out.println("[WARNING][Device.save] "+ ex.getMessage());
         } finally {
-            em.close();
+            if(emOpt.isEmpty()) em.close();
         }
         return res;
     }

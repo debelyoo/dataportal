@@ -12,7 +12,7 @@ import java.util.Date;
 
 @Entity
 @Table(name = "windlog", uniqueConstraints = @UniqueConstraint(columnNames = {"device_id", "timestamp"}))
-public class WindLog implements JsonSerializable, SensorLog {
+public class WindLog implements JsonSerializable, ISensorLog {
     @Id
     @GeneratedValue(generator="increment")
     @GenericGenerator(name="increment", strategy = "increment")

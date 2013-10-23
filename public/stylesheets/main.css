@@ -27,3 +27,12 @@ body {
     width: 500px;
     margin: 10px 50px;
 }
+
+#listContainer {
+    width: 260px;
+    border: 1px solid #ccc;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    margin: 30px 0 20px 180px;
+    padding: 5px;
+}

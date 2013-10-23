@@ -49,6 +49,9 @@ public class Mission implements JsonSerializable {
     )
     private Collection<Device> devices = new HashSet<>();
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission")
+    protected Collection<SensorLog> sensorLogs;
+
     public Mission(Date depTime, String tz, Vehicle ve) {
         this.departureTime = depTime;
         this.timeZone = tz;

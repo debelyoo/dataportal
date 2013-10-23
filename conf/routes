@@ -11,9 +11,11 @@ GET     /spatializeResult/*batchId      controllers.Application.spatializeResult
 GET     /batch/progress/*batchId        controllers.Application.spatializationProgress(batchId)
 GET     /view                           controllers.Application.view
 GET     /contact                        controllers.Application.contact
+GET     /config                         controllers.Application.setDeviceType
 
-POST     /import                    controllers.Application.importData
-POST     /spatialize                controllers.Application.spatializeData
+POST    /import                     controllers.Application.importData
+POST    /spatialize                 controllers.Application.spatializeData
+POST    /deviceType                 controllers.Application.addDeviceType
 
 # POST sensor logs
 POST    /api/mission                controllers.Application.postMission
@@ -22,7 +24,6 @@ POST    /api/data                   controllers.Application.postData
 # Get sensor logs (by id)
 GET     /devices/*dId               controllers.Application.getDeviceById(dId)
 GET     /trajectorypoints/*tId      controllers.Application.getTrajectoryPointById(tId)
-GET     /compasslogs/*cId           controllers.Application.getCompassLogById(cId)
 GET     /temperaturelogs/*tId       controllers.Application.getTemperatureLogById(tId)
 GET     /radiometerlogs/*rId        controllers.Application.getRadiometerLogById(rId)
 GET     /windlogs/*wId              controllers.Application.getWindLogById(wId)

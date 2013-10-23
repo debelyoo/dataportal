@@ -10,7 +10,7 @@ import scala.collection.JavaConversions._
 import scala.Some
 import scala.reflect.{ClassTag, classTag}
 import java.util.HashSet
-import models.{CompassLog, RadiometerLog, WindLog, TemperatureLog}
+import models.{RadiometerLog, WindLog, TemperatureLog}
 
 @Entity
 @Table(name = "devicescala")
@@ -56,29 +56,6 @@ case class DeviceScala(name: String, address: String, datatype: String) {
       true
     }
   }
-
-  /**
-   * Update the data type of the sensor
-   * @param newType The new type to set
-   * @return true if success
-   */
-  /*def updateType(newType: String): Boolean = {
-    println("[Device] update() - "+ this.toString)
-    val em: EntityManager = JPAUtil.createEntityManager
-    // UPDATE sensor SET datatype='temperature' WHERE id=16;
-    try {
-      em.getTransaction.begin
-      val queryStr = "UPDATE "+ classOf[Device].getName +" SET datatype='"+ newType +"' WHERE id="+this.id
-      val q = em.createQuery(queryStr)
-      q.executeUpdate()
-      em.getTransaction.commit
-      true
-    } catch {
-      case ex: Exception => false
-    } finally {
-      em.close
-    }
-  }*/
 }
 
 object DeviceScala {
@@ -179,7 +156,6 @@ object DeviceScala {
       val temperatureSensors = getActiveSensorByTimeInterval[TemperatureLog](from, to, false, Some(em))
       val windSensors = getActiveSensorByTimeInterval[WindLog](from, to, false, Some(em))
       val radiometerSensors = getActiveSensorByTimeInterval[RadiometerLog](from, to, false, Some(em))
-      val compassSensors = getActiveSensorByTimeInterval[CompassLog](from, to, false, Some(em))
       val temperatureType = if (temperatureSensors.nonEmpty && dataType.isEmpty) {
         // add a virtual sensor that will appear as "All temperature" in map interface
         val typeSensor = DeviceScala("temperature", "", DataImporter.Types.TEMPERATURE)
@@ -190,7 +166,7 @@ object DeviceScala {
         val typeSensor = DeviceScala("radiometer", "", DataImporter.Types.RADIOMETER)
         List(typeSensor)
       } else List()
-      val devices = temperatureSensors ++ temperatureType ++ windSensors ++ radiometerSensors ++ radiometerType ++ compassSensors
+      val devices = temperatureSensors ++ temperatureType ++ windSensors ++ radiometerSensors ++ radiometerType
 
       em.getTransaction().commit()
       val filteredDevices = if (dataType.isDefined) devices.filter(_.datatype == dataType.get) else devices

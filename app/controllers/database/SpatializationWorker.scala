@@ -1,14 +1,7 @@
 package controllers.database
 
 import akka.actor.{Actor, ActorSystem}
-import controllers.util.{SensorLog, JPAUtil, Message}
-import models.spatial._
-import models._
-import controllers.modelmanager.DataLogManager
-import DataLogManager._
-import javax.persistence.EntityManager
-import BatchManager._
-import models.{RadiometerLog, WindLog, CompassLog, TemperatureLog}
+import controllers.util.{ISensorLog, JPAUtil, Message}
 
 class SpatializationWorker extends Actor {
 

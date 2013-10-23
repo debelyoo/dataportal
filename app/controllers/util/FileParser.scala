@@ -13,7 +13,7 @@ import scala.concurrent.Await
 import java.util.UUID
 import play.Logger
 import controllers.modelmanager.DataLogManager
-import models.Device
+import models.{DeviceType, Device}
 
 // for the ExecutionContext
 
@@ -25,9 +25,10 @@ object FileParser {
   /**
    * Parse the address file
    * @param file The name of the address file
-   * @return A Map with the sensors defined in address file
+   * @param deviceTypeName The name of the device type
+   * @return A Map with the devices defined in address file
    */
-  def parseAddressFile(file: File): Option[Map[String, Device]] = {
+  def parseAddressFile(file: File, deviceTypeName: String): Option[Map[String, Device]] = {
     val sensors = scala.collection.mutable.Map[String, Device]() // address -> Sensor(name, address)
     try {
       val source = scala.io.Source.fromFile(file)
@@ -42,9 +43,11 @@ object FileParser {
           throw new AssertionError
         } else if (chunksOnLine.nonEmpty && ind > 0) {
           //println(chunksOnLine(0)+ " - "+ chunksOnLine(1))
+          val deviceType = DeviceType.getByName(deviceTypeName)
+          assert(deviceType.isDefined, {println("[parseAddressFile()] device type does not exist")})
           val addr = chunksOnLine(0)
           val name = chunksOnLine(1)
-          sensors += Tuple2(addr, new Device(name, addr, ""))
+          sensors += Tuple2(addr, new Device(name, addr, deviceType.get))
         }
       }
       Some(sensors.toMap)

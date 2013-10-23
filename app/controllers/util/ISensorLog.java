@@ -7,7 +7,7 @@ import java.util.Date;
 /**
  * Common getters for all sensor logs
  */
-public interface SensorLog {
+public interface ISensorLog {
     Long getId();
     Device getDevice();
     Date getTimestamp();
