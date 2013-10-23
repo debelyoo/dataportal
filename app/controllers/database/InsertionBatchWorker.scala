@@ -26,15 +26,14 @@ class InsertionBatchWorker extends Actor {
           if (chunksOnLine.nonEmpty) {
             //println(chunksOnLine.toList)
             inc += 1
-            val deviceOpt = devices.get(chunksOnLine(0))
-            val device = if (deviceOpt.isDefined) {
-              val dev = new Device(deviceOpt.get.getName, deviceOpt.get.getAddress, dataType)
+            val device = devices.get(chunksOnLine(0))
+            /*val device = if (deviceOpt.isDefined) {
               if (dataType != DataImporter.Types.COMPASS) {
                 // persist device in DB. Not for compass because compass value is added to trajectory points
                 DataLogManager.insertionWorker ! Message.InsertDevice(dev)
               }
               Some(dev)
-            } else None
+            } else None*/
             val date = if (chunksOnLine(1).contains(".") && dataType != DataImporter.Types.ULM_TRAJECTORY) {
               // if TS comes from labview
               DateFormatHelper.labViewTs2JavaDate(chunksOnLine(1))

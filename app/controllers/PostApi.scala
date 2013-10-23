@@ -3,7 +3,7 @@ package controllers
 import play.api.mvc.{Action, Controller}
 import play.api.libs.json.{JsObject, JsArray}
 import controllers.util.{DateFormatHelper, Message, DataImporter}
-import controllers.modelmanager.{DeviceManager, VehicleManager, DataLogManager}
+import controllers.modelmanager.DataLogManager
 import java.util.UUID
 import models.{Device, Vehicle, Mission}
 import scala.concurrent.duration.Duration
@@ -26,7 +26,6 @@ trait PostApi {
       val tz = (request.body \ "timezone").as[String]
       val vName = (request.body \ "vehicle").as[String]
       val devices = (request.body \ "devices").as[JsArray]
-      //val vehicle = VehicleManager.getByName(vName).getOrElse(new Vehicle(vName))
       val departureTime = DateFormatHelper.unixTs2JavaDate(ts).get
       //val mission = new Mission(departureTime, tz, vehicle)
       val reply = DataLogManager.insertionWorker ? Message.InsertMission(departureTime, tz, vName, devices)

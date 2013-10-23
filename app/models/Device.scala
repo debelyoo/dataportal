@@ -1,27 +1,101 @@
-package controllers.modelmanager
+package models
 
-import javax.persistence.{TemporalType, NoResultException, EntityManager}
-import models._
+import javax.persistence._
+import org.hibernate.annotations.GenericGenerator
+import controllers.util.json.JsonSerializable
+import com.google.gson._
+import java.lang.reflect.Type
 import controllers.util.{DataImporter, JPAUtil}
+import controllers.modelmanager.DeviceManager
+import java.util
 import scala.collection.JavaConversions._
-import java.util.Date
-import scala.reflect._
-import java.lang.Boolean
-import scala.Some
-import models.Device
 
-object DeviceManager {
+@Entity
+@Table(name = "device")
+class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
+  @Id
+  @GeneratedValue(generator="increment")
+  @GenericGenerator(name="increment", strategy = "increment")
+  @Column(name = "id", unique = true, nullable = false)
+  var id: Long = _
+
+  var name: String = n
+
+  var address: String = addr
+
+  @ManyToOne(cascade=Array(CascadeType.ALL))
+  @JoinColumn(name="devicetype_id")
+  var deviceType: DeviceType = dt
+
+  @ManyToMany(cascade = Array(CascadeType.ALL),mappedBy = "devices",targetEntity = classOf[Mission])
+  var missions: util.Collection[Mission] = new util.HashSet[Mission]()
+
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "device",cascade=Array(CascadeType.ALL))
+  var sensorLogs: util.Collection[SensorLog] = new util.HashSet[SensorLog]()
+
+  override def toString = id + " -> name: "+ name +", address: "+ address +", type: " + deviceType.name
+
+  def this() = this("", "", null) // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
+
+  def toJson: String = {
+    return new GsonBuilder().registerTypeAdapter(classOf[Device], new DeviceSerializer).create.toJson(this)
+  }
+
+  /**
+   * Custom JSON Serializer for Device
+   */
+  class DeviceSerializer extends JsonSerializer[Device] {
+    def serialize(device: Device, `type`: Type, context: JsonSerializationContext): JsonElement = {
+      val missionJson: JsonElement = new JsonObject
+      missionJson.getAsJsonObject.addProperty("id", device.id)
+      missionJson.getAsJsonObject.addProperty("name", device.name)
+      missionJson.getAsJsonObject.addProperty("address", device.address)
+      missionJson.getAsJsonObject.addProperty("devicetype", device.deviceType.name)
+      return missionJson
+    }
+  }
+
+  /**
+   * Save the Device in Postgres database
+   */
+  def save(emOpt: Option[EntityManager]): Boolean = {
+    var em = emOpt.getOrElse(JPAUtil.createEntityManager())
+    var res: Boolean = false
+    try {
+      if (emOpt.isEmpty) em.getTransaction.begin
+      val sensorInDb: Option[Device] = DeviceManager.getByNameAndAddress(this.name, this.address, emOpt)
+      if (sensorInDb.isEmpty) {
+        em.persist(this)
+        res = true
+      }
+      else {
+        res = true
+      }
+      if (emOpt.isEmpty) em.getTransaction.commit
+      res
+    } catch {
+      case ex: Exception => {
+        System.out.println("[ERROR][Device.save] " + ex.getMessage)
+        false
+      }
+    } finally {
+      if (emOpt.isEmpty) em.close
+    }
+  }
+}
+
+object Device {
   /**
    * Get a sensor by Id
    * @param sIdList A list of sensor Ids
    * @return The sensor
    */
-  /*def getById(sIdList: List[Long], emOpt: Option[EntityManager]): Map[Long, Device] = {
+  def getById(sIdList: List[Long], emOpt: Option[EntityManager]): Map[Long, Device] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
-      val q = em.createQuery("from "+ classOf[Device].getName +" WHERE id IN ("+ sIdList.mkString(",") +")")
-      val devices = q.getResultList.map(_.asInstanceOf[Device]).map(s => (s.getId.toLong, s)).toMap
+      val q = em.createQuery("from "+ classOf[Device].getName +" WHERE id IN ("+ sIdList.mkString(",") +")", classOf[Device])
+      val devices = q.getResultList.map(s => (s.id.toLong, s)).toMap
       if (emOpt.isEmpty) em.getTransaction().commit()
       devices
     } catch {
@@ -30,7 +104,7 @@ object DeviceManager {
     } finally {
       if (emOpt.isEmpty) em.close()
     }
-  }*/
+  }
 
   /**
    * Get a device by name and address
@@ -63,23 +137,25 @@ object DeviceManager {
    * @param emOpt An optional entity manager to avoid created many transactions for multiple consecutive queries
    * @return A list of devices
    */
-  /*def getForMission(missionId: Long, datatype: Option[String], address: Option[String], emOpt: Option[EntityManager] = None): List[Device] = {
+  def getForMission(missionId: Long, datatype: Option[String], address: Option[String], emOpt: Option[EntityManager] = None): List[Device] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     val typeMap = collection.mutable.Map[String, Int]()
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
-      // TODO - improve many to many request
-      val typeCondition = if (datatype.isDefined) " AND d.datatype = '"+ datatype.get +"'" else ""
+      //val typeCondition = if (datatype.isDefined) " AND d.datatype = '"+ datatype.get +"'" else ""
+      //val addressCondition = if (address.isDefined) " AND d.address = '"+ address.get +"'" else ""
+      //val query = "SELECT d.id, d.name FROM equipment AS e, device AS d WHERE e.mission_id = "+ missionId +" AND e.device_id = d.id"+ typeCondition + addressCondition+ " ORDER BY name"
+      //val q = em.createNativeQuery(query)
+      // many to many query
+      val typeCondition = if (datatype.isDefined) " AND d.deviceType.name = '"+ datatype.get +"'" else ""
       val addressCondition = if (address.isDefined) " AND d.address = '"+ address.get +"'" else ""
-      val query = "SELECT d.id, d.name FROM equipment AS e, device AS d WHERE e.mission_id = "+ missionId +" AND e.device_id = d.id"+ typeCondition + addressCondition+ " ORDER BY name"
-      val q = em.createNativeQuery(query)
-      val devices = q.getResultList.map(_.asInstanceOf[Array[Object]]).toList.map(obj => {
-        val dId = obj(0).asInstanceOf[Int]
-        val d = getById(List(dId), Some(em)).get(dId).get
-        if (!typeMap.contains(d.getDatatype)) {
-          typeMap += d.getDatatype -> 1
+      val query = "SELECT DISTINCT d FROM "+ classOf[Device].getName +" d JOIN d.missions m WHERE m.id = "+ missionId + typeCondition + addressCondition+ " ORDER BY d.name"
+      val q = em.createQuery(query, classOf[Device])
+      val devices = q.getResultList.toList.map(d => {
+        if (!typeMap.contains(d.deviceType.name)) {
+          typeMap += d.deviceType.name -> 1
         } else {
-          typeMap(d.getDatatype) = (typeMap(d.getDatatype) + 1)
+          typeMap(d.deviceType.name) = (typeMap(d.deviceType.name) + 1)
         }
         d
       })
@@ -88,7 +164,7 @@ object DeviceManager {
         t <- typeMap
         if (t._2 > 1)
       } yield {
-        new Device(0, t._1, "", t._1)
+        new Device(t._1, "", new DeviceType(t._1))
       }
       if (emOpt.isEmpty) em.getTransaction().commit()
       devices ++ virtualDeviceList
@@ -98,7 +174,7 @@ object DeviceManager {
     } finally {
       if (emOpt.isEmpty) em.close()
     }
-  }*/
+  }
 
   /**
    * Get active devices by time range
@@ -172,5 +248,4 @@ object DeviceManager {
       if (emOpt.isEmpty) em.close()
     }
   }*/
-
 }

@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import controllers.modelmanager.DataLogManager
 import models.DeviceType
 
-object Application extends Controller with GetApi with PostApi {
+object Application extends Controller with GetApi with PostApi with DeleteApi {
   
   def index = Action {
     Ok(views.html.index("Your new application is ready."))
@@ -21,14 +21,6 @@ object Application extends Controller with GetApi with PostApi {
 
   def importResult(batchId: String = "") = Action {
     Ok(views.html.importResult(batchId))
-  }
-
-  def spatializeResult(batchId: String = "") = Action {
-    Ok(views.html.spatializeResult(batchId))
-  }
-
-  def spatializeForm = Action {
-    Ok(views.html.spatializeSensorData())
   }
 
   def view = Action {
@@ -75,21 +67,9 @@ object Application extends Controller with GetApi with PostApi {
     }
   }
 
-  /*
-  Called when spatialize form is submitted
-   */
-  def spatializeData = Action(parse.multipartFormData) { request =>
-    val dataType = request.body.dataParts("dataType").mkString(",").toLowerCase
-    val date = request.body.dataParts("date").mkString(",").toLowerCase
-    //println("Spatialization process [START] ...")
-    val res = "" //DataLogManager.spatialize(dataType, date)
-    //println("Spatialization process [END]")
-    Redirect(routes.Application.spatializeResult(res))
-  }
-
-  // Get the progress of a spatialization batch
-  def spatializationProgress(batchId: String) = Action {
-    val hintAndProgress = DataLogManager.spatializationProgress(batchId)
+  // Get the progress of an insertion batch
+  def insertionProgress(batchId: String) = Action {
+    val hintAndProgress = DataLogManager.insertionProgress(batchId)
     hintAndProgress.map { case (h, p) => Ok(Json.toJson(Map("progress" -> Json.toJson(p), "hint" -> Json.toJson(h))))}.getOrElse(NotFound)
   }
 

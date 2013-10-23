@@ -4,7 +4,6 @@ import javax.persistence._
 import org.hibernate.annotations.GenericGenerator
 import java.util.Date
 import controllers.util.JPAUtil
-import scala.collection.JavaConversions._
 
 @Entity
 @Table(name = "sensorlog")
@@ -27,7 +26,7 @@ class SensorLog(m: Mission, d: Device, ts: Date, v: Double) {
 
   var value: Double = v
 
-  override def toString = id + " -> for mission: "+ mission.getId +" and device: "+ device.getName +", TS: " + timestamp + " value: "+value
+  override def toString = "[SensorLog] id: " + id + ", mission: "+ mission.id +", device: "+ device.name +", TS: " + timestamp + " value: "+value
 
   def this() = this(null, null, null, 0.0) // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
 

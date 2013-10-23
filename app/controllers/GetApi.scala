@@ -7,7 +7,7 @@ import play.api.mvc._
 import play.api.Logger
 import models._
 import scala.Some
-import controllers.modelmanager.{DeviceManager, DataLogManager}
+import controllers.modelmanager.{DataLogManager}
 import java.util.TimeZone
 
 trait GetApi extends ResponseFormatter {
@@ -32,7 +32,7 @@ trait GetApi extends ResponseFormatter {
         val mission = DataLogManager.getById[Mission](missionId)
         assert(mission.isDefined, {println("Mission does not exist")})
         val dateFormatter = DateFormatHelper.dateTimeFormatter
-        dateFormatter.setTimeZone(TimeZone.getTimeZone(mission.get.getTimeZone()))
+        dateFormatter.setTimeZone(TimeZone.getTimeZone(mission.get.timeZone))
         //println("From Date: "+map.get("from_date")+" - time zone: "+mission.get.getTimeZone())
         val startDate = map.get("from_date").map(dateFormatter.parse(_))
         val endDate = map.get("to_date").map(dateFormatter.parse(_))
@@ -41,7 +41,7 @@ trait GetApi extends ResponseFormatter {
 
         val maxNb = map.get("max_nb").map(_.toInt)
         val deviceIdList = map.get("device_id").map {
-          case "all" => DeviceManager.getForMission(missionId, map.get("data_type"), None).map(_.getId.toLong)
+          case "all" => Device.getForMission(missionId, map.get("data_type"), None).map(_.id.toLong)
           case _ => List(map.get("device_id").get.toLong)
         }.get
         val logMap = DataLogManager.getDataByMission(datatype, missionId, deviceIdList, startDate, endDate, maxNb)
@@ -114,7 +114,7 @@ trait GetApi extends ResponseFormatter {
    * @return
    */
   def getDeviceForMission(missionId: String) = Action {
-    val deviceList = DeviceManager.getForMission(missionId.toLong, None, None)
+    val deviceList = Device.getForMission(missionId.toLong, None, None)
     val jsList = Json.toJson(deviceList.map(d => Json.parse(d.toJson)))
     // build return JSON obj with array and count
     Ok(Json.toJson(Map("devices" -> jsList, "count" -> Json.toJson(deviceList.length))))
@@ -135,7 +135,7 @@ trait GetApi extends ResponseFormatter {
    * Get details of a particular device (used mainly for tests)
    */
   def getDeviceById(dId: String) = Action {
-    val deviceMap = DeviceManager.getById(List(dId.toLong), None)
+    val deviceMap = Device.getById(List(dId.toLong), None)
     deviceMap.get(dId.toLong).map(s => Ok(Json.toJson(s.toJson))).getOrElse(NotFound) // return Not Found if no device with id 'dId' exists
   }
 
@@ -165,16 +165,6 @@ trait GetApi extends ResponseFormatter {
   def getTemperatureLogById(tId: String) = Action {
     val logOpt = DataLogManager.getById[TemperatureLog](tId.toLong)
     logOpt.map(tl => Ok(tl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'tId' exists
-  }
-
-  def getRadiometerLogById(rId: String) = Action {
-    val logOpt = DataLogManager.getById[RadiometerLog](rId.toLong)
-    logOpt.map(rl => Ok(rl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'rId' exists
-  }
-
-  def getWindLogById(wId: String) = Action {
-    val logOpt = DataLogManager.getById[WindLog](wId.toLong)
-    logOpt.map(wl => Ok(Json.toJson(Json.parse(wl.toJson)))).getOrElse(NotFound) // return Not Found if no log with id 'wId' exists
   }
   ///
 

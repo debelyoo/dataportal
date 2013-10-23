@@ -5,7 +5,6 @@ import scala.collection.mutable.{Map => MMap}
 import models.Device
 
 object BatchManager {
-  //val spatializationBatches = MMap[String, (List[GpsLog], List[Device], List[ISensorLog])]() // batchId -> (list of GPS logs, list of sensors, list of data logs)
   val insertionBatches = MMap[String, (Array[String], Map[String, Device])]() // batchId -> (filename, Array of lines, sensors)
   val batchProgress = MMap[String, (String, Int, Int)]() // batchId -> (filename/datatype, nbElementsTotal, nbElementsDone)
 
@@ -27,9 +26,5 @@ object BatchManager {
       insertionBatches.remove(batchId)
       //println("batch ["+ batchId +"] removed from insertionBatches map")
     }
-    /*if (spatializationBatches.contains(batchId)) {
-      spatializationBatches.remove(batchId)
-      //println("batch ["+ batchId +"] removed from spatializationBatches map")
-    }*/
   }
 }

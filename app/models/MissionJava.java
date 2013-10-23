@@ -16,8 +16,8 @@ import java.util.HashSet;
 import java.util.TimeZone;
 
 @Entity
-@Table(name = "mission")
-public class Mission implements JsonSerializable {
+@Table(name = "missionjava")
+public class MissionJava implements JsonSerializable {
 
 
     @Id
@@ -37,7 +37,7 @@ public class Mission implements JsonSerializable {
     @JoinColumn(name="vehicle_id")
     private Vehicle vehicle;
 
-    @ManyToMany(
+    /*@ManyToMany(
             fetch=FetchType.EAGER,
             targetEntity=Device.class,
             cascade=CascadeType.ALL
@@ -48,17 +48,18 @@ public class Mission implements JsonSerializable {
             inverseJoinColumns=@JoinColumn(name="device_id", referencedColumnName="id")
     )
     private Collection<Device> devices = new HashSet<>();
+    */
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission")
-    protected Collection<SensorLog> sensorLogs;
+    //@OneToMany(fetch = FetchType.LAZY, mappedBy = "mission")
+    //protected Collection<SensorLog> sensorLogs;
 
-    public Mission(Date depTime, String tz, Vehicle ve) {
+    public MissionJava(Date depTime, String tz, Vehicle ve) {
         this.departureTime = depTime;
         this.timeZone = tz;
         this.vehicle = ve;
     }
 
-    public Mission() {
+    public MissionJava() {
     }
 
     public Long getId() {
@@ -101,35 +102,35 @@ public class Mission implements JsonSerializable {
         this.vehicle = v;
     }
 
-    public Collection<Device> getDevices() {
+    /*public Collection<Device> getDevices() {
         return new HashSet<Device>(devices);
     }
 
     public void addDevice(Device dev) {
         if (!this.devices.contains(dev))
             this.devices.add(dev);
-    }
+    }*/
 
     public String toString() {
-        return id + " -> date: " + departureTime + ", vehicle: " + vehicle.getName();
+        return id + " -> date: " + departureTime + ", vehicle: " + vehicle.name();
     }
 
     @Override
     public String toJson() {
-        return new GsonBuilder().registerTypeAdapter(Mission.class, new MissionSerializer()).create().toJson(this);
+        return new GsonBuilder().registerTypeAdapter(MissionJava.class, new MissionSerializer()).create().toJson(this);
     }
 
     /**
      * Custom JSON Serializer
      */
-    public static class MissionSerializer implements JsonSerializer<Mission> {
+    public static class MissionSerializer implements JsonSerializer<MissionJava> {
         @Override
-        public JsonElement serialize(Mission mission, java.lang.reflect.Type type, JsonSerializationContext context) {
+        public JsonElement serialize(MissionJava mission, java.lang.reflect.Type type, JsonSerializationContext context) {
             JsonElement missionJson = new JsonObject();
             missionJson.getAsJsonObject().addProperty("id", mission.getId());
             missionJson.getAsJsonObject().addProperty("date", DateFormatHelper.selectYearFormatter().format(mission.getDepartureTime()));
             missionJson.getAsJsonObject().addProperty("timezone", mission.getTimeZone());
-            missionJson.getAsJsonObject().addProperty("vehicle", mission.getVehicle().getName());
+            missionJson.getAsJsonObject().addProperty("vehicle", mission.getVehicle().name());
             return missionJson;
         }
     }

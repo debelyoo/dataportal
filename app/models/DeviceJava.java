@@ -14,8 +14,8 @@ import java.util.HashSet;
 
 
 @Entity
-@Table(name = "device")
-public class Device implements JsonSerializable {
+@Table(name = "deviceJava")
+public class DeviceJava implements JsonSerializable {
 
     @Id
     @GeneratedValue(generator="increment")
@@ -30,15 +30,15 @@ public class Device implements JsonSerializable {
     @JoinColumn(name="devicetype_id")
     private DeviceType devicetype;
 
-    @ManyToMany(
+    /*@ManyToMany(
             cascade = CascadeType.ALL,
             mappedBy = "devices",
             targetEntity = Mission.class
-    )
-    private Collection<Mission> missions = new HashSet<>();
+    )*/
+    //private Collection<Mission> missions = new HashSet<>();
 
     // constructor to create virtual device (fake id)
-    public Device(Long id, String n, String a, DeviceType d) {
+    public DeviceJava(Long id, String n, String a, DeviceType d) {
         this.id = id;
         this.name = n;
         this.address = a;
@@ -46,13 +46,13 @@ public class Device implements JsonSerializable {
     }
 
     // constructor to create real device, id will be set when inserted
-    public Device(String n, String a, DeviceType d) {
+    public DeviceJava(String n, String a, DeviceType d) {
         this.name = n;
         this.address = a;
         this.devicetype = d;
     }
 
-    public Device(){} // default constructor
+    public DeviceJava(){} // default constructor
 
     public Long getId() {
         return id;
@@ -70,12 +70,13 @@ public class Device implements JsonSerializable {
         return devicetype;
     }
 
-    public Collection<Mission> getMissions() {
+    /*public Collection<Mission> getMissions() {
         return new HashSet<Mission>(missions);
-    }
+    }*/
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "device")
+    /*@OneToMany(fetch = FetchType.LAZY, mappedBy = "device")
     protected Collection<SensorLog> sensorLogs;
+    */
 
 
     public String toString() {
@@ -84,15 +85,15 @@ public class Device implements JsonSerializable {
 
     @Override
     public String toJson() {
-        return new GsonBuilder().registerTypeAdapter(Device.class, new DeviceSerializer()).create().toJson(this);
+        return new GsonBuilder().registerTypeAdapter(DeviceJava.class, new DeviceSerializer()).create().toJson(this);
     }
 
     /**
      * Custom JSON Serializer for Device
      */
-    public static class DeviceSerializer implements JsonSerializer<Device> {
+    public static class DeviceSerializer implements JsonSerializer<DeviceJava> {
         @Override
-        public JsonElement serialize(Device device, java.lang.reflect.Type type, JsonSerializationContext context) {
+        public JsonElement serialize(DeviceJava device, java.lang.reflect.Type type, JsonSerializationContext context) {
             JsonElement missionJson = new JsonObject();
             missionJson.getAsJsonObject().addProperty("id", device.getId());
             missionJson.getAsJsonObject().addProperty("name", device.getName());

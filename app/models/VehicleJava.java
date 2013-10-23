@@ -6,8 +6,8 @@ import org.hibernate.annotations.GenericGenerator;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "vehicle")
-public class Vehicle {
+@Table(name = "vehiclejava")
+public class VehicleJava {
 
 
     @Id
@@ -17,10 +17,10 @@ public class Vehicle {
 
     private String name;
 
-    public Vehicle(String vName) {
+    public VehicleJava(String vName) {
         this.name = vName;
     }
-    public Vehicle() {
+    public VehicleJava() {
     }
 
     public Long getId() {

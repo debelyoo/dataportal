@@ -6,15 +6,12 @@
 GET     /                               controllers.Application.index
 GET     /importForm                     controllers.Application.importForm
 GET     /importResult/*batchId          controllers.Application.importResult(batchId)
-GET     /spatializeForm                 controllers.Application.spatializeForm
-GET     /spatializeResult/*batchId      controllers.Application.spatializeResult(batchId)
-GET     /batch/progress/*batchId        controllers.Application.spatializationProgress(batchId)
+GET     /batch/progress/*batchId        controllers.Application.insertionProgress(batchId)
 GET     /view                           controllers.Application.view
 GET     /contact                        controllers.Application.contact
 GET     /config                         controllers.Application.setDeviceType
 
 POST    /import                     controllers.Application.importData
-POST    /spatialize                 controllers.Application.spatializeData
 POST    /deviceType                 controllers.Application.addDeviceType
 
 # POST sensor logs
@@ -25,9 +22,6 @@ POST    /api/data                   controllers.Application.postData
 GET     /devices/*dId               controllers.Application.getDeviceById(dId)
 GET     /trajectorypoints/*tId      controllers.Application.getTrajectoryPointById(tId)
 GET     /temperaturelogs/*tId       controllers.Application.getTemperatureLogById(tId)
-GET     /radiometerlogs/*rId        controllers.Application.getRadiometerLogById(rId)
-GET     /windlogs/*wId              controllers.Application.getWindLogById(wId)
-
 
 # Get sensor logs
 GET     /api/data                                           controllers.Application.getData
@@ -49,3 +43,6 @@ GET     /api/ping                                           controllers.Applicat
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
+
+# DELETE items
+DELETE  /api/mission/*mId           controllers.Application.deleteMission(mId)

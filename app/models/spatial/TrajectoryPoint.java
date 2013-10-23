@@ -114,7 +114,7 @@ public class TrajectoryPoint implements GeoJsonSerializable {
             JsonObject propertiesObj = new JsonObject();
             propertiesObj.addProperty("id", point.getId());
             SimpleDateFormat formatter = DateFormatHelper.postgresTimestampWithMilliFormatter();
-            formatter.setTimeZone(TimeZone.getTimeZone(point.getMission().getTimeZone()));
+            formatter.setTimeZone(TimeZone.getTimeZone(point.getMission().timeZone()));
             propertiesObj.addProperty("timestamp", formatter.format(point.getTimestamp()));
             propertiesObj.addProperty("speed", point.getSpeed());
             propertiesObj.addProperty("heading", point.getHeading());

@@ -7,12 +7,12 @@
             <property name="hibernate.dialect" value="org.hibernate.spatial.dialect.postgis.PostgisDialect"/>
 
             <property name="hibernate.connection.driver_class" value="org.postgresql.Driver"/>
-            <!--<property name="hibernate.connection.url" value="jdbc:postgresql://localhost:5432:ecoldata"/>
+            <property name="hibernate.connection.url" value="jdbc:postgresql://localhost:5432/ecol_test"/>
             <property name="hibernate.connection.username" value="ecoldata"/>
-            <property name="hibernate.connection.password" value="ecoliste"/>-->
-	        <property name="hibernate.connection.url" value="jdbc:postgresql://localhost:5432/lemanbaikal"/>
+            <property name="hibernate.connection.password" value="ecoliste"/>
+	        <!--<property name="hibernate.connection.url" value="jdbc:postgresql://localhost:5432/lemanbaikal"/>
             <property name="hibernate.connection.username" value="topo_reader"/>
-            <property name="hibernate.connection.password" value="galileo29"/>
+            <property name="hibernate.connection.password" value="galileo29"/>-->
             <property name="hibernate.connection.pool_size" value="5"/>
 
             <property name="hibernate.show_sql" value="false"/>
@@ -20,7 +20,7 @@
 
             <property name="hibernate.max_fetch_depth" value="5"/>
 
-            <property name="hibernate.hbm2ddl.auto" value="update"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/> <!-- Should not be used in production -->
 
         </properties>
     </persistence-unit>

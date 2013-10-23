@@ -31,7 +31,7 @@ object DataImporter {
       assert(dataFile.exists(), {println("File ["+ dataFile.getAbsolutePath +"] does not exist")})
       val sensors = if (addressFile.isDefined) {
         assert(addressFile.get.exists(), {println("File ["+ addressFile.get.getAbsolutePath +"] does not exist")})
-        FileParser.parseAddressFile(addressFile.get, )
+        FileParser.parseAddressFile(addressFile.get, dataType)
       } else Some(Map[String, Device]())
       assert(sensors.isDefined, {println("Wrong format in address file (2nb parameter)")})
       println("Importing... ")

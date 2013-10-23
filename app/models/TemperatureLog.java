@@ -104,8 +104,8 @@ public class TemperatureLog implements JsonSerializable, ISensorLog {
         public JsonElement serialize(TemperatureLog temperatureLog, java.lang.reflect.Type type, JsonSerializationContext context) {
             JsonElement logJson = new JsonObject();
             logJson.getAsJsonObject().addProperty("id", temperatureLog.getId());
-            logJson.getAsJsonObject().addProperty("device_id", temperatureLog.getDevice().getId());
-            logJson.getAsJsonObject().addProperty("mission_id", temperatureLog.getMission().getId());
+            logJson.getAsJsonObject().addProperty("device_id", temperatureLog.getDevice().id());
+            logJson.getAsJsonObject().addProperty("mission_id", temperatureLog.getMission().id());
             logJson.getAsJsonObject().addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter().format(temperatureLog.getTimestamp()));
             logJson.getAsJsonObject().addProperty("value", temperatureLog.getValue());
             return logJson;
