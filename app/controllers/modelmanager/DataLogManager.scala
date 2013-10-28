@@ -177,9 +177,6 @@ object DataLogManager {
                      endDate: Option[Date],
                      maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
     datatype match {
-      case DataImporter.Types.TEMPERATURE => {
-        getByMissionAndDevice[SensorLog](missionId, deviceIdList, startDate, endDate, maxNb)
-      }
       case DataImporter.Types.ALTITUDE => {
         getAltitude(missionId, startDate, endDate, maxNb)
       }
@@ -187,8 +184,10 @@ object DataLogManager {
         getSpeed(missionId, startDate, endDate, maxNb)
       }
       case _ => {
-        println("GET data - Unknown data type")
-        Map[String, List[JsonSerializable]]()
+        // all other device type
+        getByMissionAndDevice[SensorLog](missionId, deviceIdList, startDate, endDate, maxNb)
+        //println("GET data - Unknown data type")
+        //Map[String, List[JsonSerializable]]()
       }
     }
   }

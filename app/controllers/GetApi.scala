@@ -162,8 +162,8 @@ trait GetApi extends ResponseFormatter {
     logOpt.map(gl => Ok(gl.toGeoJson)).getOrElse(NotFound) // return Not Found if no log with id 'gId' exists
   }
 
-  def getTemperatureLogById(tId: String) = Action {
-    val logOpt = DataLogManager.getById[TemperatureLog](tId.toLong)
+  def getSensorLogById(tId: String) = Action {
+    val logOpt = DataLogManager.getById[SensorLog](tId.toLong)
     logOpt.map(tl => Ok(tl.toString)).getOrElse(NotFound) // return Not Found if no log with id 'tId' exists
   }
   ///

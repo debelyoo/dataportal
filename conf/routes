@@ -21,7 +21,7 @@ POST    /api/data                   controllers.Application.postData
 # Get sensor logs (by id)
 GET     /devices/*dId               controllers.Application.getDeviceById(dId)
 GET     /trajectorypoints/*tId      controllers.Application.getTrajectoryPointById(tId)
-GET     /temperaturelogs/*tId       controllers.Application.getTemperatureLogById(tId)
+GET     /sensorLogs/*tId            controllers.Application.getSensorLogById(tId)
 
 # Get sensor logs
 GET     /api/data                                           controllers.Application.getData

@@ -32,36 +32,6 @@ class InsertionWorker extends Actor {
     case Message.SetInsertionBatchJson(batchId, dataType, nbOfItems) => {
       batchProgress(batchId) = (dataType, nbOfItems, 0)
     }
-    case Message.InsertTemperatureLog(batchId, missionId, ts, sensor, temperatureValue) => {
-      val em: EntityManager = JPAUtil.createEntityManager
-      try {
-        em.getTransaction().begin()
-        // fetch the sensor in DB, to get its id
-        val sensorInDb = Device.getByNameAndAddress(sensor.name, sensor.address, Some(em))
-        assert(sensorInDb.isDefined, {println("[Message.InsertTemperatureLog] Sensor is not in Database !")})
-        //println("[RCV message] - insert temperature log: "+temperatureValue+", "+ sensorInDb.get)
-        val uniqueString = createUniqueString(sensor.address, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
-        if (!logCache.contains(uniqueString)) {
-          // insert log in cache only if cache does not contain unique string (address-timestamp)
-          val missionOpt = DataLogManager.getById[Mission](missionId, Some(em))
-          assert(missionOpt.isDefined, {println("[Message.InsertTemperatureLog] Mission is not in Database !")})
-          missionOpt.get.addDevice(sensorInDb.get)
-          missionOpt.get.save(Some(em))
-          val tl = new TemperatureLog(sensorInDb.get, ts, temperatureValue, missionOpt.get)
-          val persisted = tl.save(Some(em)) // persist in DB
-          if (persisted) {
-            logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
-            Some(true)
-          } else None
-        } else Some(false)
-        BatchManager.updateBatchProgress(batchId, "Insertion")
-        em.getTransaction().commit()
-      } catch {
-        case ae: AssertionError => None
-      } finally {
-        em.close()
-      }
-    }
     case Message.InsertCompassLog(batchId, trajectoryPoints, ts, compassValue) => {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
