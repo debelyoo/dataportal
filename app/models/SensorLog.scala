@@ -36,7 +36,7 @@ class SensorLog(m: Mission, d: Device, ts: Date, v: Double) {
    * @return true if success
    */
   def save(emOpt: Option[EntityManager] = None): Boolean = {
-    println("[SensorLog] save() - "+ this.toString)
+    //println("[SensorLog] save() - "+ this.toString)
     val em = emOpt.getOrElse(JPAUtil.createEntityManager)
     try {
       if(emOpt.isEmpty) em.getTransaction.begin

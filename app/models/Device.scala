@@ -33,6 +33,16 @@ class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "device",cascade=Array(CascadeType.ALL))
   var sensorLogs: util.Collection[SensorLog] = new util.HashSet[SensorLog]()
 
+  /**
+   * Add a mission to the missions list related to the device
+   * @param mission The mission to link to the device
+   */
+  def addMission(mission: Mission) {
+    if (!this.missions.contains(mission)) {
+      missions.add(mission)
+    }
+  }
+
   override def toString = "[Device] id: "+id + " -> name: "+ name +", address: "+ address +", type: " + deviceType.name
 
   def this() = this("", "", null) // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
@@ -59,18 +69,18 @@ class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
    * Save the Device in Postgres database
    */
   def save(emOpt: Option[EntityManager]): Boolean = {
-    var em = emOpt.getOrElse(JPAUtil.createEntityManager())
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     var res: Boolean = false
     try {
       if (emOpt.isEmpty) em.getTransaction.begin
-      val sensorInDb: Option[Device] = DeviceManager.getByNameAndAddress(this.name, this.address, emOpt)
-      if (sensorInDb.isEmpty) {
-        em.persist(this)
+      //val deviceInDb: Option[Device] = Device.getByNameAndAddress(this.name, this.address, emOpt)
+      //if (deviceInDb.isEmpty) {
+        em.merge(this) // need to merge instead of persist because deviceType is already in DB
         res = true
-      }
-      else {
+      //}
+      /*else {
         res = true
-      }
+      }*/
       if (emOpt.isEmpty) em.getTransaction.commit
       res
     } catch {
@@ -149,10 +159,10 @@ object Device {
       // many to many query
       val typeCondition = if (datatype.isDefined) " AND d.deviceType.name = '"+ datatype.get +"'" else ""
       val addressCondition = if (address.isDefined) " AND d.address = '"+ address.get +"'" else ""
-      val query = "SELECT DISTINCT d FROM "+ classOf[Device].getName +" d JOIN d.missions m WHERE m.id = "+ missionId + typeCondition + addressCondition+ " ORDER BY d.name"
+      val query = "SELECT DISTINCT d FROM "+ classOf[Device].getName +" d JOIN d.missions m WHERE m.id = "+ missionId + typeCondition + addressCondition + " ORDER BY d.name"
+      //println("[Q] "+query)
       val q = em.createQuery(query, classOf[Device])
       val devices = q.getResultList.toList.map(d => {
-        println("-- "+d)
         if (!typeMap.contains(d.deviceType.name)) {
           typeMap += d.deviceType.name -> 1
         } else {

@@ -43,7 +43,7 @@ object FileParser {
           throw new AssertionError
         } else if (chunksOnLine.nonEmpty && ind > 0) {
           //println(chunksOnLine(0)+ " - "+ chunksOnLine(1))
-          val deviceType = DeviceType.getByName(deviceTypeName) // TODO - fix "detached entity passed to persist" error - getting deviceType here and later save device is problematic
+          val deviceType = DeviceType.getByName(deviceTypeName)
           assert(deviceType.isDefined, {println("[parseAddressFile()] device type does not exist")})
           val addr = chunksOnLine(0)
           val name = chunksOnLine(1)

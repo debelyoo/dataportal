@@ -30,7 +30,7 @@ class InsertionBatchWorker extends Actor {
             //val device = if (deviceOpt.isDefined) {
               if (dataType != DataImporter.Types.COMPASS) {
                 // persist device in DB. Not for compass because compass value is added to trajectory points
-                DataLogManager.insertionWorker ! Message.InsertDevice(device.get)
+                DataLogManager.insertionWorker ! Message.InsertDevice(device.get, missionId)
               }
               /*Some(dev)
             } else None*/

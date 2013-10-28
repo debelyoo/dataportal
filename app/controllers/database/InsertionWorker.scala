@@ -189,9 +189,31 @@ class InsertionWorker extends Actor {
         em.close()
       }
     }
-    case Message.InsertDevice(device) => {
-      //println("[RCV message] - insert sensor: "+sensor)
-      device.save(None)
+    case Message.InsertDevice(device, missionId) => {
+      println("[RCV message] - insert device: "+device)
+      val em: EntityManager = JPAUtil.createEntityManager
+      try {
+        em.getTransaction.begin()
+        val deviceOpt = Device.getByNameAndAddress(device.name, device.address, Some(em))
+        val dev = if (deviceOpt.isEmpty) {
+          device.save(Some(em))
+          Device.getByNameAndAddress(device.name, device.address, Some(em)).get
+        } else {
+          // device already in DB
+          deviceOpt.get
+        }
+        // link mission with device
+        val missionOpt = DataLogManager.getById[Mission](missionId, Some(em))
+        for (mission <- missionOpt) {
+          mission.addDevice(dev)
+          mission.save(Some(em))
+        }
+        em.getTransaction.commit()
+      } catch {
+        case ex: Exception => ex.printStackTrace()
+      } finally {
+        em.close()
+      }
     }
     case Message.InsertMission(departureTime, timezone, vehicleName, devices) => {
       val em: EntityManager = JPAUtil.createEntityManager
@@ -233,7 +255,7 @@ class InsertionWorker extends Actor {
       }
     }
     case Message.InsertSensorLog(batchId, missionId, timestamp, value, deviceAddress) => {
-      println("[InsertSensorLog]")
+      //println("[InsertSensorLog]")
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         em.getTransaction.begin()
@@ -244,6 +266,7 @@ class InsertionWorker extends Actor {
         // create sensor log record
         val log = new SensorLog(mission.get, devices.head, timestamp, value)
         log.save(Some(em))
+        BatchManager.updateBatchProgress(batchId, "Insertion")
         em.getTransaction.commit()
       } catch {
         case ae: AssertionError => ae.printStackTrace()
