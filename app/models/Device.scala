@@ -6,7 +6,6 @@ import controllers.util.json.JsonSerializable
 import com.google.gson._
 import java.lang.reflect.Type
 import controllers.util.{DataImporter, JPAUtil}
-import controllers.modelmanager.DeviceManager
 import java.util
 import scala.collection.JavaConversions._
 
@@ -60,7 +59,8 @@ class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
       missionJson.getAsJsonObject.addProperty("id", device.id)
       missionJson.getAsJsonObject.addProperty("name", device.name)
       missionJson.getAsJsonObject.addProperty("address", device.address)
-      missionJson.getAsJsonObject.addProperty("devicetype", device.deviceType.name)
+      val deviceTypeName = if(device.deviceType != null) device.deviceType.name else ""
+      missionJson.getAsJsonObject.addProperty("devicetype", deviceTypeName)
       return missionJson
     }
   }

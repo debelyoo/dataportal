@@ -52,28 +52,11 @@ class InsertionBatchWorker extends Actor {
                   DataLogManager.insertionWorker ! Message.SkipLog(batchId) // necessary to update batch progress correctly (when GPS error logs are skipped)
                 }
               }
-              case DataImporter.Types.TEMPERATURE => {
-                // address - timestamp - value
-                //DataLogManager.insertionWorker ! Message.InsertTemperatureLog(batchId, missionId, date.get, device.get, chunksOnLine(2).toDouble)
-                DataLogManager.insertionWorker ! Message.InsertSensorLog(batchId, missionId, date.get, chunksOnLine(2).toDouble, chunksOnLine(0))
-              }
-              case DataImporter.Types.WIND => {
-                // address - timestamp - value
-                //DataLogManager.insertionWorker ! Message.InsertWindLog(batchId, missionId, date.get, device.get, chunksOnLine(2).toDouble)
-                DataLogManager.insertionWorker ! Message.InsertSensorLog(batchId, missionId, date.get, chunksOnLine(2).toDouble, chunksOnLine(0))
-              }
-              case DataImporter.Types.RADIOMETER  => {
-                // address - timestamp - value
-                //DataLogManager.insertionWorker ! Message.InsertRadiometerLog(batchId, missionId, date.get, device.get, chunksOnLine(2).toDouble)
-                DataLogManager.insertionWorker ! Message.InsertSensorLog(batchId, missionId, date.get, chunksOnLine(2).toDouble, chunksOnLine(0))
-              }
               case DataImporter.Types.GPS  => {
                 if (chunksOnLine(0) == "48") {
                   val altitudeValue = if (chunksOnLine.length == 5) chunksOnLine(4).toDouble else 0.0
                   //println("--> handle GPS log ! "+ chunksOnLine(0))
                   // address - timestamp - latitude - longitude - elevation
-                  //if (setNumberOpt.isEmpty) setNumberOpt = DataLogManager.getNextSetNumber(date.get)
-                  //val setNumberOpt = DataLogManager.getNextSetNumber[GpsLog](date)
                   DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, missionId, date.get,
                     chunksOnLine(2).toDouble, chunksOnLine(3).toDouble, altitudeValue, None)
                 } else {
@@ -91,7 +74,10 @@ class InsertionBatchWorker extends Actor {
                 DataLogManager.insertionWorker ! Message.InsertUlmTrajectory(batchId, missionId, tsDate,
                   chunksOnLine(0).toDouble, chunksOnLine(1).toDouble, chunksOnLine(2).toDouble)
               }
-              case _  => println("Unknown data type ! ["+ dataType +"]")
+              case _  => {
+                DataLogManager.insertionWorker ! Message.InsertSensorLog(batchId, missionId, date.get, chunksOnLine(2).toDouble, chunksOnLine(0))
+                //println("Unknown data type ! ["+ dataType +"]")
+              }
             }
           }
         }

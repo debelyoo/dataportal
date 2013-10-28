@@ -3,7 +3,7 @@ package controllers.modelmanager
 import controllers.util._
 import javax.persistence.{Query, EntityManager, TemporalType, NoResultException}
 import scala.reflect.{ClassTag, classTag}
-import java.util.{TimeZone, UUID, Calendar, Date}
+import java.util.{TimeZone, Calendar, Date}
 import scala.collection.JavaConversions._
 import models._
 import controllers.database._
@@ -24,10 +24,6 @@ object DataLogManager {
 
   val insertionWorker = Akka.system.actorOf(Props[InsertionWorker], name = "insertionWorker")
   val insertionBatchWorker = Akka.system.actorOf(Props[InsertionBatchWorker], name = "insertionBatchWorker")
-  //val spatializationWorker = Akka.system.actorOf(Props[SpatializationWorker].withDispatcher("akka.actor.prio-dispatcher"), name = "spatializationWorker")
-  //val spatializationBatchWorker = Akka.system.actorOf(Props[SpatializationBatchWorker].withDispatcher("akka.actor.prio-dispatcher"), name = "spatializationBatchWorker")
-  //val spatializationWorker = Akka.system.actorOf(Props[SpatializationWorker], name = "spatializationWorker")
-  //val spatializationBatchWorker = Akka.system.actorOf(Props[SpatializationBatchWorker], name = "spatializationBatchWorker")
   val TIMEOUT = 5 seconds
   implicit val timeout = Timeout(TIMEOUT) // needed for `?` below
 
@@ -53,28 +49,6 @@ object DataLogManager {
       if (emOpt.isEmpty) em.close()
     }
   }
-
-  /**
-   * Get the sensor logs that do not have geo pos yet
-   * @tparam T The type of data to get
-   * @return A list with the non-geolocated logs
-   */
-  /*private def getNotGeolocated[T:ClassTag](emOpt: Option[EntityManager] = None): List[T] = {
-    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
-    try {
-      if (emOpt.isEmpty) em.getTransaction().begin()
-      val clazz = classTag[T].runtimeClass
-      val q = em.createQuery("from "+ clazz.getName +" where geo_pos IS NULL ORDER BY timestamp")
-      val logs = q.getResultList.map(_.asInstanceOf[T]).toList
-      if (emOpt.isEmpty) em.getTransaction().commit()
-      logs
-    } catch {
-      case nre: NoResultException => List()
-      case ex: Exception => ex.printStackTrace; List()
-    } finally {
-      if (emOpt.isEmpty) em.close()
-    }
-  }*/
 
   /**
    * Get the sensor logs by date
@@ -332,26 +306,6 @@ object DataLogManager {
 
   /**
    * Get the distinct dates for which there is logs
-   * @return A list of dates (as String)
-   */
-  /*def getDates: List[String] = {
-    val em = JPAUtil.createEntityManager()
-    try {
-      em.getTransaction().begin()
-      val q = em.createQuery("SELECT DISTINCT cast(timestamp as date) FROM "+ classOf[GpsLog].getName)
-      val dates = q.getResultList.map(_.asInstanceOf[Date]).toList.reverse.map(ts => DateFormatHelper.selectYearFormatter.format(ts)) // use reverse to get the most recent date on top
-      em.getTransaction().commit()
-      dates
-    } catch {
-      case nre: NoResultException => List()
-      case ex: Exception => ex.printStackTrace; List()
-    } finally {
-      em.close()
-    }
-  }*/
-
-  /**
-   * Get the distinct dates for which there is logs
    * @return A list of mission id, dates (as String) and vehicles
    */
   def getMissionDates: List[(Long, String, String)] = {
@@ -535,53 +489,6 @@ object DataLogManager {
   }
 
   /**
-   * Get the footage for a specific date
-   * @param date The date of the footage to get
-   * @return the footage coordinate (JSON)
-   */
-  /*def getFootageForDate(date: Date): JsValue = {
-    val em = JPAUtil.createEntityManager()
-    try {
-      em.getTransaction().begin()
-      val afterDate = Calendar.getInstance()
-      afterDate.setTime(date)
-      afterDate.add(Calendar.DAY_OF_YEAR, 1)
-      val nativeQuery = "SELECT imagename, ST_X(leftuppercorner) AS xlu, ST_Y(leftuppercorner) AS ylu, ST_X(leftlowercorner) AS xll, ST_Y(leftlowercorner) AS yll, " +
-        "ST_X(rightuppercorner) AS xru, ST_Y(rightuppercorner) AS yru, ST_X(rightlowercorner) AS xrl, ST_Y(rightlowercorner) AS yrl FROM device" +
-        " INNER JOIN measurement ON device.id=measurement.deviceid" +
-        " INNER JOIN footage ON footage.id=measurement.footageid" +
-        " WHERE timestamp BETWEEN :start AND :end";
-      val q = em.createNativeQuery(nativeQuery)
-      q.setParameter("start", date, TemporalType.DATE)
-      q.setParameter("end", afterDate.getTime, TemporalType.DATE)
-      val res = q.getResultList.map(_.asInstanceOf[Array[Object]])
-      val jsArr = new JsonArray
-      res.foreach(resultArray => {
-        val dataJson = (new JsonObject).asInstanceOf[JsonElement]
-        dataJson.getAsJsonObject.addProperty("imagename", resultArray(0).asInstanceOf[String])
-        dataJson.getAsJsonObject.addProperty("xlu", resultArray(1).asInstanceOf[Double])
-        dataJson.getAsJsonObject.addProperty("ylu", resultArray(2).asInstanceOf[Double])
-        dataJson.getAsJsonObject.addProperty("xll", resultArray(3).asInstanceOf[Double])
-        dataJson.getAsJsonObject.addProperty("yll", resultArray(4).asInstanceOf[Double])
-        dataJson.getAsJsonObject.addProperty("xru", resultArray(5).asInstanceOf[Double])
-        dataJson.getAsJsonObject.addProperty("yru", resultArray(6).asInstanceOf[Double])
-        dataJson.getAsJsonObject.addProperty("xrl", resultArray(7).asInstanceOf[Double])
-        dataJson.getAsJsonObject.addProperty("yrl", resultArray(8).asInstanceOf[Double])
-        jsArr.add(dataJson)
-      })
-
-      em.getTransaction().commit()
-      Json.toJson(Json.parse(jsArr.toString))
-      //Json.parse(jsStr)
-    } catch {
-      case nre: NoResultException => Json.parse("{\"error\": \"no result\"}")
-      case ex: Exception => ex.printStackTrace; Json.parse("{\"error\": \"exception\"}")
-    } finally {
-      em.close()
-    }
-  }*/
-
-  /**
    * Get the raster data for a specific mission
    * @param missionId The id of the mission
    * @return the raster data (JSON)
@@ -592,8 +499,8 @@ object DataLogManager {
       em.getTransaction().begin()
       val nativeQuery = "SELECT imagename, ST_X(leftuppercorner) AS xlu, ST_Y(leftuppercorner) AS ylu, ST_X(leftlowercorner) AS xll, ST_Y(leftlowercorner) AS yll," +
         " ST_X(rightuppercorner) AS xru, ST_Y(rightuppercorner) AS yru, ST_X(rightlowercorner) AS xrl, ST_Y(rightlowercorner) AS yrl," +
-        " device.id, device.name, device.address, device.datatype FROM rasterdata, device" +
-        " WHERE mission_id = "+missionId+" AND rasterdata.device_id = device.id";
+        " device.id, device.name, device.address FROM rasterdata, device" +
+        " WHERE mission_id = "+missionId+" AND rasterdata.device_id = device.id"
       val q = em.createNativeQuery(nativeQuery)
       val res = q.getResultList.map(_.asInstanceOf[Array[Object]])
       val jsArr = new JsonArray
@@ -609,7 +516,7 @@ object DataLogManager {
         dataJson.getAsJsonObject.addProperty("xrl", resultArray(7).asInstanceOf[Double])
         dataJson.getAsJsonObject.addProperty("yrl", resultArray(8).asInstanceOf[Double])
         //val dev = new Device(resultArray(9).asInstanceOf[Int],resultArray(10).asInstanceOf[String],resultArray(11).asInstanceOf[String],resultArray(12).asInstanceOf[String])
-        val dev = Device.getById(List(resultArray(9).asInstanceOf[Long]), None).head._2
+        val dev = Device.getById(List(resultArray(9).asInstanceOf[Int]), None).head._2
         val gson: Gson = new Gson
         dataJson.getAsJsonObject.add("device", gson.fromJson(dev.toJson, classOf[JsonObject]))
         jsArr.add(dataJson)
@@ -772,64 +679,6 @@ object DataLogManager {
     } else {
       println("[WARNING] No close trajectory point for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
       None
-    }
-  }
-
-  /**
-   * Update the geo position
-   * @param dataLogId The id of the log to update
-   * @param pos The new geo position
-   * @return true if success
-   */
-  /*def updateGeoPos[T: ClassTag](dataLogId: Long, pos: Point, em: EntityManager): Boolean = {
-    //val em: EntityManager = JPAUtil.createEntityManager
-    try {
-      //em.getTransaction.begin
-      val queryStr: String = "UPDATE " + classTag[T].runtimeClass.getName + " " +
-        "SET geo_pos = ST_GeomFromText('POINT(" + pos.getX + " " + pos.getY + ")', 4326) " +
-        "WHERE id=" + dataLogId
-      val q: Query = em.createQuery(queryStr)
-      q.executeUpdate
-      //println("updateGeoPos() - ["+ dataLogId +"]")
-      //em.getTransaction.commit
-      true
-    }
-    catch {
-      case ex: Exception => {
-        ex.printStackTrace()
-        false
-      }
-    }
-    /*finally {
-      em.close
-    }*/
-  }*/
-
-  /**
-   * Link a sensor log to the corresponding gps log
-   * @param dataLogId The id of the sensor log
-   * @param gpsLogId The id of the GPS log
-   * @param em The entity manager
-   * @tparam T The type of sensor log to update
-   * @return true if success
-   */
-  def linkSensorLogToGpsLog[T: ClassTag](dataLogId: Long, gpsLogId: Long, em: EntityManager): Boolean = {
-    try {
-      //em.getTransaction.begin
-      val queryStr: String = "UPDATE " + classTag[T].runtimeClass.getName + " " +
-        "SET gps_log_id=" + gpsLogId + " " +
-        "WHERE id=" + dataLogId
-      val q: Query = em.createQuery(queryStr)
-      q.executeUpdate
-      //println("linkSensorLogToGpsLog() - ["+ dataLogId +"]")
-      //em.getTransaction.commit
-      true
-    }
-    catch {
-      case ex: Exception => {
-        ex.printStackTrace()
-        false
-      }
     }
   }
 
