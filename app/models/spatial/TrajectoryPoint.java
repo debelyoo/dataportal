@@ -18,7 +18,7 @@ import java.util.Date;
 import java.util.TimeZone;
 
 @Entity
-@Table(name = "trajectorypoint")
+@Table(name = "trajectorypoint", uniqueConstraints = {@UniqueConstraint(columnNames = {"timestamp", "mission_id"})}) // add unique constraint to avoid adding twice the same point when exporting
 public class TrajectoryPoint implements GeoJsonSerializable {
 
     @Id

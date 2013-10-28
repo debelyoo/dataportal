@@ -10,7 +10,7 @@ import com.google.gson._
 import java.lang.reflect.Type
 
 @Entity
-@Table(name = "sensorlog")
+@Table(name = "sensorlog", uniqueConstraints = Array(new UniqueConstraint(columnNames = Array("timestamp", "device_id", "mission_id")))) // add unique constraint to avoid adding twice the same log when exporting
 class SensorLog(m: Mission, d: Device, ts: Date, v: Double) extends JsonSerializable with LinkedToDevice {
   @Id
   @GeneratedValue(generator="increment")
