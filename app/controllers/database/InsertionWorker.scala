@@ -191,7 +191,13 @@ class InsertionWorker extends Actor {
           val name = (jsDev \ "name").as[String]
           val datatype = (jsDev \ "datatype").as[String]
           val deviceTypeOpt = DeviceType.getByName(datatype, Some(em))
-          val deviceType = deviceTypeOpt.getOrElse(new DeviceType(datatype))
+          val deviceType = if (deviceTypeOpt.isEmpty) {
+            val dt = new DeviceType(datatype)
+            dt.save(Some(em))
+            dt
+          } else {
+            deviceTypeOpt.get
+          }
           val deviceOpt = Device.getByNameAndAddress(name, address, Some(em))
           val device = if (deviceOpt.isEmpty) {
             val dev = new Device(name, address, deviceType)

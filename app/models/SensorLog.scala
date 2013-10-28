@@ -18,11 +18,11 @@ class SensorLog(m: Mission, d: Device, ts: Date, v: Double) extends JsonSerializ
   @Column(name = "id", unique = true, nullable = false)
   var id: Long = _
 
-  @ManyToOne(cascade=Array(CascadeType.ALL))
+  @ManyToOne
   @JoinColumn(name="mission_id")
   var mission: Mission = m
 
-  @ManyToOne(cascade=Array(CascadeType.ALL))
+  @ManyToOne
   @JoinColumn(name="device_id")
   var device: Device = d
 

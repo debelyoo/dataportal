@@ -24,20 +24,18 @@ case class DeviceType(name: String) {
    * Persist device type in DB (if it is not already in)
    * @return
    */
-  def save: Boolean = {
-    val em: EntityManager = JPAUtil.createEntityManager
+  def save(emOpt: Option[EntityManager] = None): Boolean = {
+    val em: EntityManager = emOpt.getOrElse(JPAUtil.createEntityManager)
     //println("[Sensor] save() - "+ this.toString)
     try {
-      em.getTransaction.begin
+      if (emOpt.isEmpty) em.getTransaction.begin
       em.persist(this)
-      em.getTransaction.commit
+      if (emOpt.isEmpty) em.getTransaction.commit
       true
     } catch {
-      case ex: Exception => {
-        false
-      }
+      case ex: Exception => false
     } finally {
-      em.close
+      if (emOpt.isEmpty) em.close
     }
   }
 }

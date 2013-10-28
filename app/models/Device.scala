@@ -26,7 +26,7 @@ class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
   @JoinColumn(name="devicetype_id")
   var deviceType: DeviceType = dt
 
-  @ManyToMany(cascade = Array(CascadeType.ALL),mappedBy = "devices",targetEntity = classOf[Mission])
+  @ManyToMany(mappedBy = "devices",targetEntity = classOf[Mission])
   var missions: util.Collection[Mission] = new util.HashSet[Mission]()
 
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "device",cascade=Array(CascadeType.ALL))

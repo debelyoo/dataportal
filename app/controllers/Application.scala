@@ -38,7 +38,7 @@ object Application extends Controller with GetApi with PostApi with DeleteApi {
   def addDeviceType = Action(parse.multipartFormData) { request =>
     val deviceTypeName = request.body.dataParts("deviceType").mkString(",")
     if (deviceTypeName != "") {
-      if (DeviceType(deviceTypeName).save) {
+      if (DeviceType(deviceTypeName).save()) {
         Redirect(routes.Application.setDeviceType())
       } else {
         Redirect(routes.Application.index).flashing(

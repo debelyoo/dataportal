@@ -10,6 +10,7 @@ import controllers.util.{JPAUtil, DateFormatHelper}
 import java.util
 import scala.collection.JavaConversions._
 import scala.collection.mutable
+import models.spatial.TrajectoryPoint
 
 @Entity
 @Table(name = "mission")
@@ -31,14 +32,17 @@ class Mission(depTime: Date, tz: String, v: Vehicle) extends JsonSerializable {
   @Type(`type` = "org.hibernate.spatial.GeometryType")
   var trajectory: LineString = null
 
-  @ManyToMany(fetch = FetchType.EAGER,targetEntity = classOf[Device],cascade = Array(CascadeType.ALL))
+  @ManyToMany(fetch = FetchType.EAGER,targetEntity = classOf[Device])
   @JoinTable(name = "equipment",
     joinColumns = Array(new JoinColumn(name = "mission_id", referencedColumnName = "id")),
     inverseJoinColumns = Array(new JoinColumn(name = "device_id", referencedColumnName = "id")))
   var devices: util.Collection[Device] = new util.HashSet[Device]()
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission")
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission", cascade=Array(CascadeType.ALL))
   var sensorLogs: util.Collection[SensorLog] = new util.HashSet[SensorLog]()
+
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission", cascade=Array(CascadeType.ALL))
+  var trajectoryPoints: util.Collection[TrajectoryPoint] = new util.HashSet[TrajectoryPoint]()
 
   def this() = this(null, "", null) // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
 
