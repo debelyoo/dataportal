@@ -147,13 +147,13 @@ class InsertionWorker extends Actor {
       }
     }
     case Message.InsertDevice(device, missionId) => {
-      println("[RCV message] - insert device: "+device)
+      //println("[RCV message] - insert device: "+device)
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         em.getTransaction.begin()
         val deviceOpt = Device.getByNameAndAddress(device.name, device.address, Some(em))
         val dev = if (deviceOpt.isEmpty) {
-          device.save(Some(em))
+          device.save(true, Some(em))
           Device.getByNameAndAddress(device.name, device.address, Some(em)).get
         } else {
           // device already in DB
@@ -190,11 +190,12 @@ class InsertionWorker extends Actor {
           val address = (jsDev \ "address").as[String]
           val name = (jsDev \ "name").as[String]
           val datatype = (jsDev \ "datatype").as[String]
-
+          val deviceTypeOpt = DeviceType.getByName(datatype, Some(em))
+          val deviceType = deviceTypeOpt.getOrElse(new DeviceType(datatype))
           val deviceOpt = Device.getByNameAndAddress(name, address, Some(em))
           val device = if (deviceOpt.isEmpty) {
-            val dev = new Device(name, address, new DeviceType(datatype))
-            dev.save(Some(em))
+            val dev = new Device(name, address, deviceType)
+            dev.save(false, Some(em))
             dev
           } else {
             // device already in DB

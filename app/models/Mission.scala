@@ -23,7 +23,7 @@ class Mission(depTime: Date, tz: String, v: Vehicle) extends JsonSerializable {
   var departureTime: Date = depTime
   var timeZone: String = tz
 
-  @ManyToOne(cascade = Array(CascadeType.ALL))
+  @ManyToOne
   @JoinColumn(name = "vehicle_id")
   var vehicle: Vehicle = v
 

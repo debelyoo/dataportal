@@ -25,24 +25,19 @@ case class DeviceType(name: String) {
    * @return
    */
   def save: Boolean = {
-    val deviceTypeInDb = DeviceType.getByName(this.name)
-    if (deviceTypeInDb.isEmpty) {
-      //println("[Sensor] save() - "+ this.toString)
-      val em: EntityManager = JPAUtil.createEntityManager
-      try {
-        em.getTransaction.begin
-        em.persist(this)
-        em.getTransaction.commit
-        true
-      } catch {
-        case ex: Exception => {
-          false
-        }
-      } finally {
-        em.close
-      }
-    } else {
+    val em: EntityManager = JPAUtil.createEntityManager
+    //println("[Sensor] save() - "+ this.toString)
+    try {
+      em.getTransaction.begin
+      em.persist(this)
+      em.getTransaction.commit
       true
+    } catch {
+      case ex: Exception => {
+        false
+      }
+    } finally {
+      em.close
     }
   }
 }
@@ -54,19 +49,19 @@ object DeviceType {
    * @param name The name of the device type
    * @return An option with the device type if it is in DB
    */
-  def getByName(name: String): Option[DeviceType] = {
-    val em = JPAUtil.createEntityManager()
+  def getByName(name: String, emOpt: Option[EntityManager] = None): Option[DeviceType] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
-      em.getTransaction().begin()
+      if(emOpt.isEmpty) em.getTransaction().begin()
       val q = em.createQuery("from "+ classOf[DeviceType].getName +" where name = '"+ name +"'")
       val deviceType = q.getSingleResult.asInstanceOf[DeviceType]
-      em.getTransaction().commit()
+      if(emOpt.isEmpty) em.getTransaction().commit()
       Some(deviceType)
     } catch {
       case nre: NoResultException => None
       case ex: Exception => ex.printStackTrace; None
     } finally {
-      em.close()
+      if(emOpt.isEmpty) em.close()
     }
   }
 

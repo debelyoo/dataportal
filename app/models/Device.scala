@@ -22,7 +22,7 @@ class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
 
   var address: String = addr
 
-  @ManyToOne(cascade=Array(CascadeType.ALL))
+  @ManyToOne
   @JoinColumn(name="devicetype_id")
   var deviceType: DeviceType = dt
 
@@ -68,19 +68,17 @@ class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
   /**
    * Save the Device in Postgres database
    */
-  def save(emOpt: Option[EntityManager]): Boolean = {
+  def save(withDetachedDeviceType: Boolean = false, emOpt: Option[EntityManager] = None): Boolean = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     var res: Boolean = false
     try {
       if (emOpt.isEmpty) em.getTransaction.begin
-      //val deviceInDb: Option[Device] = Device.getByNameAndAddress(this.name, this.address, emOpt)
-      //if (deviceInDb.isEmpty) {
+      if (withDetachedDeviceType) {
         em.merge(this) // need to merge instead of persist because deviceType is already in DB
-        res = true
-      //}
-      /*else {
-        res = true
-      }*/
+      } else {
+        em.persist(this)
+      }
+      res = true
       if (emOpt.isEmpty) em.getTransaction.commit
       res
     } catch {
@@ -160,7 +158,7 @@ object Device {
       val typeCondition = if (datatype.isDefined) " AND d.deviceType.name = '"+ datatype.get +"'" else ""
       val addressCondition = if (address.isDefined) " AND d.address = '"+ address.get +"'" else ""
       val query = "SELECT DISTINCT d FROM "+ classOf[Device].getName +" d JOIN d.missions m WHERE m.id = "+ missionId + typeCondition + addressCondition + " ORDER BY d.name"
-      println("[Q] "+query)
+      //println("[Q] "+query)
       val q = em.createQuery(query, classOf[Device])
       val devices = q.getResultList.toList.map(d => {
         if (!typeMap.contains(d.deviceType.name)) {
