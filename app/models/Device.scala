@@ -160,7 +160,7 @@ object Device {
       val typeCondition = if (datatype.isDefined) " AND d.deviceType.name = '"+ datatype.get +"'" else ""
       val addressCondition = if (address.isDefined) " AND d.address = '"+ address.get +"'" else ""
       val query = "SELECT DISTINCT d FROM "+ classOf[Device].getName +" d JOIN d.missions m WHERE m.id = "+ missionId + typeCondition + addressCondition + " ORDER BY d.name"
-      //println("[Q] "+query)
+      println("[Q] "+query)
       val q = em.createQuery(query, classOf[Device])
       val devices = q.getResultList.toList.map(d => {
         if (!typeMap.contains(d.deviceType.name)) {

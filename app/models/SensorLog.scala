@@ -3,11 +3,15 @@ package models
 import javax.persistence._
 import org.hibernate.annotations.GenericGenerator
 import java.util.Date
-import controllers.util.JPAUtil
+import controllers.util.{LinkedToDevice, DateFormatHelper, JPAUtil}
+import controllers.util.json.JsonSerializable
+import java.lang.String
+import com.google.gson._
+import java.lang.reflect.Type
 
 @Entity
 @Table(name = "sensorlog")
-class SensorLog(m: Mission, d: Device, ts: Date, v: Double) {
+class SensorLog(m: Mission, d: Device, ts: Date, v: Double) extends JsonSerializable with LinkedToDevice {
   @Id
   @GeneratedValue(generator="increment")
   @GenericGenerator(name="increment", strategy = "increment")
@@ -29,6 +33,24 @@ class SensorLog(m: Mission, d: Device, ts: Date, v: Double) {
   override def toString = "[SensorLog] id: " + id + ", mission: "+ mission.id +", device: "+ device.name +", TS: " + timestamp + " value: "+value
 
   def this() = this(null, null, null, 0.0) // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
+  override def toJson: String = {
+    return new GsonBuilder().registerTypeAdapter(classOf[SensorLog], new SensorLogSerializer).create.toJson(this)
+  }
+
+  /**
+   * Custom Serializer for Sensor log
+   */
+  class SensorLogSerializer extends JsonSerializer[SensorLog] {
+    def serialize(sensorLog: SensorLog, `type`: Type, context: JsonSerializationContext): JsonElement = {
+      val logJson: JsonElement = new JsonObject
+      logJson.getAsJsonObject.addProperty("id", sensorLog.id)
+      logJson.getAsJsonObject.addProperty("device_id", sensorLog.device.id)
+      logJson.getAsJsonObject.addProperty("mission_id", sensorLog.mission.id)
+      logJson.getAsJsonObject.addProperty("timestamp", DateFormatHelper.postgresTimestampWithMilliFormatter.format(sensorLog.timestamp))
+      logJson.getAsJsonObject.addProperty("value", sensorLog.value)
+      return logJson
+    }
+  }
 
   /**
    * Persist device type in DB (if it is not already in)

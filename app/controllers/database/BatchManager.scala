@@ -1,6 +1,5 @@
 package controllers.database
 
-import controllers.util.ISensorLog
 import scala.collection.mutable.{Map => MMap}
 import models.Device
 

@@ -178,7 +178,7 @@ object DataLogManager {
                      maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
     datatype match {
       case DataImporter.Types.TEMPERATURE => {
-        getByMissionAndDevice[TemperatureLog](missionId, deviceIdList, startDate, endDate, maxNb)
+        getByMissionAndDevice[SensorLog](missionId, deviceIdList, startDate, endDate, maxNb)
       }
       case DataImporter.Types.ALTITUDE => {
         getAltitude(missionId, startDate, endDate, maxNb)
@@ -203,7 +203,7 @@ object DataLogManager {
    * @tparam T The type of data log to get
    * @return A list of the logs in the specified time interval
    */
-  private def getByTimeIntervalAndDevice[T: ClassTag](
+  /*private def getByTimeIntervalAndDevice[T: ClassTag](
                                                startTime: Date,
                                                endTime: Date,
                                                geoOnly: Boolean,
@@ -252,7 +252,7 @@ object DataLogManager {
     } finally {
       if (emOpt.isEmpty) em.close()
     }
-  }
+  }*/
 
   /**
    * Get data log by mission and device
@@ -294,7 +294,7 @@ object DataLogManager {
       val diff = (new Date).getTime - start.getTime
       println("Nb of logs queried: "+logList.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
-      val logsMapBySensorId = logList.map(_.asInstanceOf[ISensorLog]).groupBy(_.getDevice.id)
+      val logsMapBySensorId = logList.map(_.asInstanceOf[LinkedToDevice]).groupBy(_.device.id)
       logsMapBySensorId.map { case (sId, logs) => {
         val reducedLogList = if (maxNb.isDefined && logs.length > maxNb.get) {
           val moduloFactor = math.ceil(logs.length.toDouble / maxNb.get.toDouble).toInt
@@ -718,7 +718,7 @@ object DataLogManager {
     * @param sensorId The id of the sensor of interest
     * @return An option with the closest log we found
     */
-  def getClosestLog(logs: List[ISensorLog], ts: Date, marginInSeconds: Int, sensorId: Long): Option[ISensorLog] = {
+  /*def getClosestLog(logs: List[ISensorLog], ts: Date, marginInSeconds: Int, sensorId: Long): Option[ISensorLog] = {
     //println("[DataLogManager] getClosestLog() - "+logs.head)
     val beforeDate = Calendar.getInstance()
     beforeDate.setTime(ts)
@@ -742,7 +742,7 @@ object DataLogManager {
       println("[WARNING] No close log for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
       None
     }
-  }
+  }*/
 
   /**
    * Get the closest GPS log to a specified timestamp

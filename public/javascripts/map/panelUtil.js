@@ -116,6 +116,7 @@ function onAddLayersClicked() {
 }
 
 function onResetClicked() {
+    closeGraphPanel();
 	currentMissions = new Array(); // reset array
 	dataGraphAvailable = false;
 	//$('#dataSelectPanel').hide();
@@ -125,7 +126,6 @@ function onResetClicked() {
 	$('#dataSelectPanel').hide();
 	$('#deviceSelectRow').hide();
 	$('#dataGraphPlaceholder').hide();
-	closeGraphPanel();
 }
 
 /**
@@ -351,7 +351,7 @@ function createDeviceSelectForData(jsonData, missionId) {
 			deviceId = "all";
 		}
 		
-		var datatype = d['datatype'];
+		var datatype = d['devicetype'];
 		// id is datatype--ID (ex: temperature--3)
 		options += "<option value=\""+ datatype +"--"+ deviceId +"\">"+ deviceName +"</option>"
 	});
@@ -503,13 +503,11 @@ function toggleControlPanel() {
 
 function toggleGraphPanel() {
 	//console.log("toggleGraphPanel()");
-	//console.log($("#graphPanelContainer").position().top);
-	//console.log($("#mapPanel").height());
 	if (dataGraphAvailable) {
         var maxTop = $("#mapPanel").height() - 50;
         //if ($("#graphPanelContainer").position().top < maxTop) {
         if (!$("#graphPanelHideBtnPlaceholder").hasClass('rotated270')) {
-        $("#graphPanelHideBtnPlaceholder").removeClass('rotated90');
+            $("#graphPanelHideBtnPlaceholder").removeClass('rotated90');
             $("#graphPanelHideBtnPlaceholder").addClass('rotated270');
             $("#graphPanelContainer").animate({top: '+=25%'}, 1000)
         } else {

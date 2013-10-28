@@ -41,7 +41,7 @@ trait GetApi extends ResponseFormatter {
 
         val maxNb = map.get("max_nb").map(_.toInt)
         val deviceIdList = map.get("device_id").map {
-          case "all" => Device.getForMission(missionId, map.get("data_type"), None).map(_.id.toLong)
+          case "all" => Device.getForMission(missionId, map.get("data_type"), None).map(_.id)
           case _ => List(map.get("device_id").get.toLong)
         }.get
         val logMap = DataLogManager.getDataByMission(datatype, missionId, deviceIdList, startDate, endDate, maxNb)

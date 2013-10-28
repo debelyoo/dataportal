@@ -66,25 +66,12 @@ class InsertionWorker extends Actor {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         em.getTransaction().begin()
-        //val sensorInDb = DeviceManager.getByNameAndAddress(sensor.getName, sensor.getAddress, Some(em))
-        //assert(sensorInDb.isDefined, {println("[Message.InsertCompassLog] Sensor is not in Database !")})
-        //println("[RCV message] - insert compass log: "+compassValue+", "+ sensorInDb.get)
-        //val uniqueString = createUniqueString(sensor.getAddress, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
-        //if (!logCache.contains(uniqueString)) {
-          val ptOpt = DataLogManager.getClosestGpsLog(trajectoryPoints, ts, 1)
-          for (pt <- ptOpt) {
-            val p = DataLogManager.getById[TrajectoryPoint](pt.getId, Some(em)).get // need to reload the point in this entity manager to be persisted below
-            p.setHeading(compassValue)
-            p.save(Some(em))
-          }
-
-          //val cl = new CompassLog(sensorInDb.get, ts, compassValue, missionOpt.get)
-          //val persisted = cl.save(Some(em)) // persist in DB
-          /*if (persisted) {
-            logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
-            Some(true)
-          } else None*/
-        //} else Some(false)
+        val ptOpt = DataLogManager.getClosestGpsLog(trajectoryPoints, ts, 1)
+        for (pt <- ptOpt) {
+          val p = DataLogManager.getById[TrajectoryPoint](pt.getId, Some(em)).get // need to reload the point in this entity manager to be persisted below
+          p.setHeading(compassValue)
+          p.save(Some(em))
+        }
         BatchManager.updateBatchProgress(batchId, "Insertion")
         em.getTransaction().commit()
       } catch {
