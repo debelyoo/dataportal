@@ -41,7 +41,7 @@ class Mission(depTime: Date, tz: String, v: Vehicle) extends JsonSerializable {
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission", cascade=Array(CascadeType.ALL))
   var sensorLogs: util.Collection[SensorLog] = new util.HashSet[SensorLog]()
 
-  @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission", cascade=Array(CascadeType.ALL))
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission", cascade=Array(CascadeType.ALL)) // cascading constraint is set on a OneToMany relationship, not a ManyToOne
   var trajectoryPoints: util.Collection[TrajectoryPoint] = new util.HashSet[TrajectoryPoint]()
 
   def this() = this(null, "", null) // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)

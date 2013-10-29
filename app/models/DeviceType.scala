@@ -5,6 +5,7 @@ import org.hibernate.annotations.GenericGenerator
 import java.lang.Boolean
 import controllers.util.JPAUtil
 import scala.collection.JavaConversions._
+import play.api.libs.json.Json
 
 @Entity
 @Table(name = "devicetype")
@@ -41,6 +42,8 @@ case class DeviceType(name: String) {
 }
 
 object DeviceType {
+
+  implicit val deviceTypeFormat = Json.format[DeviceType] // an implicit conversion to JSON
 
   /**
    * Get DeviceType by name

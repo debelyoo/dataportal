@@ -222,33 +222,20 @@ trait GetApi extends ResponseFormatter {
   }
 
   /**
+   * Get the device types available
+   * @return a JSON array with the device types
+   */
+  def getDeviceTypes = Action {
+    val jsDeviceTypes = DeviceType.getAll().map(Json.toJson(_)) // uses the implicit JSON conversion in companion object
+    val jsList = Json.toJson(jsDeviceTypes)
+    Ok(jsList)
+  }
+
+  /**
    * A ping service util
    * @return 200 OK
    */
   def ping = Action {
     Ok
   }
-
-  /**
-   * Get the first and last log time for a specific date and set
-   * @param dateStr The date to look for
-   * @return The first and last log time (JSON)
-   */
-  /*def getLogTimesForDateAndSet(dateStr: String, setNumber: String) = Action {
-    val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
-    val setNumberOpt = setNumber match {
-      case "all" => None
-      case _ => Some(setNumber.toInt)
-    }
-    val (firstTime, lastTime) = DataLogManager.getTimesForDateAndSet(date, setNumberOpt)
-    Ok(Json.toJson(Map("first_time" -> Json.toJson(firstTime), "last_time" -> Json.toJson(lastTime))))
-  }
-
-  def getLogSetsForDate(dateStr: String) = Action {
-    val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
-    val setList = DataLogManager.getLogSetsForDate(date)
-    //Logger.warn("sets: "+setList)
-    val jsList = Json.toJson(setList.map(sn => Json.toJson(sn)))
-    Ok(Json.toJson(Map("sets" -> jsList, "count" -> Json.toJson(setList.length))))
-  }*/
 }

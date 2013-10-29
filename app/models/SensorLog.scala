@@ -18,7 +18,7 @@ class SensorLog(m: Mission, d: Device, ts: Date, v: Double) extends JsonSerializ
   @Column(name = "id", unique = true, nullable = false)
   var id: Long = _
 
-  @ManyToOne
+  @ManyToOne // cascading constraint is set on a OneToMany relationship, not a ManyToOne
   @JoinColumn(name="mission_id")
   var mission: Mission = m
 

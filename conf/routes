@@ -25,7 +25,6 @@ GET     /sensorLogs/*tId            controllers.Application.getSensorLogById(tId
 
 # Get sensor logs
 GET     /api/data                                           controllers.Application.getData
-#GET     /api/gpsdata                                        controllers.Application.getGpsData
 
 # Get misc
 #GET     /api/dates                                          controllers.Application.getLogDates
@@ -39,6 +38,7 @@ GET     /api/rasterdata/formission/*missionId               controllers.Applicat
 #GET     /api/sensors/from/*startDate/to/*endDate            controllers.Application.getSensorByDatetime(startDate, endDate)
 GET     /api/devices/formission/*missionId                  controllers.Application.getDeviceForMission(missionId)
 GET     /api/pointsofinterest/formission/*missionId         controllers.Application.getPointOfInterestForMission(missionId)
+GET     /api/deviceTypes                                    controllers.Application.getDeviceTypes
 GET     /api/ping                                           controllers.Application.ping
 
 # Map static resources from the /public folder to the /assets URL path
