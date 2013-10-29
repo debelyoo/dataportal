@@ -16,7 +16,7 @@ function initSelectPanel() {
 	createLayerTreeControls();
 	
 	$.ajax({
-	  url: config.get('URL_PREFIX') +"/api/missiondates"
+	  url: config.URL_PREFIX +"/api/missiondates"
 	}).done(function( jsonData ) {
 		for (var i=0;i<jsonData.length;i++){
 			addMissionDate(jsonData[i]);
@@ -140,7 +140,7 @@ function getMissionsForDates(dateArr) {
 	//nbMissionListReceived = 0;
 	for (var i=0; i < dateArr.length; i++) {
 		$.ajax({
-			url: config.get('URL_PREFIX') +"/api/missions/fordate/"+dateArr[i]
+			url: config.URL_PREFIX +"/api/missions/fordate/"+dateArr[i]
 		}).done(function( missions ) {
 			//nbMissionListReceived++;
 			//var mode = $("#selectMode").val();
@@ -160,16 +160,16 @@ function getMissionsForDates(dateArr) {
 function addMissionDate(mission) {
 	var className;
 	if (isUlmMission(mission)) {
-		className = config.get('ULM_DATE_CLASSNAME');
+		className = config.ULM_DATE_CLASSNAME;
 	} else if (isCatamaranMission(mission)) {
-		className = config.get('CAT_DATE_CLASSNAME');
+		className = config.CAT_DATE_CLASSNAME;
 	}
 	var nDate = new Date(mission.departuretime.substring(0,10));
 	if (!dateList.hasOwnProperty(nDate)) {
 		dateList[nDate] = className;
 	} else if (dateList[nDate] != className) {
 		// flight & cruise exist for this date
-		dateList[nDate] = config.get('ULM_CAT_DATE_CLASSNAME');
+		dateList[nDate] = config.ULM_CAT_DATE_CLASSNAME;
 	}
 }
 
@@ -250,7 +250,7 @@ function checkSpecialDate(date) {
  */
 function refreshTimeFields(date, set, refreshSensorSelect) {
 	$.ajax({
-		url: config.get('URL_PREFIX') +"/api/times/fordate/"+ date +"/andset/"+set
+		url: config.URL_PREFIX +"/api/times/fordate/"+ date +"/andset/"+set
 	}).done(function( jsonData ) {
 		var startTime = jsonData['first_time']; // 16:30:10
 		var endTime = jsonData['last_time'];
@@ -266,7 +266,7 @@ function refreshTimeFields(date, set, refreshSensorSelect) {
  */
 function refreshSetField(date) {
 	$.ajax({
-		url: config.get('URL_PREFIX') +"/api/sets/fordate/"+ date
+		url: config.URL_PREFIX +"/api/sets/fordate/"+ date
 	}).done(function( jsonData ) {
 		//console.log(jsonData);
 		var setNumbers = jsonData['sets'];
@@ -325,7 +325,7 @@ function createPathSelectForData() {
 
 function getDevicesForMission(missionId) {
 	$.ajax({
-		url: config.get('URL_PREFIX') +"/api/devices/formission/"+missionId
+		url: config.URL_PREFIX +"/api/devices/formission/"+missionId
 	}).done(function( jsonData ) {
 		createDeviceSelectForData(jsonData, missionId);
 	});
@@ -386,8 +386,8 @@ function getDatatypeAndDeviceId() {
  * @param deviceId The id of the device
  */
 function getDeviceData(datatype, missionId, deviceId) {
-    dataJsonUrl = config.get('URL_PREFIX') +"/api/data?data_type="+ datatype +"&mission_id="+missionId+"&device_id="+deviceId;
-	var url = dataJsonUrl + "&max_nb="+config.get('MAX_NB_DATA_POINTS_ON_MAP')
+    dataJsonUrl = config.URL_PREFIX +"/api/data?data_type="+ datatype +"&mission_id="+missionId+"&device_id="+deviceId;
+	var url = dataJsonUrl + "&max_nb="+config.MAX_NB_DATA_POINTS_ON_MAP
 	//var url = config.get('URL_PREFIX') +"/api/data?data_type="+datatype+"&mission_id="+missionId+"&device_id="+deviceId+"&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH');
 	console.log(url);
 	var graphHeight = $('#graphPanel').height();
@@ -409,7 +409,7 @@ function getDeviceData(datatype, missionId, deviceId) {
 
 function getMissionMaximumSpeed(missionId) {
     $.ajax({
-        url: config.get('URL_PREFIX') +"/api/maxspeed/formission/"+ missionId
+        url: config.URL_PREFIX +"/api/maxspeed/formission/"+ missionId
     }).done(function( jsonData ) {
         mapLayerUtil.set({maximumSpeed: jsonData.max_speed});
         mapLayerUtil.set({headingAvailable: jsonData.heading_available});
@@ -423,7 +423,7 @@ function refreshSensorField(date, startTime, endTime) {
 	var startDate = dateNoDash+"-"+stNoColumn;
 	var endDate = dateNoDash+"-"+etNoColumn;
 	$.ajax({
-		url: config.get('URL_PREFIX') +"/api/sensors/from/"+ startDate +"/to/"+ endDate
+		url: config.URL_PREFIX +"/api/sensors/from/"+ startDate +"/to/"+ endDate
 	}).done(function( jsonData ) {
 		createSensorSelect(jsonData);
 	});
@@ -561,7 +561,7 @@ function zoomGraph(datatype, mid, sid) {
 		} else {
 			zoomedGraph.set({datatype: datatype, sensorId: sid, missionId: mid});
 		}
-		var dataJsonUrlZoomedGraph = dataJsonUrl + "&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH')
+		var dataJsonUrlZoomedGraph = dataJsonUrl + "&max_nb="+config.MAX_NB_DATA_POINTS_SINGLE_GRAPH
 		zoomedGraph.refreshSensorGraph(dataJsonUrlZoomedGraph);
 		mapLayerUtil.set({activeGraph: zoomedGraph});
 	}
