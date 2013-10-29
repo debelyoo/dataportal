@@ -60,7 +60,9 @@ class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
       missionJson.getAsJsonObject.addProperty("name", device.name)
       missionJson.getAsJsonObject.addProperty("address", device.address)
       val deviceTypeName = if(device.deviceType != null) device.deviceType.name else ""
-      missionJson.getAsJsonObject.addProperty("devicetype", deviceTypeName)
+      val plotType = if(device.deviceType != null) device.deviceType.plotType else ""
+      missionJson.getAsJsonObject.addProperty("device_type", deviceTypeName)
+      missionJson.getAsJsonObject.addProperty("plot_type", plotType)
       return missionJson
     }
   }
@@ -150,10 +152,6 @@ object Device {
     val typeMap = collection.mutable.Map[String, Int]()
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
-      //val typeCondition = if (datatype.isDefined) " AND d.datatype = '"+ datatype.get +"'" else ""
-      //val addressCondition = if (address.isDefined) " AND d.address = '"+ address.get +"'" else ""
-      //val query = "SELECT d.id, d.name FROM equipment AS e, device AS d WHERE e.mission_id = "+ missionId +" AND e.device_id = d.id"+ typeCondition + addressCondition+ " ORDER BY name"
-      //val q = em.createNativeQuery(query)
       // many to many query
       val typeCondition = if (datatype.isDefined) " AND d.deviceType.name = '"+ datatype.get +"'" else ""
       val addressCondition = if (address.isDefined) " AND d.address = '"+ address.get +"'" else ""
@@ -173,7 +171,7 @@ object Device {
         t <- typeMap
         if (t._2 > 1)
       } yield {
-        new Device(t._1, "", new DeviceType(t._1))
+        new Device(t._1, "", new DeviceType(t._1, "line"))
       }
       if (emOpt.isEmpty) em.getTransaction().commit()
       devices ++ virtualDeviceList

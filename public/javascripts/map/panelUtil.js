@@ -351,9 +351,12 @@ function createDeviceSelectForData(jsonData, missionId) {
 			deviceId = "all";
 		}
 		
-		var datatype = d['devicetype'];
-		// id is datatype--ID (ex: temperature--3)
-		options += "<option value=\""+ datatype +"--"+ deviceId +"\">"+ deviceName +"</option>"
+		var datatype = d['device_type'];
+		// add in select values, only data that can be plotted as 'line'
+		if (d['plot_type'] == "line") {
+		    // id is datatype--ID (ex: temperature--3)
+		    options += "<option value=\""+ datatype +"--"+ deviceId +"\">"+ deviceName +"</option>"
+		}
 	});
 	var pathSelect = "<select id=\"deviceSelect\">" + options + "</select>";
 	$('#deviceSelectPlaceholder').html(pathSelect);
