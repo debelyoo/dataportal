@@ -39,7 +39,7 @@
                 var config = new Config();
                 $().ready(function() {
                     $.ajax({
-                        url: config.get('URL_PREFIX') +"/api/missiondates"
+                        url: config.URL_PREFIX +"/api/missiondates"
                     }).done(function( jsonData ) {
                         createMissionSelect(jsonData);
                     });
