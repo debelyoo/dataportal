@@ -72,7 +72,7 @@ MapLayerUtil.prototype.addLayers = function(mission) {
         this.addTrajectoryLayer(mission, config.MODE_POINTS);
     }
     this.getPoiForMission(mission, this.addControls);
-    this.testFeatures(0, createPathSelectForData);
+    this.testFeatures(0, graphPanel.createPathSelectForData);
 };
 
 /**

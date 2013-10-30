@@ -16,3 +16,27 @@ Object.size = function(obj) {
 function first(obj) {
     for (var a in obj) return obj[a];
 }
+
+/**
+ * Check if a mission is a ulm mission
+ * @param mission The mission to check
+ */
+function isUlmMission(mission) {
+	if (mission.vehicle == "ulm") {
+		return true;
+	} else {
+		return false
+	}
+}
+
+/**
+ * Check if a mission is a catamaran mission
+ * @param mission The mission to check
+ */
+function isCatamaranMission(mission) {
+	if (mission.vehicle == "catamaran") {
+		return true;
+	} else {
+		return false
+	}
+}

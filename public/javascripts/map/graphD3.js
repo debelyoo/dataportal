@@ -14,7 +14,7 @@ function GraphD3() {
     this.svgElementId = 'svgElement';
     this.linkWithGeoData = false;
     this.withTooltip = false;
-    this.tooltip = {width: 150, height: 50, x: 0, y: 0};
+    this.tooltipBox = {width: 150, height: 50, x: 0, y: 0};
     this.zoomable = false;
     this.nbZoomLines = 0;
     this.zoomLowerBound = "";
@@ -140,10 +140,10 @@ GraphD3.prototype.handleMouseOverGraph = function(event) {
                 this.updateHoverLine(mouseXY.mouseX)
             }
             if (this.withTooltip) {
-                var yPosTt = mouseXY.mouseY - this.tooltip.height - 10 // deduce 10 to have the tooltip above the cursor
-                var tt = this.tooltip;
+                var yPosTt = mouseXY.mouseY - this.tooltipBox.height - 10 // deduce 10 to have the tooltip above the cursor
+                var tt = this.tooltipBox;
                 tt.y = yPosTt;
-                this.tooltip = tt
+                this.tooltipBox = tt
             }
         }
     } else {
@@ -205,8 +205,8 @@ GraphD3.prototype.updateHoverLine = function(xPos) {
     this.hoverLine.attr("x1", xPos).attr("x2", xPos)
     if (this.withTooltip) {
         this.tooltip.classed("hide", false);
-        var xPosTt = xPos - this.tooltip.width / 2
-        this.tooltip.attr("transform", "translate("+ xPosTt  +","+ this.tooltip.y +")");
+        var xPosTt = xPos - this.tooltipBox.width / 2
+        this.tooltip.attr("transform", "translate("+ xPosTt  +","+ this.tooltipBox.y +")");
     }
 };
 
