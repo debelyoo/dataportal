@@ -131,7 +131,7 @@ GraphD3.prototype.handleMouseOverGraph = function(event) {
 
         if (this.sensorLogs != undefined) {
             var v = this.getValueForPositionXFromData(mouseXY.mouseX, 0);
-            updateInfoDiv("tooltipText", v, false); // update the details (or tooltip) text, the position is updated later
+            graphPanel.updateInfoDiv("tooltipText", v, false); // update the details (or tooltip) text, the position is updated later
             //console.log(v);
             if (this.linkWithGeoData){
                 // pass by the data layer, highlight the point and then updates the position of the hover line in graph

@@ -352,7 +352,6 @@ MapLayerUtil.prototype.printFeatureDetails = function(e) {
     }
     //console.log(e.object.handlers.feature);
     //console.log(mapLayerUtil.gmlLayer.features[0]); // e.feature['attributes'].id);
-    //updateInfoDiv("infoDiv", e.feature['attributes'], true);
     if (selectedLayer.name.indexOf("POI") == -1) {
         // not a POI layer
         if (mapLayerUtil.activeGraph != null) {
@@ -430,7 +429,6 @@ MapLayerUtil.prototype.selectData = function(e) {
     //console.log("Click: "+e['attributes'].value);
     this.selected = false;
     $('#infoDiv').css({'border-color': '#66cccc'})
-    updateInfoDiv(e['attributes']);
     this.selected = true;
 };
 
@@ -440,7 +438,7 @@ MapLayerUtil.prototype.unselectData = function(e) {
 };
 
 /**
- * Highlight a specific feature (called from graphD3.js
+ * Highlight a specific feature (called from graphD3.js)
  * @param xpf The index of the feature to highlight as a fraction of the total nb of features
  */
 MapLayerUtil.prototype.highlightFeaturePoint = function(xpf) {
@@ -500,6 +498,11 @@ MapLayerUtil.prototype.getInfoContainerId = function() {
     return containerElementId;
 };
 
+/**
+ * Update (direction and size) of the speed vector for a trajectory
+ * The speed vector is a cursor which is oriented according to craft's heading and whose size varies according to craft's speed
+ * @param e The highlighted feature (in a data layer)
+ */
 MapLayerUtil.prototype.updateSpeedVector = function(e) {
     //console.log("updateSpeedVector()", e.feature.attributes.heading);
     var vectorWidth = $('#speedVectorPlaceholder').width();

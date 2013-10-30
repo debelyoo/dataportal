@@ -28,7 +28,7 @@ GET     /api/data                                           controllers.Applicat
 
 # Get misc
 #GET     /api/dates                                          controllers.Application.getLogDates
-GET     /api/missiondates                                   controllers.Application.getMissionDates
+GET     /api/missions                                        controllers.Application.getMissions
 GET     /api/missions/fordate/*date                         controllers.Application.getMissionsForDate(date)
 GET     /api/trajectory                                     controllers.Application.getTrajectory
 GET     /api/maxspeed/formission/*missionId                 controllers.Application.getMaxSpeedAndHeadingForMission(missionId)

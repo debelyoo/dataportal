@@ -48,6 +48,11 @@ GraphPanel.prototype.getDevicesForMission = function(mission) {
     });
 };
 
+/**
+ * Create the select field for the devices associated with a trajectory (or mission)
+ * @param jsonData A JSON object containing the device list
+ * @param mission The selected mission
+ */
 GraphPanel.prototype.createDeviceSelectForData = function(jsonData, mission) {
     var self = this;
     var devices = jsonData['devices'];
@@ -125,6 +130,10 @@ GraphPanel.prototype.getDeviceData = function(datatype, missionId, deviceId) {
     $('#dataGraphPlaceholder').show();
 };
 
+/**
+ * Get maximum speed (if available) and heading (if avaialable) of a mission
+ * @param missionId The id of the mission
+ */
 GraphPanel.prototype.getMissionMaximumSpeed = function(missionId) {
     $.ajax({
         url: config.URL_PREFIX +"/api/maxspeed/formission/"+ missionId
@@ -132,33 +141,6 @@ GraphPanel.prototype.getMissionMaximumSpeed = function(missionId) {
         mapLayerUtil.maximumSpeed = jsonData.max_speed;
         mapLayerUtil.headingAvailable = jsonData.heading_available;
     });
-};
-
-/**
- * Create the sensor select to choose the sensor to display.
- * @param jsonData The list of available sensors
- */
-GraphPanel.prototype.createSensorSelect = function(jsonData) {
-    var sensors = jsonData['sensors'];
-    //console.log(sensors);
-
-    var options = "<option value=\"gps--0\">GPS only</option>"; // default value
-    sensors.map(function(s) {
-        var sensorName, sensorId;
-        if (s['id'] != 0) {
-            sensorName = s['name'];
-            sensorId = s['id'];
-        } else {
-            sensorName = "All "+s['name'];
-            sensorId = "all";
-        }
-
-        var datatype = s['datatype'];
-        // id is datatype--ID (ex: temperature--3)
-        options += "<option value=\""+ datatype +"--"+ sensorId +"\">"+ sensorName +"</option>"
-    });
-    var sensorSelect = "<select id=\"sensorSelect\">" + options + "</select>";
-    $('#sensorSelectPlaceholder').html(sensorSelect);
 };
 
 /**
@@ -230,5 +212,31 @@ GraphPanel.prototype.closePanel = function() {
     // if graph panel is visible (open), close it (slide down)
     if (!$("#graphPanelHideBtnPlaceholder").hasClass('rotated270')) {
         this.togglePanel();
+    }
+};
+
+/**
+ * Update the details info
+ * @param containerElementId The id of the HTML element that contains the details
+ * @param attr The data object {value: string, timestamp: string}
+ * @param withDay Indicates if the day of the log has to be printed
+ */
+GraphPanel.prototype.updateInfoDiv = function(containerElementId, attr, withDay) {
+    if (!mapLayerUtil.selected) {
+        //console.log("updateInfoDiv()");
+        var dateStr = attr.timestamp;
+        var dateArr = dateStr.split(' ');
+        var containerElementId = mapLayerUtil.getInfoContainerId();
+        if (withDay) {
+            $('#'+ containerElementId +' > #dataTimePlaceholder').html(dateArr[1]+"  ("+ dateArr[0] +")");
+        } else {
+            $('#'+ containerElementId +' > #dataTimePlaceholder').html(dateArr[1]);
+        }
+        var valueHtml = "";
+        if (mapLayerUtil.activeGraph != null && mapLayerUtil.activeGraph.sensorLogs.length == 1 && mapLayerUtil.activeGraph.withTooltip) {
+            valueHtml = "<b>Value:</b> "+ Number(attr.value).toFixed(3) +"<br/>";
+        }
+        $('#'+ containerElementId +' > #dataValuePlaceholder').html(valueHtml);
+        $('#'+ containerElementId +' > #speedValuePlaceholder').html(Number(attr.speed).toFixed(2));
     }
 };

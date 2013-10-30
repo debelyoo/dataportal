@@ -179,10 +179,10 @@ trait GetApi extends ResponseFormatter {
   }*/
 
   /**
-   * Get dates (year-month-day) of missions in DB
-   * @return A list of dates (JSON)
+   * Get missions from DB
+   * @return A list of missions (JSON)
    */
-  def getMissionDates = Action {
+  def getMissions = Action {
     val dateList = DataLogManager.getMissionDates
     val jsList = Json.toJson(dateList.map { case (missionId, dateStr, vehicle) =>
       Json.toJson(Map("id" -> Json.toJson(missionId), "departuretime" -> Json.toJson(dateStr), "vehicle" -> Json.toJson(vehicle)))

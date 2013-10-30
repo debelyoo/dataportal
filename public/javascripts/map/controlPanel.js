@@ -13,7 +13,7 @@ ControlPanel.prototype.initialize = function() {
     this.createLayerTreeControls();
 
     $.ajax({
-      url: config.URL_PREFIX +"/api/missiondates"
+      url: config.URL_PREFIX +"/api/missions"
     }).done(function( jsonData ) {
         for (var i=0;i<jsonData.length;i++){
             self.addMissionDate(jsonData[i]);
