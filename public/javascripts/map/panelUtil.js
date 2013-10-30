@@ -5,7 +5,6 @@ var zoomedGraph;
 var dataJsonUrl;
 var dateList = {}; // map containing the mission dates
 var currentMissions = new Array();
-//var nbSelectedDates, nbMissionListReceived = 0;
 var dataGraphAvailable = false;
 
 /**
@@ -100,13 +99,13 @@ function createLayerTreeControls() {
 }
 
 function onLemanBtnClicked() {
-	ptLeman= new OpenLayers.LonLat(6.59,46.39).transform(mapLayerUtil.get('epsg4326'),mapLayerUtil.get('epsg900913'));
+	ptLeman= new OpenLayers.LonLat(6.59,46.39).transform(mapLayerUtil.epsg4326,mapLayerUtil.epsg900913);
     zoomLeman=10;
     mapLayerUtil.mapPanel.map.setCenter(ptLeman,zoomLeman);
 }
 
 function onBaikalBtnClicked() {
-    ptBaikal= new OpenLayers.LonLat(106.7,52.10).transform(mapLayerUtil.get('epsg4326'),mapLayerUtil.get('epsg900913'));
+    ptBaikal= new OpenLayers.LonLat(106.7,52.10).transform(mapLayerUtil.epsg4326,mapLayerUtil.epsg900913);
     zoomBaikal=10;
     mapLayerUtil.mapPanel.map.setCenter(ptBaikal,zoomBaikal);
 }
@@ -386,21 +385,21 @@ function getDatatypeAndDeviceId() {
  * @param deviceId The id of the device
  */
 function getDeviceData(datatype, missionId, deviceId) {
+    //console.log("[panelUtil.js] getDeviceData()");
     dataJsonUrl = config.URL_PREFIX +"/api/data?data_type="+ datatype +"&mission_id="+missionId+"&device_id="+deviceId;
 	var url = dataJsonUrl + "&max_nb="+config.MAX_NB_DATA_POINTS_ON_MAP
-	//var url = config.get('URL_PREFIX') +"/api/data?data_type="+datatype+"&mission_id="+missionId+"&device_id="+deviceId+"&max_nb="+config.get('MAX_NB_DATA_POINTS_SINGLE_GRAPH');
 	console.log(url);
 	var graphHeight = $('#graphPanel').height();
-	embeddedGraph = mapLayerUtil.get('activeGraph')
+	embeddedGraph = mapLayerUtil.activeGraph
 	if(!embeddedGraph) {
 	    //console.log("create embedded graph !");
-        embeddedGraph = new GraphD3({
-            containerElementId: 'dataGraphPlaceholder',
-            svgElementId: 'svgElement1',
-            linkWithGeoData: true,
-            heightContainer: graphHeight
-        });
-        mapLayerUtil.set({activeGraph: embeddedGraph});
+        embeddedGraph = new GraphD3();
+        embeddedGraph.containerElementId = 'dataGraphPlaceholder';
+        embeddedGraph.svgElementId = 'svgElement1';
+        embeddedGraph.linkWithGeoData = true;
+        embeddedGraph.heightContainer = graphHeight;
+        embeddedGraph.initialize(); // call initialize explicitly
+        mapLayerUtil.activeGraph = embeddedGraph;
     }
 	embeddedGraph.refreshSensorGraph(url, false);
 	$("#graphPanelZoomBtnPlaceholder").attr("onclick", "zoomGraph('"+ datatype +"','"+ missionId +"','"+ deviceId +"')");
@@ -411,8 +410,8 @@ function getMissionMaximumSpeed(missionId) {
     $.ajax({
         url: config.URL_PREFIX +"/api/maxspeed/formission/"+ missionId
     }).done(function( jsonData ) {
-        mapLayerUtil.set({maximumSpeed: jsonData.max_speed});
-        mapLayerUtil.set({headingAvailable: jsonData.heading_available});
+        mapLayerUtil.maximumSpeed = jsonData.max_speed;
+        mapLayerUtil.headingAvailable = jsonData.heading_available;
     });
 }
 
@@ -468,7 +467,7 @@ function createSensorSelect(jsonData) {
  * @param withDay Indicates if the day of the log has to be printed
  */
 var updateInfoDiv = function(containerElementId, attr, withDay) {
-	if (!mapLayerUtil.get('selected')) {
+	if (!mapLayerUtil.selected) {
 		//console.log("updateInfoDiv()");
 		var dateStr = attr.timestamp;
 		var dateArr = dateStr.split(' ');
@@ -480,7 +479,7 @@ var updateInfoDiv = function(containerElementId, attr, withDay) {
 			$('#'+ containerElementId +' > #dataTimePlaceholder').html(dateArr[1]);
 		}
 		var valueHtml = "";
-		if (mapLayerUtil.has('activeGraph') && mapLayerUtil.get('activeGraph').sensorLogs.length == 1 && mapLayerUtil.get('activeGraph').get('withTooltip')) {
+		if (mapLayerUtil.activeGraph != null && mapLayerUtil.activeGraph.sensorLogs.length == 1 && mapLayerUtil.activeGraph.withTooltip) {
 			valueHtml = "<b>Value:</b> "+ Number(attr.value).toFixed(3) +"<br/>";
 		}
 		$('#'+ containerElementId +' > #dataValuePlaceholder').html(valueHtml);
@@ -542,34 +541,36 @@ function zoomGraph(datatype, mid, sid) {
 		$("#graphZoomPanel").show();
 		//console.log()
 		if(zoomedGraph == undefined) {
-			zoomedGraph = new GraphD3({
-				containerElementId: 'graphZoomPlaceholder', 
-				svgElementId: 'svgElement2',
-				margin: {top: 50, right: 100, bottom: 50, left: 100},
-				widthContainer: $("#graphZoomPlaceholder").width(),
-				heightContainer: $("#graphZoomPlaceholder").height(),
-				datatype: datatype,
-				sensorId: sid,
-				missionId: mid,
-				zoomable: true,
-				ticksIntervalX: 5,
-				nbTicksX: 10,
-				nbTicksY: 14,
-				linkWithGeoData: false,
-				withTooltip: true
-			});
+			zoomedGraph = new GraphD3();
+            zoomedGraph.containerElementId = 'graphZoomPlaceholder';
+			zoomedGraph.svgElementId = 'svgElement2';
+			zoomedGraph.margin = {top: 50, right: 100, bottom: 50, left: 100};
+			zoomedGraph.widthContainer = $("#graphZoomPlaceholder").width();
+			zoomedGraph.heightContainer = $("#graphZoomPlaceholder").height();
+			zoomedGraph.datatype = datatype;
+			zoomedGraph.sensorId = sid;
+			zoomedGraph.missionId = mid;
+			zoomedGraph.zoomable = true;
+			zoomedGraph.ticksIntervalX = 5;
+			zoomedGraph.nbTicksX = 10;
+			zoomedGraph.nbTicksY = 14;
+			zoomedGraph.linkWithGeoData = false;
+			zoomedGraph.withTooltip = true;
+			zoomedGraph.initialize();
 		} else {
-			zoomedGraph.set({datatype: datatype, sensorId: sid, missionId: mid});
+			zoomedGraph.datatype = datatype;
+			zoomedGraph.sensorId = sid;
+			zoomedGraph.missionId = mid;
 		}
 		var dataJsonUrlZoomedGraph = dataJsonUrl + "&max_nb="+config.MAX_NB_DATA_POINTS_SINGLE_GRAPH
 		zoomedGraph.refreshSensorGraph(dataJsonUrlZoomedGraph);
-		mapLayerUtil.set({activeGraph: zoomedGraph});
+		mapLayerUtil.activeGraph = zoomedGraph;
 	}
 }
 
 function closeZoomGraph() {
 	zoomedGraph.resetZoomBounds();
-	mapLayerUtil.set({activeGraph: embeddedGraph});
+	mapLayerUtil.activeGraph = embeddedGraph;
 	$("#graphZoomResetZoomBtn").hide();
 	$('#graphZoomPanel').hide();
 }

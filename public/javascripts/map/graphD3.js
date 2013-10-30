@@ -20,16 +20,14 @@ function GraphD3() {
     this.zoomLowerBound = "";
     this.zoomUpperBound = "";
     this.originalDataUrl = "";
-
-    this.initialize();
 }
 
 /* initialize() function */
 GraphD3.prototype.initialize = function() {
     //console.log("GraphD3 model - initialize()");
     //console.log(this);
-    this.width = this.get('widthContainer') - this.get('margin').left - this.get('margin').right;
-    this.height = this.get('heightContainer') - this.get('margin').top - this.get('margin').bottom;
+    this.width = this.widthContainer - this.margin.left - this.margin.right;
+    this.height = this.heightContainer - this.margin.top - this.margin.bottom;
     this.color = d3.scale.category10();
     this.x = d3.time.scale().range([0, this.width]);
     this.y = d3.scale.linear().range([this.height, 0]);
@@ -46,7 +44,7 @@ GraphD3.prototype.initialize = function() {
     this.containerElement.mousemove(function(event) {
         self.handleMouseOverGraph(event);
     });
-    if (this.get('zoomable')) {
+    if (this.zoomable) {
         this.containerElement.mousedown(function(event) {
             self.handleMouseDown(event);
         });
@@ -89,9 +87,9 @@ GraphD3.prototype.handleMouseDown = function(event) {
             .append("svg:line")
             .attr("x1", lineXPos).attr("x2", lineXPos)
             .attr("y1", 0).attr("y2", this.height); // top to bottom
-        this.set({nbZoomLines: this.nbZoomLines + 1});
+        this.nbZoomLines = this.nbZoomLines + 1;
         if (this.nbZoomLines == 2) {
-            this.set({zoomUpperBound: ts})
+            this.zoomUpperBound = ts;
             $("#graphZoomZoomBtn").show();
             var dataUrlZoom = config.URL_PREFIX +"/api/data?data_type="+ this.datatype;
             dataUrlZoom += "&from_date="+ this.zoomLowerBound +"&to_date="+ this.zoomUpperBound;

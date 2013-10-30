@@ -510,8 +510,8 @@ MapLayerUtil.prototype.updateSpeedVector = function(e) {
     var xPos = mapXY.x - vectorWidth/2; // + Math.sin(heading) * vectorWidth;
     var yPos = mapXY.y - vectorHeight/2; // + Math.cos(heading) * vectorHeight;
     var normalizedSpeed = 1.0;
-    if (mapLayerUtil.get('maximumSpeed') > 0) {
-        normalizedSpeed = e.feature.attributes.speed / (mapLayerUtil.get('maximumSpeed') / 1.7);
+    if (mapLayerUtil.maximumSpeed > 0) {
+        normalizedSpeed = e.feature.attributes.speed / (mapLayerUtil.maximumSpeed / 1.7);
     }
     $('#speedVectorPlaceholder').css({
         top: yPos,
