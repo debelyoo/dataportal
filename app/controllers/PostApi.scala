@@ -9,6 +9,7 @@ import models.{Device, Vehicle, Mission}
 import scala.concurrent.duration.Duration
 import akka.util.Timeout
 import scala.concurrent.ExecutionContext.Implicits.global
+import play.api.Logger
 
 // Necessary for `actor ? message`
 import akka.pattern.ask
@@ -44,6 +45,7 @@ trait PostApi {
     // handle POST data as JSON
     val dataType = (request.body \ "datatype").as[String]
     val jsArray = (request.body \ "items").asInstanceOf[JsArray]
+    //Logger.info("[PostApi] postData() - inc: " + (request.body \ "inc"))
     val batchId = UUID.randomUUID().toString
     DataLogManager.insertionWorker ! Message.SetInsertionBatchJson(batchId, dataType, jsArray.value.length)
     jsArray.value.foreach(item => {

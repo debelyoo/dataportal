@@ -13,6 +13,7 @@ import controllers.modelmanager.DataLogManager
 import scala.Some
 import javax.persistence.EntityManager
 import play.api.libs.json.{Json, JsNumber, JsObject}
+import play.api.Logger
 
 class InsertionWorker extends Actor {
   implicit def queue2finitequeue[A](q: Queue[A]) = new FiniteQueue[A](q)
@@ -27,9 +28,13 @@ class InsertionWorker extends Actor {
       insertionBatches(batchId) = (lines, sensors)
       batchProgress(batchId) = (filename, lines.length, 0)
       //Logger.info("insertionBatches: "+insertionBatches.size)
+      if(dataType == DataImporter.Types.ULM_TRAJECTORY || dataType == DataImporter.Types.GPS) {
+        lastSpeedPoint = None // reset last speed point
+      }
       DataLogManager.insertionBatchWorker ! Message.Work(batchId, dataType, missionId)
     }
     case Message.SetInsertionBatchJson(batchId, dataType, nbOfItems) => {
+      Logger.info("[InsertionWorker] SetInsertionBatchJson() - [" + nbOfItems + " items]")
       batchProgress(batchId) = (dataType, nbOfItems, 0)
     }
     case Message.InsertCompassLog(batchId, trajectoryPoints, ts, compassValue) => {
@@ -173,6 +178,7 @@ class InsertionWorker extends Actor {
       }
     }
     case Message.InsertMission(departureTime, timezone, vehicleName, devices) => {
+      lastSpeedPoint = None // reset last speed point (so that speed can be computed for new trajectory)
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         em.getTransaction.begin()
@@ -257,7 +263,6 @@ class InsertionWorker extends Actor {
   private def computeSpeed(ts: Date, point: Point): Double = {
     val INTERVAL_BETWEEN_SPEED_POINTS = 1000L // milliseconds (it means that we compute speed every 1000 ms)
     val timeDiff = lastSpeedPoint.map(gpsLog => ts.getTime - gpsLog.getTimestamp.getTime) // time difference (ms) between gps points
-    //val point = geom.asInstanceOf[Point]
     if (lastSpeedPoint.isEmpty) {
       val speed = 0.0
       val gl = new TrajectoryPoint()
