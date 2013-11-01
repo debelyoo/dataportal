@@ -10,7 +10,7 @@ import controllers.util.{JPAUtil, DateFormatHelper}
 import java.util
 import scala.collection.JavaConversions._
 import scala.collection.mutable
-import models.spatial.TrajectoryPoint
+import models.spatial.{PointOfInterest, TrajectoryPoint}
 
 @Entity
 @Table(name = "mission")
@@ -43,6 +43,9 @@ class Mission(depTime: Date, tz: String, v: Vehicle) extends JsonSerializable {
 
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission", cascade=Array(CascadeType.ALL)) // cascading constraint is set on a OneToMany relationship, not a ManyToOne
   var trajectoryPoints: util.Collection[TrajectoryPoint] = new util.HashSet[TrajectoryPoint]()
+
+  @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission", cascade=Array(CascadeType.ALL)) // cascading constraint is set on a OneToMany relationship, not a ManyToOne
+  var pointsOfInterest: util.Collection[PointOfInterest] = new util.HashSet[PointOfInterest]()
 
   def this() = this(null, "", null) // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
 

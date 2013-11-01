@@ -29,7 +29,7 @@ public class PointOfInterest implements GeoJsonSerializable {
     @Type(type="org.hibernate.spatial.GeometryType")
     private Point coordinate;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne // cascading constraint is set on a OneToMany relationship, not a ManyToOne
     @JoinColumn(name="mission_id")
     private Mission mission;
 

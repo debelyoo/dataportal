@@ -36,8 +36,11 @@ trait PostApi {
     }
   }
 
-  def postData = Action(parse.json) { request =>
-    println(request.body)
+  /*
+   * handle payload of 500 kB max (enough to handle 1000 sensor logs in json object)
+   */
+  def postData = Action(parse.json(maxLength = 1024 * 500)) { request =>
+    //println(request.body)
     // handle POST data as JSON
     val dataType = (request.body \ "datatype").as[String]
     val jsArray = (request.body \ "items").asInstanceOf[JsArray]
