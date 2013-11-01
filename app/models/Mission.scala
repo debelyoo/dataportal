@@ -68,6 +68,7 @@ class Mission(depTime: Date, tz: String, v: Vehicle) extends JsonSerializable {
       val missionJson: JsonElement = new JsonObject
       missionJson.getAsJsonObject.addProperty("id", mission.id)
       missionJson.getAsJsonObject.addProperty("date", DateFormatHelper.selectYearFormatter.format(mission.departureTime))
+      missionJson.getAsJsonObject.addProperty("time", DateFormatHelper.selectHourMinFormatter.format(mission.departureTime))
       missionJson.getAsJsonObject.addProperty("timezone", mission.timeZone)
       missionJson.getAsJsonObject.addProperty("vehicle", mission.vehicle.name)
       return missionJson

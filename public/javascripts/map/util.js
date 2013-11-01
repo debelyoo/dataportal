@@ -40,3 +40,18 @@ function isCatamaranMission(mission) {
 		return false
 	}
 }
+
+/**
+ * Get a mission by id among the loaded missions (useful when multiple missions exists for one date)
+ * @param missionId The id of the mission to get
+ */
+function getCurrentMissionById(missionId) {
+    var missionToReturn;
+    for (var i = 0; i < currentMissions.length; i++) {
+        var mission = currentMissions[i];
+        if (mission.id == missionId) {
+            missionToReturn = mission;
+        }
+    }
+    return missionToReturn;
+}

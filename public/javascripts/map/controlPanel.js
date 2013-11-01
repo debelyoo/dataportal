@@ -201,18 +201,17 @@ ControlPanel.prototype.getMissionsForDates = function(dateArr) {
     if (dateArr.length > 0) {
         $('#loadingGifPlaceholder').show();
     }
-    //nbMissionListReceived = 0;
     for (var i=0; i < dateArr.length; i++) {
         $.ajax({
             url: config.URL_PREFIX +"/api/missions/fordate/"+dateArr[i]
         }).done(function( missions ) {
-            //nbMissionListReceived++;
-            //var mode = $("#selectMode").val();
             for (var j=0;j<missions.length;j++){
+                //console.log("getMissionsForDates()", missions[j]);
                 currentMissions.push(missions[j]);
                 // add path for each mission
                 mapLayerUtil.addLayers(missions[j]);
             }
+            mapLayerUtil.testFeatures(0, graphPanel.createPathSelectForData);
         });
     }
 };

@@ -61,7 +61,6 @@ MapLayerUtil.prototype.initialize = function() {
  * @param isUlmMission
  */
 MapLayerUtil.prototype.addLayers = function(mission) {
-    this.interactiveLayers = {}; // reset map when loading new layers
     this.addRasterLayer(mission);
     if (isUlmMission(mission)) {
         // for ULM mission, add line + points (trajectory)
@@ -72,7 +71,6 @@ MapLayerUtil.prototype.addLayers = function(mission) {
         this.addTrajectoryLayer(mission, config.MODE_POINTS);
     }
     this.getPoiForMission(mission, this.addControls);
-    this.testFeatures(0, graphPanel.createPathSelectForData);
 };
 
 /**
@@ -90,7 +88,14 @@ MapLayerUtil.prototype.addControls = function() {
     mapLayerUtil.setSelectCtrl(layers);
 };
 
+/**
+ * Add layer in map containing the interactive layers (layers with highlight or select actions)
+ * @param layerKey The key of the layer (mission id or mission id + '-POI')
+ * @param layer The layer to add
+ * @param mission The mission linked to the layer
+ */
 MapLayerUtil.prototype.addLayerInInteractiveLayerMap = function(layerKey, layer, mission) {
+    //console.log("addLayerInInteractiveLayerMap()", layerKey);
     var map = this.interactiveLayers;
     map[layerKey] = {'layer':layer, 'mission': mission};
     this.interactiveLayers = map;
@@ -107,7 +112,7 @@ MapLayerUtil.prototype.addTrajectoryLayer = function(mission, mode) {
     var suffix = "";
     if (mode == config.MODE_LINESTRING)
         suffix = " (Line)"
-    var layerTitle = mission.date + " - " + mission.vehicle + suffix;
+    var layerTitle = mission.date + " " + mission.time + " - " + mission.vehicle + suffix;
     var nbTraj = this.nbTrajectory + 1;
     var color = "rgb(255,"+Math.floor(175/nbTraj)+",0)";
     this.nbTrajectory = nbTraj;
@@ -176,7 +181,7 @@ MapLayerUtil.prototype.addPointOfInterestLayer = function(mission, callback) {
     //console.log(poiLayer.features.length);
     this.mapPanel.map.addLayer(poiLayer);
     // add POI layer in interactive layers map
-    this.addLayerInInteractiveLayerMap(mission.id+"-POI", poiLayer);
+    this.addLayerInInteractiveLayerMap(mission.id+"-POI", poiLayer, mission);
 
     // Add controls
     callback();
@@ -329,6 +334,7 @@ MapLayerUtil.prototype.setSelectCtrl = function(layers) {
  * Remove all path layers
  */
 MapLayerUtil.prototype.removeLayers = function() {
+    this.interactiveLayers = {}; // reset map containing the interactive layers
     var nbLayers = this.mapPanel.map.getLayersBy("isBaseLayer",false);
     for(var a = 0; a < nbLayers.length; a++ ){
         if (nbLayers[a].isBaseLayer==false){
@@ -445,9 +451,8 @@ MapLayerUtil.prototype.highlightFeaturePoint = function(xpf) {
     this.highlightCtrl.unselectAll();
     //console.log("highlightFeaturePoint() - "+xpf);
     var map = this.interactiveLayers;
+    //console.log("highlightFeaturePoint()", $('#pathSelect').val(), map);
     var layerForGraph = map[$('#pathSelect').val()].layer;
-    //var layerForGraph = this.mapPanel.map.getLayersByName(layerName)[0];
-    //console.log(layerForGraph.features.length);
     var index = Math.round(xpf * layerForGraph.features.length);
     if (index == layerForGraph.features.length)
         index = layerForGraph.features.length - 1;
@@ -469,9 +474,10 @@ MapLayerUtil.prototype.updateHoverLine = function(e) {
     var lastLogTime = d[d.length-1].date.getTime();
     var timeRange = lastLogTime - firstLogTime;
     var logTime = this.activeGraph.formatDate.parse(e.feature['attributes'].timestamp).getTime() - firstLogTime;
-    //console.log("logTime: "+logTime+", width: "+this.get('activeGraph').get('width')+", timeRange: "+timeRange);
+    //console.log("logTime: " + e.feature['attributes'].timestamp +", first logTime: "+d[0].date);
+    //console.log("logTime: "+logTime+", timeRange: "+timeRange);
     var xPos = logTime * this.activeGraph.width / timeRange;
-    //console.log("xPos: "+xPos);
+    //console.log("xPos: "+xPos+", graph width: "+this.activeGraph.width);
     if(xPos >= this.activeGraph.width) {
         xPos = this.activeGraph.width;
     } else if (xPos < 0) {

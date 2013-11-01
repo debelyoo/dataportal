@@ -8,13 +8,12 @@ function GraphPanel() {};
  * This function is called as a called from mapLayerUtil.js when all layer features are loaded
  */
 GraphPanel.prototype.createPathSelectForData = function() {
-    var self = this;
     //console.log("createPathSelectForData()", currentMissions.length);
     var options = "";
     //var options = "<option value=0>Select a trajectory</option>"; // default value
     for (var i = 0; i < currentMissions.length; i++) {
         var mission = currentMissions[i];
-        var missionName = mission.date + " - " + mission.vehicle
+        var missionName = mission.date + " "+ mission.time +" - " + mission.vehicle
         dataGraphAvailable = true;
         options += "<option value="+ mission.id +">"+ missionName +"</option>";
     }
@@ -25,8 +24,8 @@ GraphPanel.prototype.createPathSelectForData = function() {
         var missionId = $("#pathSelect").val();
         if (missionId > 0) {
             // get sensors for this trajectory
-            self.getDevicesForMission(missionId);
-            self.getMissionMaximumSpeed(missionId); // every time the selected trajectory changes -> get max speed and heading
+            graphPanel.getDevicesForMission(getCurrentMissionById(missionId));
+            graphPanel.getMissionMaximumSpeed(missionId); // every time the selected trajectory changes -> get max speed and heading
         } else {
             $('#deviceSelectRow').hide();
         }

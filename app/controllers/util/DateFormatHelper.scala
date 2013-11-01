@@ -10,6 +10,7 @@ object DateFormatHelper {
   def postgresTimestampWithMilliFormatter: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
   val selectYearFormatter = new SimpleDateFormat("yyyy-MM-dd")
   val selectTimeFormatter = new SimpleDateFormat("HH:mm:ss")
+  val selectHourMinFormatter = new SimpleDateFormat("HH:mm")
   //val ulmKmlTimestampFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HHmmss.SSS")
 
   /**

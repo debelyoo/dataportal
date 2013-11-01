@@ -200,6 +200,7 @@ GraphD3.prototype.getValueForPositionXFromData = function(xPosition, dataSeriesI
  * @param xPos The x position of the line
  */
 GraphD3.prototype.updateHoverLine = function(xPos) {
+    //console.log("updateHoverLine() - "+xPos);
     this.hoverLine.classed("hide", false);
     // set position of hoverLine
     this.hoverLine.attr("x1", xPos).attr("x2", xPos)
