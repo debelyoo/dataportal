@@ -3,7 +3,7 @@ package models
 import javax.persistence._
 import org.hibernate.annotations.GenericGenerator
 import java.util.Date
-import controllers.util.{LinkedToDevice, DateFormatHelper, JPAUtil}
+import controllers.util.{DateFormatHelper, JPAUtil}
 import controllers.util.json.JsonSerializable
 import java.lang.String
 import com.google.gson._
@@ -11,7 +11,7 @@ import java.lang.reflect.Type
 
 @Entity
 @Table(name = "sensorlog", uniqueConstraints = Array(new UniqueConstraint(columnNames = Array("timestamp", "device_id", "mission_id")))) // add unique constraint to avoid adding twice the same log when exporting
-class SensorLog(m: Mission, d: Device, ts: Date, v: Double) extends JsonSerializable with LinkedToDevice {
+class SensorLog(m: Mission, d: Device, ts: Date, v: Double) extends JsonSerializable {
   @Id
   @GeneratedValue(generator="increment")
   @GenericGenerator(name="increment", strategy = "increment")

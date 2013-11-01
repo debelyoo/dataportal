@@ -19,6 +19,7 @@ import controllers.util.json.JsonSerializable
 import models.spatial.{PointOfInterest, TrajectoryPoint}
 import com.google.gson.{Gson, JsonArray, JsonElement, JsonObject}
 import models.internal.{SpeedLog, AltitudeLog}
+import scala.collection.mutable
 
 object DataLogManager {
 
@@ -160,8 +161,6 @@ object DataLogManager {
       case _ => {
         // all other device type
         getByMissionAndDevice[SensorLog](missionId, deviceIdList, startDate, endDate, maxNb)
-        //println("GET data - Unknown data type")
-        //Map[String, List[JsonSerializable]]()
       }
     }
   }
@@ -267,8 +266,10 @@ object DataLogManager {
       val diff = (new Date).getTime - start.getTime
       println("Nb of logs queried: "+logList.length + " ["+ diff +"ms]")
       if (emOpt.isEmpty) em.getTransaction().commit()
-      val logsMapBySensorId = logList.map(_.asInstanceOf[LinkedToDevice]).groupBy(_.device.id)
-      logsMapBySensorId.map { case (sId, logs) => {
+      val logsMapBySensorId = logList.map(_.asInstanceOf[SensorLog]).groupBy(_.device.id)
+      logsMapBySensorId.map { case (sId, rawLogs) => {
+        // adapt to trajectory points time range - pad with zero values
+        val logs = mapTimeRangeToTrajectory(missionId, rawLogs, emOpt)
         val reducedLogList = if (maxNb.isDefined && logs.length > maxNb.get) {
           val moduloFactor = math.ceil(logs.length.toDouble / maxNb.get.toDouble).toInt
           //println("logs list reduced by factor: "+ moduloFactor)
@@ -291,16 +292,60 @@ object DataLogManager {
   }
 
   /**
-   * Converts a Double value to Int
-   * @param valueToTest The value to convert
-   * @return an option with the Int value
+   * Adapt time range of data logs to time range of trajectory.
+   * Many times data logging begins after gps logging, this introduces a time range difference
+   * between data logs and trajectory points and causes problems when plotting both graphs.
+   * Need to add fake values to sensor logs list.
+   * @param missionId The id of the mission
+   * @param logs The data logs
+   * @param emOpt An optional entity manager
+   * @return The list of sensor logs extended by "virtual" values if needed
    */
-  def doubleToInt(valueToTest: Double): Option[Int] = {
+  private def mapTimeRangeToTrajectory(missionId: Long, logs: List[SensorLog], emOpt: Option[EntityManager]): List[SensorLog] = {
+    val firstTimeData = logs.head.timestamp
+    val lastTimeData = logs.last.timestamp
+    val timeDiffBetweenDataLogs = logs(1).timestamp.getTime - logs(0).timestamp.getTime
+    val (firstTimeTraj, lastTimeTraj) = getFirstAndLastTimeOfTrajectory(missionId, emOpt).get
+    val timeDiffBetweenFirstDataLogAndFirstTrajectoryPoint = firstTimeData.getTime - firstTimeTraj.getTime
+    if (timeDiffBetweenFirstDataLogAndFirstTrajectoryPoint > timeDiffBetweenDataLogs) {
+      //println("Need padding !")
+      // need padding
+      val virtualSensorLogs = new mutable.MutableList[SensorLog]()
+      var virtualLogTS = firstTimeTraj.getTime
+      while(virtualLogTS < firstTimeData.getTime) {
+        // create virtual sensor log with same value as the first 'real' sensor log
+        val log = new SensorLog(logs.head.mission, logs.head.device, new Date(virtualLogTS), logs.head.value)
+        virtualSensorLogs += log
+        // keep same time diff between logs
+        virtualLogTS += timeDiffBetweenDataLogs
+      }
+      virtualSensorLogs.toList ::: logs
+    } else {
+      // does not need padding, so simply return 'logs'
+      logs
+    }
+  }
+
+  /**
+   * Get the first and last time for a trajectory
+   * @param missionId The id of the mission
+   * @param emOpt An optional entity manager
+   * @return An option with the first time and last time of the trajectory logs
+   */
+  private def getFirstAndLastTimeOfTrajectory(missionId: Long, emOpt: Option[EntityManager]): Option[(Date, Date)] = {
+    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
-      val intValue = valueToTest.asInstanceOf[Int]
-      Some(intValue)
+      if (emOpt.isEmpty) em.getTransaction().begin()
+      val query = "SELECT MIN(timestamp) AS firsttime, MAX(timestamp) AS lasttime FROM "+ classOf[TrajectoryPoint].getName +" WHERE mission_id = :missionId";
+      val q = em.createQuery(query)
+      q.setParameter("missionId", missionId)
+      val res = q.getSingleResult.asInstanceOf[Array[Object]]
+      if (emOpt.isEmpty) em.getTransaction().commit()
+      Some((res(0).asInstanceOf[Date], res(1).asInstanceOf[Date]))
     } catch {
-      case ex: Exception => None
+      case ex: Exception => ex.printStackTrace(); None
+    } finally {
+      if (emOpt.isEmpty) em.close()
     }
   }
 
@@ -308,17 +353,20 @@ object DataLogManager {
    * Get the distinct dates for which there is logs
    * @return A list of mission id, dates (as String) and vehicles
    */
-  def getMissionDates: List[(Long, String, String)] = {
+  def getMissions: List[Mission] = {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
-      val q = em.createQuery("SELECT DISTINCT m.id, cast(m.departureTime as date), m.vehicle.name FROM "+ classOf[Mission].getName +" m")
-      //val dates = q.getResultList.map(_.asInstanceOf[Date]).toList.map(ts => DateFormatHelper.selectYearFormatter.format(ts))
-      val dates = q.getResultList.map(_.asInstanceOf[Array[Object]]).toList.map(obj =>
-        (obj(0).asInstanceOf[Long], DateFormatHelper.selectYearFormatter.format(obj(1).asInstanceOf[Date]), obj(2).asInstanceOf[String])
-      )
+      //val q = em.createQuery("SELECT DISTINCT m.id, cast(m.departureTime as date), m.vehicle.name FROM "+ classOf[Mission].getName +" m")
+      val q = em.createQuery("FROM "+ classOf[Mission].getName, classOf[Mission])
+      val missions = q.getResultList.toList
+
+      /*val dates = q.getResultList.map(_.asInstanceOf[Array[Object]]).toList.map(obj =>
+        (obj(0).asInstanceOf[Long], DateFormatHelper.selectYearFormatter.format(obj(1).asInstanceOf[Date]),
+          DateFormatHelper.selectTimeFormatter.format(obj(1).asInstanceOf[Date]), obj(2).asInstanceOf[String])
+      )*/
       em.getTransaction().commit()
-      dates
+      missions
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()
@@ -560,97 +608,6 @@ object DataLogManager {
   }
 
   /**
-   * Get the first and last log time for a specific date
-   * @param date The date
-   * @return The first and last log time
-   */
-  /*def getTimesForDateAndSet(date: Date, setNumber: Option[Int]): (String, String) = {
-    val em = JPAUtil.createEntityManager()
-    try {
-      em.getTransaction().begin()
-      val afterDate = Calendar.getInstance()
-      afterDate.setTime(date)
-      afterDate.add(Calendar.DAY_OF_YEAR, 1)
-      val setCondition = setNumber.map(sn => " AND set_number = "+sn).getOrElse("")
-      val q = em.createQuery("SELECT MIN(cast(timestamp as time)), MAX(cast(timestamp as time)) " +
-        "FROM "+ classOf[GpsLog].getName + " WHERE timestamp BETWEEN :start AND :end" + setCondition)
-      q.setParameter("start", date, TemporalType.DATE)
-      q.setParameter("end", afterDate.getTime, TemporalType.DATE)
-      val res = q.getSingleResult.asInstanceOf[Array[Object]]
-      val firstTime = res(0).asInstanceOf[Date]
-      val lastTime = res(1).asInstanceOf[Date]
-      //println(firstTime +" - "+ lastTime)
-      em.getTransaction().commit()
-      (DateFormatHelper.selectTimeFormatter.format(firstTime), DateFormatHelper.selectTimeFormatter.format(lastTime))
-    } catch {
-      case nre: NoResultException => ("00:00:00", "00:00:00")
-      case ex: Exception => ex.printStackTrace; ("00:00:00", "00:00:00")
-    } finally {
-      em.close()
-    }
-  }*/
-
-  /**
-   * Get the list of set numbers for a specific date
-   * @param date The date we want
-   * @return A list of set numbers
-   */
-  /*def getLogSetsForDate(date: Date): List[Int] = {
-    val em = JPAUtil.createEntityManager()
-    try {
-      em.getTransaction().begin()
-      val afterDate = Calendar.getInstance()
-      afterDate.setTime(date)
-      afterDate.add(Calendar.DAY_OF_YEAR, 1)
-      val q = em.createQuery("SELECT DISTINCT log.setNumber FROM "+ classOf[GpsLog].getName+" log  WHERE timestamp BETWEEN :start AND :end")
-      q.setParameter("start", date, TemporalType.DATE)
-      q.setParameter("end", afterDate.getTime, TemporalType.DATE)
-      val setNumbers = q.getResultList.map(_.asInstanceOf[Int]).toList.sorted
-      em.getTransaction().commit()
-      setNumbers
-    } catch {
-      case nre: NoResultException => List()
-      case ex: Exception => ex.printStackTrace; List()
-    } finally {
-      em.close()
-    }
-  }*/
-
-  /**
-    * Get the closest log (of a sensor) to a specified timestamp
-    * @param logs The sensor logs to search in
-    * @param ts The timestamp to match
-    * @param marginInSeconds The margin +/- around the timestamp
-    * @param sensorId The id of the sensor of interest
-    * @return An option with the closest log we found
-    */
-  /*def getClosestLog(logs: List[ISensorLog], ts: Date, marginInSeconds: Int, sensorId: Long): Option[ISensorLog] = {
-    //println("[DataLogManager] getClosestLog() - "+logs.head)
-    val beforeDate = Calendar.getInstance()
-    beforeDate.setTime(ts)
-    beforeDate.add(Calendar.SECOND, -marginInSeconds)
-    val afterDate = Calendar.getInstance()
-    afterDate.setTime(ts)
-    afterDate.add(Calendar.SECOND, marginInSeconds)
-    //val closeLogs = getByTimeIntervalAndSensor[T](beforeDate.getTime, afterDate.getTime, sensorId, Some(em))
-    val closeLogs = logs.filter(log =>
-      (log.getTimestamp.getTime > beforeDate.getTime.getTime &&
-        log.getTimestamp.getTime < afterDate.getTime.getTime &&
-        log.getDevice.id == sensorId)
-    )
-    if (closeLogs.nonEmpty) {
-      val (closestPoint, diff) = closeLogs.map(cl => {
-        val timeDiff = math.abs(cl.getTimestamp.getTime - ts.getTime)
-        (cl, timeDiff)
-      }).minBy(_._2)
-      Some(closestPoint)
-    } else {
-      println("[WARNING] No close log for TS: "+DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
-      None
-    }
-  }*/
-
-  /**
    * Get the closest GPS log to a specified timestamp
    * @param trajectoryPoints The trajectory points to search in
    * @param ts The timestamp to match
@@ -695,45 +652,6 @@ object DataLogManager {
       BatchManager.cleanCompletedBatch(batchId)
     }
     percentage
-  }
-
-  /**
-   * Get the next set number for data (multiple data sets can be collected on one day)
-   * @param date The date of the set
-   * @tparam T The type of data want
-   * @return An option with the next set number to use
-   */
-  def getNextSetNumber[T:ClassTag](date: Date): Option[Int] = {
-    /*val MAX_TIME_DIFF_BETWEEN_SETS = 1000 * 60 * 0.5 // 30 seconds
-    val em = JPAUtil.createEntityManager()
-    try {
-      em.getTransaction().begin()
-      val afterDate = Calendar.getInstance()
-      afterDate.setTime(date)
-      afterDate.add(Calendar.DAY_OF_YEAR, 1)
-      val q = em.createQuery("FROM "+ classTag[GpsLog].runtimeClass.getName + " WHERE timestamp BETWEEN :start AND :end ORDER BY timestamp DESC", classOf[GpsLog])
-      q.setParameter("start", date, TemporalType.DATE)
-      q.setParameter("end", afterDate.getTime, TemporalType.DATE)
-      q.setMaxResults(1)
-      val lastLog = q.getSingleResult
-      em.getTransaction().commit()
-      val diff = date.getTime - lastLog.asInstanceOf[ISensorLog].getTimestamp.getTime
-      val newSetNumber = if (math.abs(diff) < MAX_TIME_DIFF_BETWEEN_SETS) {
-        // if diff is smaller than threshold, keep same set number
-        lastLog.getSetNumber
-      } else lastLog.getSetNumber + 1
-      Logger.warn("Previous logs exist for this date -> set number = "+ newSetNumber +" [diff: "+ diff +"ms]")
-      Some(newSetNumber)
-    } catch {
-      case nre: NoResultException => {
-        Logger.warn("No previous log for this date -> set number = 0")
-        Some(0)
-      }
-      case ex: Exception => ex.printStackTrace; None
-    } finally {
-      em.close()
-    }*/
-    Some(0)
   }
 
 }

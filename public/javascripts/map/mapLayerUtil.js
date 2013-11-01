@@ -113,9 +113,11 @@ MapLayerUtil.prototype.addTrajectoryLayer = function(mission, mode) {
     if (mode == config.MODE_LINESTRING)
         suffix = " (Line)"
     var layerTitle = mission.date + " " + mission.time + " - " + mission.vehicle + suffix;
-    var nbTraj = this.nbTrajectory + 1;
-    var color = "rgb(255,"+Math.floor(175/nbTraj)+",0)";
-    this.nbTrajectory = nbTraj;
+    var hueValue = (30 + 40*this.nbTrajectory) % 360;
+    //var nbTraj = this.nbTrajectory + 1;
+    //var color = "rgb(255,"+Math.floor(175/nbTraj)+",0)";
+    var color = "hsl("+ hueValue +", 100%, 60%)";
+    this.nbTrajectory++;
     var trajectoryLayer = new OpenLayers.Layer.Vector(layerTitle, {
         strategies: [new OpenLayers.Strategy.Fixed()],
         projection: this.epsg4326,
@@ -143,7 +145,7 @@ MapLayerUtil.prototype.addTrajectoryLayer = function(mission, mode) {
 MapLayerUtil.prototype.addPointOfInterestLayer = function(mission, callback) {
     var geojsonUrl = config.URL_PREFIX +"/api/pointsofinterest/formission/"+mission.id;
     console.log(geojsonUrl);
-    var layerTitle = mission.date + " - " + mission.vehicle + " (POI)";
+    var layerTitle = mission.date + " " + mission.time + " - " + mission.vehicle + " (POI)";
 
     var pink = "rgb(255,105,180)"; // pink
     var white = "rgb(255,255,255)";
@@ -474,7 +476,7 @@ MapLayerUtil.prototype.updateHoverLine = function(e) {
     var lastLogTime = d[d.length-1].date.getTime();
     var timeRange = lastLogTime - firstLogTime;
     var logTime = this.activeGraph.formatDate.parse(e.feature['attributes'].timestamp).getTime() - firstLogTime;
-    //console.log("logTime: " + e.feature['attributes'].timestamp +", first logTime: "+d[0].date);
+    //console.log("logTime: " + e.feature['attributes'].timestamp +", first logTime: "+d[0].date+" , last logTime: "+d[d.length-1].date);
     //console.log("logTime: "+logTime+", timeRange: "+timeRange);
     var xPos = logTime * this.activeGraph.width / timeRange;
     //console.log("xPos: "+xPos+", graph width: "+this.activeGraph.width);

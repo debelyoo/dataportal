@@ -48,7 +48,7 @@
                     var options = "<option value=0>Select a trajectory</option>"; // default value
                     for (var i = 0; i < missions.length; i++) {
                         mission = missions[i];
-                        var missionName = mission.departuretime + " - " + mission.vehicle
+                        var missionName = mission.date + " " + mission.time + " - " + mission.vehicle
                         options += "<option value="+ mission.id +">"+ missionName +"</option>"
                     }
 

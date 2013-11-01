@@ -39,7 +39,7 @@ object DateFormatHelper {
       cal.setTimeInMillis(unixTs.toLong)
       Some(cal.getTime)
     } catch {
-      case ex: Exception => None
+      case ex: Exception => ex.printStackTrace(); None
     }
   }
 

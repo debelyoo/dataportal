@@ -53,33 +53,6 @@ trait GetApi extends ResponseFormatter {
   }
 
   /**
-   * Get the GPS data
-   * @return
-   */
-  /*def getGpsData = Action {
-    implicit request =>
-      try {
-        val map = request.queryString.map { case (k,v) => k -> v.mkString }
-        val format = map.get("format").getOrElse(GEOJSON_FORMAT) // default format is Geo json
-        val coordinateFormat = map.get("coordinate_format").getOrElse("gps")
-        //println("[GetApi] getData() - "+ map.get("data_type").get + " <"+ format +">")
-        Logger.info("[GetApi] getGpsData() - <"+ format +">")
-        //println(map)
-        assert(map.contains("from_date"), {println("Missing from_date parameter")})
-        assert(map.contains("to_date"), {println("Missing to_date parameter")})
-        val startDate = DateFormatHelper.dateTimeFormatter.parse(map.get("from_date").get)
-        val endDate = DateFormatHelper.dateTimeFormatter.parse(map.get("to_date").get)
-        val maxNb = map.get("max_nb").map(_.toInt)
-        val gpsLogs = DataLogManager.getByTimeInterval[GpsLog](startDate, endDate, false, maxNb)
-        //Ok(logsAsGeoJsonLinestring(Map("gps sensor" -> gpsLogs)))
-        Ok(logsAsGeoJson(Map("gps sensor" -> gpsLogs)))
-      } catch {
-        case ae: AssertionError => BadRequest
-        case ex: Exception => ex.printStackTrace(); BadRequest
-      }
-  }*/
-
-  /**
    * Get the trajectory of a mission
    * @return
    */
@@ -139,23 +112,6 @@ trait GetApi extends ResponseFormatter {
     deviceMap.get(dId.toLong).map(s => Ok(Json.toJson(s.toJson))).getOrElse(NotFound) // return Not Found if no device with id 'dId' exists
   }
 
-  /**
-   * Get the active sensors in a time interval
-   * @param startTime The start time of the interval
-   * @param endTime The end time of the interval
-   * @param dataType The type of the sensor to get
-   * @return A list of sensors (JSON)
-   */
-  /*def getSensorByDatetime(startTime: String, endTime: String, dataType: Option[String] = None) = Action {
-    //println("Start: "+startTime +", End: "+endTime)
-    val startDate = DateFormatHelper.dateTimeFormatter.parse(startTime)
-    val endDate = DateFormatHelper.dateTimeFormatter.parse(endTime)
-    val sensorList = Sensor.getByDatetime(startDate, endDate, dataType)
-    val jsList = Json.toJson(sensorList.map(s => Json.parse(s.toJson)))
-    // build return JSON obj with array and count
-    Ok(Json.toJson(Map("sensors" -> jsList, "count" -> Json.toJson(sensorList.length))))
-  }*/
-
   /// Getters for log details (used mainly for tests)
   def getTrajectoryPointById(tId: String) = Action {
     val logOpt = DataLogManager.getById[TrajectoryPoint](tId.toLong)
@@ -183,9 +139,12 @@ trait GetApi extends ResponseFormatter {
    * @return A list of missions (JSON)
    */
   def getMissions = Action {
-    val dateList = DataLogManager.getMissionDates
-    val jsList = Json.toJson(dateList.map { case (missionId, dateStr, vehicle) =>
-      Json.toJson(Map("id" -> Json.toJson(missionId), "departuretime" -> Json.toJson(dateStr), "vehicle" -> Json.toJson(vehicle)))
+    val missions = DataLogManager.getMissions
+    val jsList = Json.toJson(missions.map { case (mission) =>
+      Json.toJson(Map("id" -> Json.toJson(mission.id),
+        "date" -> Json.toJson(DateFormatHelper.selectYearFormatter.format(mission.departureTime)),
+        "time" -> Json.toJson(DateFormatHelper.selectHourMinFormatter.format(mission.departureTime)),
+        "vehicle" -> Json.toJson(mission.vehicle.name)))
     })
     Ok(jsList)
   }

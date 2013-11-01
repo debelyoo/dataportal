@@ -5,5 +5,6 @@ var mapLayerUtil = new MapLayerUtil();
 var embeddedGraph; // reference to the graph in bottom part of interface
 var zoomedGraph; // reference to the full screen graph (when zoomed)
 var dataJsonUrl;
+var nbSelectedDates, nbFetchedDates;
 var currentMissions = new Array();
 var dataGraphAvailable = false;

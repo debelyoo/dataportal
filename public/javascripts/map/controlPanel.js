@@ -109,7 +109,10 @@ ControlPanel.prototype.onBaikalBtnClicked = function() {
 };
 
 ControlPanel.prototype.onAddLayersClicked = function() {
-    this.getMissionsForDates($('#calendar').DatePickerGetDate('ymd'));
+    var dateArr = $('#calendar').DatePickerGetDate('ymd');
+    if (dateArr.length > 0) {
+        this.getMissionsForDates(dateArr);
+    }
 };
 
 ControlPanel.prototype.onResetClicked = function() {
@@ -182,7 +185,7 @@ ControlPanel.prototype.addMissionDate = function(mission) {
     } else if (isCatamaranMission(mission)) {
         className = config.CAT_DATE_CLASSNAME;
     }
-    var nDate = new Date(mission.departuretime.substring(0,10));
+    var nDate = new Date(mission.date.substring(0,10));
     if (!this.dateList.hasOwnProperty(nDate)) {
         this.dateList[nDate] = className;
     } else if (this.dateList[nDate] != className) {
@@ -196,11 +199,10 @@ ControlPanel.prototype.addMissionDate = function(mission) {
  * @param dateArr The list of date
  */
 ControlPanel.prototype.getMissionsForDates = function(dateArr) {
-    //var self = this;
-    //nbSelectedDates = dateArr.length;
-    if (dateArr.length > 0) {
-        $('#loadingGifPlaceholder').show();
-    }
+    nbSelectedDates = dateArr.length;
+    nbFetchedDates = 0;
+    $('#loadingGifPlaceholder').show();
+
     for (var i=0; i < dateArr.length; i++) {
         $.ajax({
             url: config.URL_PREFIX +"/api/missions/fordate/"+dateArr[i]
@@ -211,7 +213,10 @@ ControlPanel.prototype.getMissionsForDates = function(dateArr) {
                 // add path for each mission
                 mapLayerUtil.addLayers(missions[j]);
             }
-            mapLayerUtil.testFeatures(0, graphPanel.createPathSelectForData);
+            nbFetchedDates++;
+            if (nbFetchedDates == nbSelectedDates) {
+                mapLayerUtil.testFeatures(0, graphPanel.createPathSelectForData);
+            }
         });
     }
 };

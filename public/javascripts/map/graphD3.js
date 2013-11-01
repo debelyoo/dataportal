@@ -117,6 +117,10 @@ GraphD3.prototype.handleMouseOutGraph = function(event) {
     //console.log("MouseOut graph");
 };
 
+/**
+ * This function is called when the mouse cursor moves over the graph
+ * @param event The mouse event
+ */
 GraphD3.prototype.handleMouseOverGraph = function(event) {
     //console.log("MouseOver graph ");
     var mouseXY = this.getMouseXY(event)
@@ -134,7 +138,8 @@ GraphD3.prototype.handleMouseOverGraph = function(event) {
             graphPanel.updateInfoDiv("tooltipText", v, false); // update the details (or tooltip) text, the position is updated later
             //console.log(v);
             if (this.linkWithGeoData){
-                // pass by the data layer, highlight the point and then updates the position of the hover line in graph
+                // pass by the data layer, highlights the point and then updates the position of the hover line in graph,
+                // time ranges of trajectory points and data logs need to be the same (c.f. DataLogManager.mapTimeRangeToTrajectory() in Scala code).
                 mapLayerUtil.highlightFeaturePoint(v.xPosFraction);
             } else {
                 this.updateHoverLine(mouseXY.mouseX)
@@ -239,11 +244,6 @@ GraphD3.prototype.refreshSensorGraph = function(url, zoomed) {
         return {
           name: name,
           values: data.logs[ind].values
-          /*values: data.logs[ind].values.map(function(d) {
-            //console.log("[graphD3.js - 242]", d);
-            return {date: self.parseDate(d.timestamp), logValue: d.value};
-            //return {date: self.parseDate(d.timestamp), logValue: d.value, coordinate_swiss: d.coordinate_swiss, speed: d.speed};
-          })*/
         };
       });
 
