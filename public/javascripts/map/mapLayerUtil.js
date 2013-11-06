@@ -67,14 +67,6 @@ MapLayerUtil.prototype.addLayers = function(mission) {
     // add line + points (trajectory)
     this.addTrajectoryLayer(mission, config.MODE_LINESTRING);
     this.addTrajectoryLayer(mission, config.MODE_POINTS);
-    /*if (isUlmMission(mission)) {
-        // for ULM mission, add line + points (trajectory)
-        this.addTrajectoryLayer(mission, config.MODE_LINESTRING);
-        this.addTrajectoryLayer(mission, config.MODE_POINTS);
-    } else {
-        // for catamaran mission add only points (trajectory)
-        this.addTrajectoryLayer(mission, config.MODE_POINTS);
-    }*/
     this.getPoiForMission(mission, this.addControls);
 };
 
@@ -115,8 +107,8 @@ MapLayerUtil.prototype.addTrajectoryLayer = function(mission, mode) {
     var geojsonUrl = config.URL_PREFIX +"/api/trajectory?max_nb="+config.MAX_NB_DATA_POINTS_ON_MAP+"&format=geojson&mode="+mode+"&mission_id="+mission.id;
     console.log(geojsonUrl);
     var suffix = "";
-    if (mode == config.MODE_LINESTRING)
-        suffix = " (Line)"
+    if (mode == config.MODE_POINTS)
+        suffix = " (points)"
     var layerTitle = mission.date + " " + mission.time + " - " + mission.vehicle + suffix;
     var hueValue = (30 + 40*this.nbTrajectory) % 360;
     //var nbTraj = this.nbTrajectory + 1;
@@ -132,7 +124,7 @@ MapLayerUtil.prototype.addTrajectoryLayer = function(mission, mode) {
                 ignoreExtraDims: true // necessary to ignore 3rd coordinate (z) in geojson points
             })
         }),
-        styleMap: this.getStyleMap(mode, isUlmMission(mission), color)
+        styleMap: this.getStyleMap(mode, color)
     });
 
     // Add layer to map
@@ -234,10 +226,9 @@ MapLayerUtil.prototype.addRasterLayer = function(mission) {
 /**
  * Get the styleMap according to the type of mission and trajectory display mode
  * @param mode
- * @param isUlmMission
  * @param color
  */
-MapLayerUtil.prototype.getStyleMap = function(mode, isUlmMission, color) {
+MapLayerUtil.prototype.getStyleMap = function(mode, color) {
     var styleMap;
     if (mode == config.MODE_POINTS) {
         // if it is a ULM mission and the trajectory is shown as points -> make them transparent

@@ -113,6 +113,7 @@ GraphPanel.prototype.getDeviceData = function(datatype, missionId, deviceId) {
     var url = dataJsonUrl + "&max_nb="+config.MAX_NB_DATA_POINTS_ON_MAP
     console.log(url);
     var graphHeight = $('#graphPanel').height();
+    var graphWidth = $('#dataGraphPlaceholder').width();
     embeddedGraph = mapLayerUtil.activeGraph
     if(!embeddedGraph) {
         //console.log("create embedded graph !");
@@ -121,6 +122,7 @@ GraphPanel.prototype.getDeviceData = function(datatype, missionId, deviceId) {
         embeddedGraph.svgElementId = 'svgElement1';
         embeddedGraph.linkWithGeoData = true;
         embeddedGraph.heightContainer = graphHeight;
+        embeddedGraph.widthContainer = graphWidth;
         embeddedGraph.initialize(); // call initialize explicitly
         mapLayerUtil.activeGraph = embeddedGraph;
     }

@@ -53,7 +53,8 @@ ControlPanel.prototype.createLayerTreeControls = function() {
         singleClickExpand: true,
         loader:{
             filter: function(record){
-                res=record.get("layer").CLASS_NAME == "OpenLayers.Layer.Vector" && record.get("layer").isBaseLayer == false;
+                // filter out the layers with the invisible points
+                var res = record.get("layer").CLASS_NAME == "OpenLayers.Layer.Vector" && record.get("layer").isBaseLayer == false && record.get("layer").styleMap.styles.default.defaultStyle.fillColor != "transparent";
                 return res
             }
         }
@@ -91,7 +92,9 @@ ControlPanel.prototype.createLayerTreeControls = function() {
         layerStore: mapLayerUtil.mapPanel.layers,
         renderTo: "legendPanel",
         filter: function(record){
-            return record.get("layer").CLASS_NAME == "OpenLayers.Layer.Vector"
+            //console.log(record.get("layer"));
+            // get only vector layers, and filter out the layers with the invisible points
+            return (record.get("layer").CLASS_NAME == "OpenLayers.Layer.Vector" && record.get("layer").styleMap.styles.default.defaultStyle.fillColor != "transparent")
         }
     });
 };

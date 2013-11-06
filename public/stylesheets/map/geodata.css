@@ -236,7 +236,8 @@ div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate
 
 #dataGraphPlaceholder {
 	float: left;
-	width: 50%;
+	width: 60%;
+	height: 100%;
 }
 
 #graphControlPlaceholder {

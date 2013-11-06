@@ -40,6 +40,7 @@ GraphD3.prototype.initialize = function() {
     this.parseDate = this.formatDate.parse;
     this.containerElement = $("#"+this.containerElementId);
 
+
     var self = this;
     this.containerElement.mousemove(function(event) {
         self.handleMouseOverGraph(event);
@@ -54,11 +55,20 @@ GraphD3.prototype.initialize = function() {
     }
 };
 
+GraphD3.prototype.updateWidthHeight = function() {
+    this.width = this.containerElement.width() - this.margin.left - this.margin.right;
+    this.height = this.containerElement.height() - this.margin.top - this.margin.bottom;
+};
+
 GraphD3.prototype.createSvgElement = function() {
+    var svgWidth = this.width + this.margin.left + this.margin.right
+    var svgHeight = this.height + this.margin.top + this.margin.bottom
     var svg = d3.select("#"+this.containerElementId).append("svg")
-        .attr("width", this.width + this.margin.left + this.margin.right)
-        .attr("height", this.height + this.margin.top + this.margin.bottom)
+        .attr("width", svgWidth)
+        .attr("height", svgHeight)
         .attr("id", this.svgElementId)
+        .attr("viewBox", "0 0 "+svgWidth+" "+svgHeight)
+        //.attr("preserveAspectRatio", "xMinYMid")
         .append("g")
         .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
     return svg;
@@ -227,6 +237,9 @@ GraphD3.prototype.refreshSensorGraph = function(url, zoomed) {
     this.resetZoomBounds();
     $('#'+this.svgElementId).remove(); // remove SVG element if already present
     var svg = this.createSvgElement();
+    this.svgElement = d3.select("#"+this.svgElementId)
+    console.log(this.svgElement[0]);
+
     d3.json(url, function(error, data) {
       //console.log(error);
       //console.log(data);
@@ -346,6 +359,15 @@ GraphD3.prototype.refreshSensorGraph = function(url, zoomed) {
       } else {
         self.originalDataUrl = url;
       }
+
+      $(window).on("resize", function() {
+          //console.log("--svg resize--", self.svgElement);
+          var test = self.svgElement;
+          //var targetWidth = self.containerElement.width();
+          self.svgElement.attr("width", self.containerElement.width());
+          self.svgElement.attr("height", self.containerElement.height());
+          self.updateWidthHeight();
+      }); //.trigger("resize");
     });
 };
 
