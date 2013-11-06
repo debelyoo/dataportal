@@ -17,7 +17,6 @@ class InsertionBatchWorker extends Actor {
         val trajectoryPoints = if (dataType == DataImporter.Types.COMPASS) {
           DataLogManager.getTrajectoryPoints(missionId, None, None, None) // for inserting compass value
         } else List()
-        var inc = 0
         for ((line, ind) <- lines.zipWithIndex) {
           val chunksOnLine = if(dataType != DataImporter.Types.ULM_TRAJECTORY)
             line.split("\\t")
@@ -25,7 +24,6 @@ class InsertionBatchWorker extends Actor {
             line.split(",")
           if (chunksOnLine.nonEmpty) {
             //println(chunksOnLine.toList)
-            inc += 1
             /*val deviceOpt = devices.get(chunksOnLine(0))
             if (dataType != DataImporter.Types.COMPASS) {
               // persist device in DB. Not for compass because compass value is added to trajectory points
@@ -56,6 +54,9 @@ class InsertionBatchWorker extends Actor {
                   // address - timestamp - latitude - longitude - elevation
                   DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, missionId, date.get,
                     chunksOnLine(2).toDouble, chunksOnLine(3).toDouble, altitudeValue, None)
+                  if (ind == lines.length-1) {
+                    DataLogManager.insertionWorker ! Message.InsertTrajectoryLinestring(missionId)
+                  }
                 } else {
                   DataLogManager.insertionWorker ! Message.SkipLog(batchId) // necessary to update batch progress correctly (when GPS error logs are skipped)
                 }

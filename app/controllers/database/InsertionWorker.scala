@@ -94,6 +94,10 @@ class InsertionWorker extends Actor {
         em.close()
       }
     }
+    case Message.InsertTrajectoryLinestring(missionId) => {
+      Logger.info("InsertTrajectoryLinestring()")
+      DataLogManager.setTrajectoryLinestring(missionId)
+    }
     case Message.InsertPointOfInterest(batchId, missionId, ts, latitude, longitude, altitude) => {
       val em: EntityManager = JPAUtil.createEntityManager
       try {

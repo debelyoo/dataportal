@@ -64,14 +64,17 @@ MapLayerUtil.prototype.initialize = function() {
  */
 MapLayerUtil.prototype.addLayers = function(mission) {
     this.addRasterLayer(mission);
-    if (isUlmMission(mission)) {
+    // add line + points (trajectory)
+    this.addTrajectoryLayer(mission, config.MODE_LINESTRING);
+    this.addTrajectoryLayer(mission, config.MODE_POINTS);
+    /*if (isUlmMission(mission)) {
         // for ULM mission, add line + points (trajectory)
         this.addTrajectoryLayer(mission, config.MODE_LINESTRING);
         this.addTrajectoryLayer(mission, config.MODE_POINTS);
     } else {
         // for catamaran mission add only points (trajectory)
         this.addTrajectoryLayer(mission, config.MODE_POINTS);
-    }
+    }*/
     this.getPoiForMission(mission, this.addControls);
 };
 
@@ -236,7 +239,7 @@ MapLayerUtil.prototype.addRasterLayer = function(mission) {
  */
 MapLayerUtil.prototype.getStyleMap = function(mode, isUlmMission, color) {
     var styleMap;
-    if (mode == config.MODE_POINTS && isUlmMission) {
+    if (mode == config.MODE_POINTS) {
         // if it is a ULM mission and the trajectory is shown as points -> make them transparent
         styleMap = new OpenLayers.StyleMap({
             "default": new OpenLayers.Style({

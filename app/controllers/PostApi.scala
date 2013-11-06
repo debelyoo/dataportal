@@ -44,14 +44,16 @@ trait PostApi {
     //println(request.body)
     // handle POST data as JSON
     val dataType = (request.body \ "datatype").as[String]
-    val jsArray = (request.body \ "items").asInstanceOf[JsArray]
+    val jsArray = (request.body \ "items").as[JsArray]
+    val lastChunk = (request.body \"last_chunk").as[Boolean]
     //Logger.info("[PostApi] postData() - inc: " + (request.body \ "inc"))
+    var missionId: Long = 0
     val batchId = UUID.randomUUID().toString
     DataLogManager.insertionWorker ! Message.SetInsertionBatchJson(batchId, dataType, jsArray.value.length)
     jsArray.value.foreach(item => {
       dataType match {
         case DataImporter.Types.GPS => {
-          val missionId = (item \ "mission_id").as[Long]
+          missionId = (item \ "mission_id").as[Long]
           val ts = (item \ "timestamp").as[Double]
           val date = DateFormatHelper.unixTs2JavaDate(ts).get
           val lat = (item \ "latitude").as[Double]
@@ -61,7 +63,7 @@ trait PostApi {
           DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, missionId, date, lat, lon, alt, heading)
         }
         case _ => {
-          val missionId = (item \ "mission_id").as[Long]
+          missionId = (item \ "mission_id").as[Long]
           val ts = (item \ "timestamp").as[Double]
           val date = DateFormatHelper.unixTs2JavaDate(ts).get
           val value = (item \ "value").as[Double]
@@ -71,6 +73,10 @@ trait PostApi {
         }
       }
     })
+    if (dataType == DataImporter.Types.GPS && lastChunk) {
+      // insert linestring object for mission
+      DataLogManager.insertionWorker ! Message.InsertTrajectoryLinestring(missionId)
+    }
     Ok
   }
 

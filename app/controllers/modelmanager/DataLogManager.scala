@@ -406,7 +406,7 @@ object DataLogManager {
    * @param missionId The mission id
    * @return The trajectory in GeoJSON object
    */
-  def getTrajectoryLinestring(missionId: Int): JsValue = {
+  def getTrajectoryLinestring(missionId: Long): JsValue = {
     val em = JPAUtil.createEntityManager()
     try {
       em.getTransaction().begin()
@@ -422,6 +422,29 @@ object DataLogManager {
     } catch {
       case nre: NoResultException => Json.parse("{\"error\": \"no result\"}")
       case ex: Exception => ex.printStackTrace; Json.parse("{\"error\": \""+ ex.getMessage +"\"}")
+    } finally {
+      em.close()
+    }
+  }
+
+  /**
+   * Set the linestring geometry object for a mission
+   * @param missionId The id of a mission
+   * @return true if success
+   */
+  def setTrajectoryLinestring(missionId: Long): Boolean = {
+    val em: EntityManager = JPAUtil.createEntityManager
+    try {
+      em.getTransaction.begin()
+      val points = getTrajectoryPoints(missionId, None, None, None, Some(em))
+      val pointsAsString = points.map(tp => tp.getCoordinate.getX + " " + tp.getCoordinate.getY) // coordinates are separated by space
+      val linestring = "LINESTRING("+ pointsAsString.mkString(",") +")"
+      val q = em.createNativeQuery("UPDATE mission SET trajectory = '"+ linestring +"' WHERE id = "+missionId)
+      val nbUpdated = q.executeUpdate()
+      em.getTransaction.commit()
+      nbUpdated == 1
+    } catch {
+      case ex: Exception => ex.printStackTrace(); false
     } finally {
       em.close()
     }

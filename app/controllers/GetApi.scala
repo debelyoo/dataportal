@@ -66,7 +66,7 @@ trait GetApi extends ResponseFormatter {
         Logger.info("[GetApi] getTrajectory() - <"+ format +">")
         //println(map)
         assert(map.contains("mission_id"), {println("Missing mission_id parameter")})
-        val missionId = map.get("mission_id").map(_.toInt)
+        val missionId = map.get("mission_id").map(_.toLong)
         val maxNb = map.get("max_nb").map(_.toInt)
         val resp = if (mode == GIS_LINESTRING) {
           DataLogManager.getTrajectoryLinestring(missionId.get)

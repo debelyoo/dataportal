@@ -13,7 +13,7 @@ object Message {
   case class InsertGpsLog (batchId: String, missionId: Long, ts: Date, latitude: Double, longitude: Double, altitude: Double, heading: Option[Double])
   case class InsertPointOfInterest (batchId: String, missionId: Long, ts: Date, latitude: Double, longitude: Double, altitude: Double)
   case class InsertUlmTrajectory (batchId: String, missionId: Long, ts: Date, latitude: Double, longitude: Double, altitude: Double)
-  //case class InsertRadiometerLog (batchId: String, missionId: Long, ts: Date, device: Device, radiometerVal: Double)
+  case class InsertTrajectoryLinestring (missionId: Long)
   case class InsertDevice (device: Device, missionId: Long)
   case class InsertMission (departureTime: Date, timezone: String, vehicleName: String, devices: JsArray)
   case class InsertSensorLog (batchId: String, missionId: Long, ts: Date, tempVal: Double, deviceAddress: String)
