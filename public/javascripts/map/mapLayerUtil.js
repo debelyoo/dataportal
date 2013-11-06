@@ -53,6 +53,8 @@ MapLayerUtil.prototype.initialize = function() {
     // disable 3D effect with google map
     gmapLayer.mapObject.setTilt(0);
     window.onmousemove = this.handleMouseMove;
+    // Add a scale line
+    this.mapPanel.map.addControl(new OpenLayers.Control.ScaleLine());			
 };
 
 /**

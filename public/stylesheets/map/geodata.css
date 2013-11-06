@@ -2,6 +2,8 @@ body {
 	overflow: hidden;
 }
 
+
+
 #mapPanel {
 	height: 100%;
 }
@@ -97,6 +99,34 @@ body {
     position: absolute;
     top: 100px;
     left: 70%;
+}
+
+.olControlScale{
+    top: 5em !important;
+    left: 0em !important;
+    border: solid 2px red;
+     border-color:red;
+}
+
+.olControlScaleLine {
+     border-color:red;
+    top: 75px;
+    display: block;
+    font-size: xx-small;
+    left: 10px;
+    position: absolute;
+    font-family: arial, sans-serif;
+    color: red;
+    border: red;
+}
+.olControlScaleLineTop {
+     border-color:red;
+    border: solid 2px red;
+}
+
+.olControlScaleLineBottom {
+     border-color:red;
+    border: solid 2px red;
 }
 
 .colorLegendRow {
