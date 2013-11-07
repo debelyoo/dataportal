@@ -104,29 +104,29 @@ body {
 .olControlScale{
     top: 5em !important;
     left: 0em !important;
-    border: solid 2px red;
-     border-color:red;
+    border: solid 2px black;
+     border-color:black;
 }
 
 .olControlScaleLine {
-     border-color:red;
+     border-color:black;
     top: 75px;
     display: block;
     font-size: xx-small;
     left: 10px;
     position: absolute;
     font-family: arial, sans-serif;
-    color: red;
-    border: red;
+    color: black;
+    border: black;
 }
 .olControlScaleLineTop {
-     border-color:red;
-    border: solid 2px red;
+     border-color:black;
+    border: solid 2px black;
 }
 
 .olControlScaleLineBottom {
-     border-color:red;
-    border: solid 2px red;
+     border-color:black;
+    border: solid 2px black;
 }
 
 .colorLegendRow {
