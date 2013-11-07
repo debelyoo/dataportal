@@ -367,7 +367,7 @@ GraphD3.prototype.refreshSensorGraph = function(url, zoomed) {
           self.svgElement.attr("width", self.containerElement.width());
           self.svgElement.attr("height", self.containerElement.height());
           self.updateWidthHeight();
-      }); //.trigger("resize");
+      });
     });
 };
 

@@ -70,11 +70,12 @@
             <div id="controlPanelHideBtnPlaceholder" onclick="controlPanel.togglePanel()"></div>
             <div id="controlPanel">
                 <div id="selectDiv" class="overlayPanelWhite">
-                    <div class="buttonRow centeredLarge">
+                    <div id="loadingGifPlaceholder"><img id="loadingGif" src="/img/loading.gif"></div>
+                    <div class="buttonRow centered">
                         <div id="lemanBtn" class="selectBtn" onclick="controlPanel.onLemanBtnClicked();">Leman</div>
                         <div id="baikalBtn" class="selectBtn" onclick="controlPanel.onBaikalBtnClicked();">Baikal</div>
                     </div>
-                    <div id="colorLegend">
+                    <div id="colorLegend" class="centered">
                         <div class="colorLegendRow">
                             <div class="colorLegendSquare catDate"></div>
                             <div class="colorLegendText">Catamaran</div>
@@ -88,8 +89,6 @@
                     <div class="buttonRow centered">
                         <div id="addLayerBtn" class="selectBtn" onclick="controlPanel.onAddLayersClicked();">Add layers</div>
                         <div id="resetBtn" class="selectBtn" onclick="controlPanel.onResetClicked();">Reset selection</div>
-                        <!--<div id="updateBtn">Update</div>-->
-                        <div id="loadingGifPlaceholder"><img id="loadingGif" src="/img/loading.gif"></div>
                     </div>
 
                     <div id="layerTreeContainer">

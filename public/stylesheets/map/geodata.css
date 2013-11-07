@@ -80,7 +80,7 @@ body {
 }
 
 #selectDiv .centered {
-    width: 80%;
+    width: 220px; /* use fix width to avoid buttons stacking vertically when  width is decreased */
     margin-right: auto;
     margin-left: auto;
 }
@@ -98,8 +98,6 @@ body {
 #colorLegend {
     position: relative;
     height: 20px;
-    left: 10%;
-    width: 90%; /* to avoid horizontal scroll since left is 10% */
 }
 
 .olControlScale{
@@ -149,7 +147,7 @@ body {
 }
 
 #calendar {
-	margin-bottom: 10px;
+	margin-bottom: 5px;
 	margin-top: 5px;
 }
 
@@ -289,7 +287,8 @@ div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate
 }
 
 .buttonRow {
-	height: 40px;
+	height: 30px;
+	padding: 5px 0;
 }
 
 .selectBtn {
@@ -302,10 +301,15 @@ div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate
 	float: left
 }
 
+#buttonWrapper {
+    position: absolute;
+}
+
 #loadingGifPlaceholder {
 	width: 30px;
 	height: 30px;
-	float: left;
+	position: absolute;
+	left: 85%;
 	padding: 5px;
 	display: none;
 }
