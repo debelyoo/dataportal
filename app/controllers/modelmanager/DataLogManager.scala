@@ -142,6 +142,7 @@ object DataLogManager {
    * @param startDate The start date (optional)
    * @param endDate The end date (optional)
    * @param maxNb The maximum number of logs (optional)
+   * @param syncWithTrajectory true if data is get in a graph shown as overlay to a map (sync with trajectory is necessary) - default is true
    * @return A map with the logs by device
    */
   def getDataByMission(
@@ -150,7 +151,8 @@ object DataLogManager {
                      deviceIdList: List[Long],
                      startDate: Option[Date],
                      endDate: Option[Date],
-                     maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
+                     maxNb: Option[Int],
+                     syncWithTrajectory: Boolean): Map[String, List[JsonSerializable]] = {
     datatype match {
       case DataImporter.Types.ALTITUDE => {
         getAltitude(missionId, startDate, endDate, maxNb)
@@ -160,7 +162,7 @@ object DataLogManager {
       }
       case _ => {
         // all other device type
-        getByMissionAndDevice[SensorLog](missionId, deviceIdList, startDate, endDate, maxNb)
+        getByMissionAndDevice[SensorLog](missionId, deviceIdList, startDate, endDate, maxNb, syncWithTrajectory)
       }
     }
   }
@@ -233,6 +235,7 @@ object DataLogManager {
    * @param startTime
    * @param endTime
    * @param maxNb The maximum number of logs to return
+   * @param syncWithTrajectory true if data is get in a graph shown as overlay to a map (sync with trajectory is necessary)
    * @param emOpt An optional entity manager
    * @tparam T The type of log to get
    * @return A map of logs by device
@@ -243,6 +246,7 @@ object DataLogManager {
                                                startTime: Option[Date],
                                                endTime: Option[Date],
                                                maxNb: Option[Int],
+                                               syncWithTrajectory: Boolean,
                                                emOpt: Option[EntityManager] = None): Map[String, List[T]] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
@@ -268,8 +272,8 @@ object DataLogManager {
       if (emOpt.isEmpty) em.getTransaction().commit()
       val logsMapBySensorId = logList.map(_.asInstanceOf[SensorLog]).groupBy(_.device.id)
       logsMapBySensorId.map { case (sId, rawLogs) => {
-        // adapt to trajectory points time range - pad with zero values
-        val logs = mapTimeRangeToTrajectory(missionId, rawLogs, emOpt)
+        // adapt to trajectory points time range - pad with zero values (if requested)
+        val logs = if (syncWithTrajectory) mapTimeRangeToTrajectory(missionId, rawLogs, emOpt) else rawLogs
         val reducedLogList = if (maxNb.isDefined && logs.length > maxNb.get) {
           val moduloFactor = math.ceil(logs.length.toDouble / maxNb.get.toDouble).toInt
           //println("logs list reduced by factor: "+ moduloFactor)
@@ -308,7 +312,7 @@ object DataLogManager {
     val (firstTimeTraj, lastTimeTraj) = getFirstAndLastTimeOfTrajectory(missionId, emOpt).get
     val timeDiffBetweenFirstDataLogAndFirstTrajectoryPoint = firstTimeData.getTime - firstTimeTraj.getTime
     if (timeDiffBetweenFirstDataLogAndFirstTrajectoryPoint > timeDiffBetweenDataLogs) {
-      //println("Need padding !")
+      //Logger.info("Need padding !")
       // need padding
       val virtualSensorLogs = new mutable.MutableList[SensorLog]()
       var virtualLogTS = firstTimeTraj.getTime

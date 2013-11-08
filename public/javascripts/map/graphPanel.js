@@ -161,7 +161,7 @@ GraphPanel.prototype.zoomGraph = function(datatype, mid, sid) {
             zoomedGraph = new GraphD3();
             zoomedGraph.containerElementId = 'graphZoomPlaceholder';
             zoomedGraph.svgElementId = 'svgElement2';
-            zoomedGraph.margin = {top: 50, right: 100, bottom: 50, left: 100};
+            zoomedGraph.margin = {top: 50, right: 150, bottom: 50, left: 100};
             zoomedGraph.widthContainer = $("#graphZoomPlaceholder").width();
             zoomedGraph.heightContainer = $("#graphZoomPlaceholder").height();
             zoomedGraph.datatype = datatype;
@@ -179,7 +179,7 @@ GraphPanel.prototype.zoomGraph = function(datatype, mid, sid) {
             zoomedGraph.sensorId = sid;
             zoomedGraph.missionId = mid;
         }
-        var dataJsonUrlZoomedGraph = dataJsonUrl + "&max_nb="+config.MAX_NB_DATA_POINTS_SINGLE_GRAPH
+        var dataJsonUrlZoomedGraph = dataJsonUrl + "&max_nb="+config.MAX_NB_DATA_POINTS_SINGLE_GRAPH+"&sync_with_trajectory=false"
         zoomedGraph.refreshSensorGraph(dataJsonUrlZoomedGraph);
         mapLayerUtil.activeGraph = zoomedGraph;
     }

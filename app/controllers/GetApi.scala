@@ -40,11 +40,13 @@ trait GetApi extends ResponseFormatter {
         //val sensorIdList = map.get("sensor_id").map(_.toLong).toList // TODO handle multi Ids (by parsing string)
 
         val maxNb = map.get("max_nb").map(_.toInt)
+        val syncWithTrajectory = map.get("sync_with_trajectory").map(_.toBoolean).getOrElse(true) // default is true, graph is visible below the trajectory
+        //Logger.info("sync: "+syncWithTrajectory)
         val deviceIdList = map.get("device_id").map {
           case "all" => Device.getForMission(missionId, map.get("data_type"), None).map(_.id)
           case _ => List(map.get("device_id").get.toLong)
         }.get
-        val logMap = DataLogManager.getDataByMission(datatype, missionId, deviceIdList, startDate, endDate, maxNb)
+        val logMap = DataLogManager.getDataByMission(datatype, missionId, deviceIdList, startDate, endDate, maxNb, syncWithTrajectory)
         formatResponse(format, logMap)
       } catch {
         case ae: AssertionError => BadRequest

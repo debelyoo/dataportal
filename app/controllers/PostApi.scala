@@ -46,7 +46,7 @@ trait PostApi {
     val dataType = (request.body \ "datatype").as[String]
     val jsArray = (request.body \ "items").as[JsArray]
     val lastChunk = (request.body \"last_chunk").as[Boolean]
-    //Logger.info("[PostApi] postData() - inc: " + (request.body \ "inc"))
+    //Logger.info("[PostApi] postData() - last: " + lastChunk)
     var missionId: Long = 0
     val batchId = UUID.randomUUID().toString
     DataLogManager.insertionWorker ! Message.SetInsertionBatchJson(batchId, dataType, jsArray.value.length)

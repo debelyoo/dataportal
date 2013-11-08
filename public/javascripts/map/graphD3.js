@@ -1,5 +1,5 @@
 function GraphD3() {
-    this.margin = {top: 20, right: 100, bottom: 30, left: 50};
+    this.margin = {top: 20, right: 150, bottom: 30, left: 50}; // margin between graph and div container, right margin is big for legend
     this.widthContainer = 620;
     this.heightContainer = 250;
     this.width = 0;
@@ -104,6 +104,7 @@ GraphD3.prototype.handleMouseDown = function(event) {
             var dataUrlZoom = config.URL_PREFIX +"/api/data?data_type="+ this.datatype;
             dataUrlZoom += "&from_date="+ this.zoomLowerBound +"&to_date="+ this.zoomUpperBound;
             dataUrlZoom += "&mission_id="+ this.missionId +"&device_id="+this.sensorId+"&max_nb="+config.MAX_NB_DATA_POINTS_SINGLE_GRAPH
+            dataUrlZoom += "&sync_with_trajectory=false"
             $("#graphZoomZoomBtn").attr("onclick", "zoomedGraph.refreshSensorGraph('"+ dataUrlZoom +"', true);");
         } else {
             this.zoomLowerBound = ts
@@ -232,13 +233,12 @@ GraphD3.prototype.updateHoverLine = function(xPos) {
  * @param zoomed Indicates if the current graph is the zoomed one
  */
 GraphD3.prototype.refreshSensorGraph = function(url, zoomed) {
-    //console.log("refreshSensorGraph() - "+url);
+    console.log("refreshSensorGraph() - "+url);
     var self = this;
     this.resetZoomBounds();
     $('#'+this.svgElementId).remove(); // remove SVG element if already present
     var svg = this.createSvgElement();
     this.svgElement = d3.select("#"+this.svgElementId)
-    console.log(this.svgElement[0]);
 
     d3.json(url, function(error, data) {
       //console.log(error);
@@ -311,13 +311,36 @@ GraphD3.prototype.refreshSensorGraph = function(url, zoomed) {
           .style("stroke", function(d) { return self.color(d.name); });
           //.on('mouseover', function(d, i) { self.handleMouseOverLine(d, i); });
 
-      sl.append("text")
-          .datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; })
-          .attr("transform", function(d) { return "translate(" + self.x(d.value.date) + "," + self.y(d.value.value) + ")"; })
-          .attr("x", 3)
-          .attr("dy", ".35em")
-          .style("stroke", "black")
-          .text(function(d) { return d.name; });
+      // add legend
+      var legendOffsetY = 0;
+      var legend = svg.append("g")
+      .attr("class", "legend")
+      .attr("x", self.width + 20)
+      .attr("y", legendOffsetY)
+      .attr("height", 100)
+      .attr("width", 100);
+
+      legend.selectAll('g').data(self.sensorLogs)
+        .enter()
+        .append('g')
+        .each(function(d, i) {
+          var g = d3.select(this);
+          g.append("rect")
+            .attr("x", self.width + 20)
+            .attr("y", i*25 + legendOffsetY)
+            .attr("width", 10)
+            .attr("height", 10)
+            .style("fill", function(d) { return self.color(d.name); });
+
+          g.append("text")
+            .attr("x", self.width + 35)
+            .attr("y", i * 25 + 8 + legendOffsetY)
+            .attr("height",30)
+            .attr("width",100)
+            .style("fill", function(d) { return self.color(d.name); })
+            .text(function(d) { return d.name; });
+
+        });
 
       // add a 'hover' line that we'll show as a user moves their mouse (or finger)
       // so we can use it to show detailed values of each line

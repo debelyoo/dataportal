@@ -234,14 +234,14 @@ div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate
 
 #dataGraphPlaceholder {
 	float: left;
-	width: 60%;
+	width: 65%;
 	height: 100%;
 }
 
 #graphControlPlaceholder {
     position: absolute;
-    width: 20%;
-    left: 80%;
+    top: 100px;
+    left: 20px;
 }
 
 #graphPanelBtnPanel {
