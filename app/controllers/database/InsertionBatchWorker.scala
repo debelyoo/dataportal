@@ -71,6 +71,9 @@ class InsertionBatchWorker extends Actor {
                 val (tsDate, timeZone) = DateFormatHelper.ulmTs2JavaDate(chunksOnLine(3))
                 DataLogManager.insertionWorker ! Message.InsertUlmTrajectory(batchId, missionId, tsDate,
                   chunksOnLine(0).toDouble, chunksOnLine(1).toDouble, chunksOnLine(2).toDouble)
+                if (ind == lines.length-1) {
+                  DataLogManager.insertionWorker ! Message.InsertTrajectoryLinestring(missionId)
+                }
               }
               case _  => {
                 val deviceOpt = devices.get(chunksOnLine(0))
