@@ -364,11 +364,6 @@ object DataLogManager {
       //val q = em.createQuery("SELECT DISTINCT m.id, cast(m.departureTime as date), m.vehicle.name FROM "+ classOf[Mission].getName +" m")
       val q = em.createQuery("FROM "+ classOf[Mission].getName, classOf[Mission])
       val missions = q.getResultList.toList
-
-      /*val dates = q.getResultList.map(_.asInstanceOf[Array[Object]]).toList.map(obj =>
-        (obj(0).asInstanceOf[Long], DateFormatHelper.selectYearFormatter.format(obj(1).asInstanceOf[Date]),
-          DateFormatHelper.selectTimeFormatter.format(obj(1).asInstanceOf[Date]), obj(2).asInstanceOf[String])
-      )*/
       em.getTransaction().commit()
       missions
     } catch {
