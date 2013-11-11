@@ -9,7 +9,7 @@ import play.api.libs.json.Json
 
 @Entity
 @Table(name = "devicetype")
-case class DeviceType(name: String, plotType: String) {
+case class DeviceType(name: String, unit: String, plotType: String) {
 
   @Id
   @GeneratedValue(generator="increment")
@@ -19,7 +19,7 @@ case class DeviceType(name: String, plotType: String) {
 
   override def toString = id + " -> name: " + name + ", plotType: "+ plotType
 
-  def this() = this("", "") // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
+  def this() = this("", "", "") // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
 
   /**
    * Persist device type in DB (if it is not already in)
@@ -44,6 +44,10 @@ case class DeviceType(name: String, plotType: String) {
 object DeviceType {
 
   implicit val deviceTypeFormat = Json.format[DeviceType] // an implicit conversion to JSON
+
+  object PlotTypes {
+    val LINE = "line"
+  }
 
   /**
    * Get DeviceType by name

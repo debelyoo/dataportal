@@ -14,6 +14,7 @@ import java.util.Date
 import play.api.Logger
 import models.spatial.TrajectoryPoint
 import com.google.gson.{Gson, JsonArray, JsonObject, JsonElement}
+import models.Device
 
 trait ResponseFormatter {
 
@@ -28,10 +29,11 @@ trait ResponseFormatter {
   /**
    * Format the logs list in the right format, depending on what has been requested in the REST query
    * @param format The desired format
-   * @param logMap The list of logs (by sensor)
+   * @param logMap The list of logs (by device)
+   *
    * @return A HTTP response
    */
-  def formatResponse(format: String, logMap: Map[String, List[JsonSerializable]]) = {
+  def formatResponse(format: String, logMap: Map[Device, List[JsonSerializable]]) = {
     format match {
       case JSON_FORMAT => Ok(logsAsJson(logMap))
       //case KML_FORMAT => Ok(logsAsKml(logMap))
@@ -42,13 +44,17 @@ trait ResponseFormatter {
 
   /**
    * Format the list of logs as JSON array
-   * @param logMap A map with the logs for each sensor
+   * @param logMap A map with the logs for each device
    * @return A JSON object with the sensor logs
    */
-  private def logsAsJson(logMap: Map[String, List[JsonSerializable]]): JsValue = {
-    val jsObjectList = logMap.map { case (sensorName, logList) => {
+  private def logsAsJson(logMap: Map[Device, List[JsonSerializable]]): JsValue = {
+    val jsObjectList = logMap.map { case (device, logList) => {
       val jsList = Json.toJson(logList.map(log => Json.parse(log.toJson)))
-      val sensorAndValues = Json.toJson(Map("sensor" -> Json.toJson(sensorName), "values" -> jsList, "count" -> Json.toJson(logList.length)))
+      val sensorAndValues = Json.toJson(Map(
+        "sensor" -> Json.toJson(device.name),
+        "unit" -> Json.toJson(device.deviceType.unit),
+        "values" -> jsList,
+        "count" -> Json.toJson(logList.length)))
       sensorAndValues
     }}
     // build return JSON obj with array

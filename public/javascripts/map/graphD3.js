@@ -243,9 +243,11 @@ GraphD3.prototype.refreshSensorGraph = function(url, zoomed) {
     d3.json(url, function(error, data) {
       //console.log(error);
       //console.log(data);
-      var sensorNames = data.logs.map(function(serie) {return serie["sensor"]});
+      var unit;
+      var sensorNames = data.logs.map(function(serie) {return serie.sensor});
       self.color.domain(sensorNames);
       data.logs.forEach(function(serie) {
+        unit = serie.unit; // get unit for y axis
         serie.values.forEach(function(d) {
           d.date = self.parseDate(d.timestamp); // parse timestamp to date (D3 takes date in X axis)
         })
@@ -297,8 +299,20 @@ GraphD3.prototype.refreshSensorGraph = function(url, zoomed) {
           .attr("transform", "rotate(-90)")
           .attr("y", 6)
           .attr("dy", ".71em")
-          .style("text-anchor", "end")
+          .style("text-anchor", "end");
           //.text("Temperature (°C)");
+
+      // unit text (above y axis)
+      svg.append("g")
+          .attr("class", "unit")
+          .append("text")
+          .attr("x", 10)
+          .attr("y", 0)
+          .attr("height", 20)
+          .attr("width", 100)
+          .text(unit);
+
+
 
       var sl = svg.selectAll(".sensorLog")
         .data(self.sensorLogs)

@@ -202,7 +202,7 @@ class InsertionWorker extends Actor {
           val datatype = (jsDev \ "datatype").as[String]
           val deviceTypeOpt = DeviceType.getByName(datatype, Some(em))
           val deviceType = if (deviceTypeOpt.isEmpty) {
-            val dt = new DeviceType(datatype, "line") // 'line' is default plot type
+            val dt = DeviceType(datatype, "", DeviceType.PlotTypes.LINE) // 'line' is default plot type
             dt.save(Some(em))
             dt
           } else {

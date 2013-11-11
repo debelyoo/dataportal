@@ -149,7 +149,7 @@ object Device {
    */
   def getForMission(missionId: Long, datatype: Option[String], address: Option[String], emOpt: Option[EntityManager] = None): List[Device] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
-    val typeMap = collection.mutable.Map[String, Int]()
+    val typeMap = collection.mutable.Map[DeviceType, Int]()
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
       // many to many query
@@ -159,10 +159,10 @@ object Device {
       //println("[Q] "+query)
       val q = em.createQuery(query, classOf[Device])
       val devices = q.getResultList.toList.map(d => {
-        if (!typeMap.contains(d.deviceType.name)) {
-          typeMap += d.deviceType.name -> 1
+        if (!typeMap.contains(d.deviceType)) {
+          typeMap += d.deviceType -> 1
         } else {
-          typeMap(d.deviceType.name) = (typeMap(d.deviceType.name) + 1)
+          typeMap(d.deviceType) = (typeMap(d.deviceType) + 1)
         }
         d
       })
@@ -171,7 +171,7 @@ object Device {
         t <- typeMap
         if (t._2 > 1)
       } yield {
-        new Device(t._1, "", new DeviceType(t._1, "line"))
+        new Device(t._1.name, "", DeviceType(t._1.name, t._1.unit, DeviceType.PlotTypes.LINE))
       }
       if (emOpt.isEmpty) em.getTransaction().commit()
       devices ++ virtualDeviceList
@@ -182,77 +182,4 @@ object Device {
       if (emOpt.isEmpty) em.close()
     }
   }
-
-  /**
-   * Get active devices by time range
-   * @param from start time of range
-   * @param to end time of range
-   * @param dataType type of the device
-   * @return A list of devices (active during specified time range)
-   */
-  /*def getByDatetime(from: Date, to: Date, dataType: Option[String] = None): List[Device] = {
-    /*SELECT DISTINCT s.id, s.name
-    FROM temperaturelog tl, sensor s where timestamp BETWEEN '2013-06-13 16:20:00'::timestamp
-      AND '2013-06-13 16:31:25'::timestamp AND sensor_id = s.id AND s.name like 'PT%';*/
-    val em = JPAUtil.createEntityManager()
-    try {
-      em.getTransaction().begin()
-      val temperatureSensors = getActiveSensorByTimeInterval[TemperatureLog](from, to, false, Some(em))
-      val windSensors = getActiveSensorByTimeInterval[WindLog](from, to, false, Some(em))
-      val radiometerSensors = getActiveSensorByTimeInterval[RadiometerLog](from, to, false, Some(em))
-      val temperatureType = if (temperatureSensors.nonEmpty && dataType.isEmpty) {
-        // add a virtual sensor that will appear as "All temperature" in map interface
-        val typeSensor = new Device(0, "temperature", "", DataImporter.Types.TEMPERATURE)
-        List(typeSensor)
-      } else List()
-      val radiometerType = if (radiometerSensors.nonEmpty && dataType.isEmpty) {
-        // add a virtual sensor that will appear as "All radiometer" in map interface
-        val typeSensor = new Device(0, "radiometer", "", DataImporter.Types.RADIOMETER)
-        List(typeSensor)
-      } else List()
-      val devices = temperatureSensors ++ temperatureType ++ windSensors ++ radiometerSensors ++ radiometerType
-
-      em.getTransaction().commit()
-      val filteredDevices = if (dataType.isDefined) devices.filter(_.getDatatype == dataType.get) else devices
-      filteredDevices.sortBy(_.getName)
-    } catch {
-      case ex: Exception => ex.printStackTrace; List()
-    } finally {
-      em.close()
-    }
-  }*/
-
-  /**
-   * Get the data logs of a type between a time interval
-   * @param startTime The start time of the interval
-   * @param endTime The end time of the interval
-   * @param geoOnly Indicates if we want only the logs mapped to a gps log
-   * @tparam T The type of data log to get
-   * @return A list of the logs in the specified time interval
-   */
-  /*private def getActiveSensorByTimeInterval[T: ClassTag](startTime: Date, endTime: Date, geoOnly: Boolean, emOpt: Option[EntityManager] = None): List[Device] = {
-    val em = emOpt.getOrElse(JPAUtil.createEntityManager())
-    try {
-      if (emOpt.isEmpty) em.getTransaction().begin()
-      val clazz = classTag[T].runtimeClass
-      val geoCondition = if (geoOnly) "AND log.gpsLog IS NOT NULL " else ""
-      // where timestamp BETWEEN '2013-05-14 16:30:00'::timestamp AND '2013-05-14 16:33:25'::timestamp ;
-      val queryStr = "SELECT DISTINCT log.sensor from "+ clazz.getName +" log " +
-        "WHERE timestamp BETWEEN :start AND :end " + geoCondition
-      //println(queryStr)
-
-      val q = em.createQuery(queryStr)
-      q.setParameter("start", startTime, TemporalType.TIMESTAMP)
-      q.setParameter("end", endTime, TemporalType.TIMESTAMP)
-      //println(q.getResultList)
-      val sensors = q.getResultList.map(_.asInstanceOf[Device]).toList
-      if (emOpt.isEmpty) em.getTransaction().commit()
-      sensors
-    } catch {
-      case nre: NoResultException => List()
-      case ex: Exception => ex.printStackTrace; List()
-    } finally {
-      if (emOpt.isEmpty) em.close()
-    }
-  }*/
 }

@@ -152,7 +152,7 @@ object DataLogManager {
                      startDate: Option[Date],
                      endDate: Option[Date],
                      maxNb: Option[Int],
-                     syncWithTrajectory: Boolean): Map[String, List[JsonSerializable]] = {
+                     syncWithTrajectory: Boolean): Map[Device, List[JsonSerializable]] = {
     datatype match {
       case DataImporter.Types.ALTITUDE => {
         getAltitude(missionId, startDate, endDate, maxNb)
@@ -247,7 +247,7 @@ object DataLogManager {
                                                endTime: Option[Date],
                                                maxNb: Option[Int],
                                                syncWithTrajectory: Boolean,
-                                               emOpt: Option[EntityManager] = None): Map[String, List[T]] = {
+                                               emOpt: Option[EntityManager] = None): Map[Device, List[T]] = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
     try {
       if (emOpt.isEmpty) em.getTransaction().begin()
@@ -285,7 +285,7 @@ object DataLogManager {
           }
         } else logs
         println("Nb of logs returned: "+reducedLogList.length)
-        (devices.get(sId).get.name, reducedLogList.map(_.asInstanceOf[T]))
+        (devices.get(sId).get, reducedLogList.map(_.asInstanceOf[T]))
       }}
     } catch {
       case nre: NoResultException => println("No result !!"); Map()
@@ -460,7 +460,7 @@ object DataLogManager {
    * @param maxNb The maximum number of points to get
    * @return A map with the altitude logs
    */
-  def getAltitude(missionId: Long, startTime: Option[Date], endTime: Option[Date], maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
+  def getAltitude(missionId: Long, startTime: Option[Date], endTime: Option[Date], maxNb: Option[Int]): Map[Device, List[JsonSerializable]] = {
     val tz = getById[Mission](missionId).map(m => TimeZone.getTimeZone(m.timeZone)).getOrElse(TimeZone.getDefault)
     val dateFormatter = DateFormatHelper.postgresTimestampWithMilliFormatter
     dateFormatter.setTimeZone(tz) // format TS with mission timezone
@@ -471,18 +471,19 @@ object DataLogManager {
         trajPt.getCoordinate.getCoordinate.z
       )
     )
-    //formatter.setTimeZone(TimeZone.getDefault) // reset formatter timezone to default
-    Map("altitude" -> altitudeLogList)
+    val virtualDev = new Device("altitude", "", DeviceType("", "m", DeviceType.PlotTypes.LINE))
+    Map(virtualDev -> altitudeLogList)
   }
 
-  def getSpeed(missionId: Long, startTime: Option[Date], endTime: Option[Date], maxNb: Option[Int]): Map[String, List[JsonSerializable]] = {
+  def getSpeed(missionId: Long, startTime: Option[Date], endTime: Option[Date], maxNb: Option[Int]): Map[Device, List[JsonSerializable]] = {
     val pointList = getTrajectoryPoints(missionId, startTime, endTime, maxNb)
     val speedLogList = pointList.map(trajPt =>
       SpeedLog(trajPt.getId,
       DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.getTimestamp),
       trajPt.getSpeed)
     )
-    Map("speed" -> speedLogList)
+    val virtualDev = new Device("speed", "", DeviceType("", "m/s", DeviceType.PlotTypes.LINE))
+    Map(virtualDev -> speedLogList)
   }
 
   /**
