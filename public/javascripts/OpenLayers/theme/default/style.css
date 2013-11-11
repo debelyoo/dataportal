@@ -50,13 +50,13 @@ div.olLayerDiv {
    font-size: xx-small;
 }
 .olControlScaleLineBottom {
-   border: solid 2px black;
+   border: solid 2px white;
    border-bottom: none;
    margin-top:-2px;
    text-align: center;
 }
 .olControlScaleLineTop {
-   border: solid 2px black;
+   border: solid 2px white;
    border-top: none;
    text-align: center;
 }

@@ -91,10 +91,6 @@ body {
     margin-left: auto;
 }
 
-/*#selectMode {
-    width: 80px;
-}*/
-
 #colorLegend {
     position: relative;
     height: 20px;
@@ -115,17 +111,8 @@ body {
     left: 10px;
     position: absolute;
     font-family: arial, sans-serif;
-    color: black;
+    color: white;
     border: black;
-}
-.olControlScaleLineTop {
-     border-color:black;
-    border: solid 2px black;
-}
-
-.olControlScaleLineBottom {
-     border-color:black;
-    border: solid 2px black;
 }
 
 .colorLegendRow {
