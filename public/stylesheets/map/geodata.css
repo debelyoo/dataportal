@@ -118,7 +118,7 @@ body {
 .colorLegendRow {
     margin: 3px 5px;
     height: 100%;
-    float: left;
+    float: right;
 }
 
 .colorLegendSquare {

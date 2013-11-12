@@ -219,6 +219,7 @@ MapLayerUtil.prototype.addRasterLayer = function(mission) {
             );
 
             self.mapPanel.map.addLayers([raster])
+            self.mapPanel.map.setLayerIndex(raster, 0); // set raster layer under all other layers
         }
     })
 };

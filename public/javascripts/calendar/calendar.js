@@ -436,7 +436,7 @@
 			layout = function (el) {
 				var options = $(el).data('datepicker');
 				var cal = $('#' + options.id);
-				console.log("layout()", cal);
+				/*console.log("layout()", cal);
 				if (!options.extraHeight) {
 					var divs = $(el).find('div');
 					options.extraHeight = divs.get(0).offsetHeight + divs.get(1).offsetHeight;
@@ -444,7 +444,7 @@
 				}
 				var tbl = cal.find('table:first').get(0);
 				console.log("tbl", tbl);
-				/*var width = tbl.offsetWidth;
+				var width = tbl.offsetWidth;
 				var height = tbl.offsetHeight;
 				console.log("width: "+width+", extraWidth: "+options.extraWidth);
                 console.log("height: "+height+", extraHeight: "+options.extraHeight);
