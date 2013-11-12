@@ -59,19 +59,18 @@ MapLayerUtil.prototype.initialize = function() {
 
 /**
  * Add all the layers related to a mission (trajectory, raster, POI)
- * @param mission
- * @param isUlmMission
+ * @param mission The mission for which we add layers
  */
 MapLayerUtil.prototype.addLayers = function(mission) {
     this.addRasterLayer(mission);
     // add line + points (trajectory)
     this.addTrajectoryLayer(mission, config.MODE_LINESTRING);
     this.addTrajectoryLayer(mission, config.MODE_POINTS);
-    this.getPoiForMission(mission, this.addControls);
+    this.getPoiForMission(mission);
 };
 
 /**
- * Add the controls (highlight & select), called from addPointOfInterestLayer() as callback
+ * Add the controls (highlight & select), called from testFeatures()
  */
 MapLayerUtil.prototype.addControls = function() {
     var layers = new Array();
@@ -137,9 +136,8 @@ MapLayerUtil.prototype.addTrajectoryLayer = function(mission, mode) {
 /**
  * Add a layer with the points of interest
  * @param mission The mission linked to the points of interest
- * @param callback The callback to add the controls
  */
-MapLayerUtil.prototype.addPointOfInterestLayer = function(mission, callback) {
+MapLayerUtil.prototype.addPointOfInterestLayer = function(mission) {
     var geojsonUrl = config.URL_PREFIX +"/api/pointsofinterest/formission/"+mission.id;
     console.log(geojsonUrl);
     var layerTitle = mission.date + " " + mission.time + " - " + mission.vehicle + " (POI)";
@@ -181,9 +179,6 @@ MapLayerUtil.prototype.addPointOfInterestLayer = function(mission, callback) {
     this.mapPanel.map.addLayer(poiLayer);
     // add POI layer in interactive layers map
     this.addLayerInInteractiveLayerMap(mission.id+"-POI", poiLayer, mission);
-
-    // Add controls
-    callback();
 };
 
 MapLayerUtil.prototype.selectPoi = function(ev) {
@@ -275,18 +270,15 @@ MapLayerUtil.prototype.getStyleMap = function(mode, color) {
 /**
  * Get the points of interest of a mission. If there are some, then create layer for them
  * @param mission The mission
- * @param callback The callback to call when layer is loaded
  */
-MapLayerUtil.prototype.getPoiForMission = function(mission, callback) {
+MapLayerUtil.prototype.getPoiForMission = function(mission) {
     //console.log("getPoiForMission()", mission);
     var self = this;
     $.ajax({
         url: config.URL_PREFIX +"/api/pointsofinterest/formission/"+mission.id
     }).done(function( jsonData ) {
         if(jsonData.features.length > 0) {
-            self.addPointOfInterestLayer(mission, callback);
-        } else {
-            callback();
+            self.addPointOfInterestLayer(mission);
         }
     });
 };
@@ -381,6 +373,7 @@ MapLayerUtil.prototype.testFeatures = function(inc, callback) {
             //console.log("Features are loaded [All]");
             $('#loadingGifPlaceholder').hide();
             self.centerOnLoadedFeatures();
+            self.addControls();
             // call the function to load the data for the embedded graph
             if (callback != undefined) {
                 callback();
