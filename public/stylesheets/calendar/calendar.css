@@ -11,10 +11,9 @@ div.datepicker {
 	display: none;
 }
 .datepickerContainer {
-	background: #121212;
-	position: absolute;
-	top: 10px;
-	left: 10px;
+	/*background: #121212;*/
+	background: white;
+	padding: 5px;
 }
 .datepickerBorderT {
 	position: absolute;
@@ -84,16 +83,18 @@ div.datepicker {
 	display: none;
 }
 div.datepicker table {
-	border-collapse:collapse;
+	border-collapse: collapse;
+	width: 100%;
+	height: 100%;
 }
 div.datepicker a {
-	color: #eee;
+	/*color: #eee;*/
 	text-decoration: none;
 	cursor: default;
 	outline: none;
 }
 div.datepicker table td {
-	text-align: right;
+	text-align: center;
 	padding: 0;
 	margin: 0;
 }
@@ -103,16 +104,18 @@ div.datepicker th {
 	font-weight: normal;
 }
 div.datepicker tbody th {
-	text-align: left;
+	text-align: center;
 }
 div.datepicker tbody a {
 	display: block;
+    background-image: none;
 }
 .datepickerDays a {
 	width: 20px;
 	line-height: 16px;
 	height: 16px;
 	padding-right: 2px;
+	width: 100%;
 }
 .datepickerYears a,
 .datepickerMonths a{
@@ -140,9 +143,6 @@ div.datepicker a:hover {
 }
 div.datepicker td.datepickerNotInMonth a:hover {
 	color: #999;
-}
-div.datepicker tbody th {
-	text-align: left;
 }
 .datepickerSpace div {
 	width: 20px;
@@ -192,7 +192,6 @@ td.datepickerSpecial.datepickerSelected a {
 
 /* utils */
 #calendar {
-    height: 200px;
 	margin-bottom: 5px;
 	margin-top: 5px;
 }

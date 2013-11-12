@@ -80,7 +80,7 @@ body {
 }
 
 #selectDiv .centered {
-    width: 220px; /* use fix width to avoid buttons stacking vertically when  width is decreased */
+    /*width: 220px;*/ /* use fix width to avoid buttons stacking vertically when  width is decreased */
     margin-right: auto;
     margin-left: auto;
 }
