@@ -133,30 +133,6 @@ body {
     float: left;
 }
 
-#calendar {
-	margin-bottom: 5px;
-	margin-top: 5px;
-}
-
-div.datepicker .catDate, div.colorLegendSquare.catDate {
-	background: #FFA62F;
-}
-
-div.datepicker .ulmDate, div.colorLegendSquare.ulmDate {
-	background: #FFF380;
-}
-
-div.datepicker .ulmCatDate {
-	background: -webkit-linear-gradient(left, #FFF380, #FFA62F);
-	background: -moz-linear-gradient(left, #FFF380, #FFA62F);
-	background: linear-gradient(left, #FFF380, #FFA62F);
-}
-
-div.datepicker .catDate a, div.datepicker .ulmDate a, div.datepicker .ulmCatDate a {
-	color: black !important;
-	cursor: pointer;
-}
-
 #dateSelect {
 	width: 120px;
 }
