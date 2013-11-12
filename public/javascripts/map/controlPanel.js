@@ -219,6 +219,7 @@ ControlPanel.prototype.getMissionsForDates = function(dateArr) {
             nbFetchedDates++;
             if (nbFetchedDates == nbSelectedDates) {
                 mapLayerUtil.testFeatures(0, graphPanel.createPathSelectForData);
+                mapLayerUtil.testRaster(0);
             }
         });
     }

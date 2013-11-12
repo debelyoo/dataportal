@@ -20,9 +20,10 @@ MapLayerUtil.prototype.initialize = function() {
     this.epsg900913 = new OpenLayers.Projection("EPSG:900913");
     this.epsg4326 = new OpenLayers.Projection("EPSG:4326");
     this.nbTrajectory = 0;
-    this.interactiveLayers = {};  // map of objects {'layer':layer, 'mission': mission}
-    this.maximumSpeed = 0.0;      // specific to the selected trajectory (selected in the graph panel)
-    this.headingAvailable = false; // specific to the selected trajectory (selected in the graph panel)
+    this.interactiveLayers = {};    // map of objects {'layer':layer, 'mission': mission}
+    this.rasterLayers = {};         // map of objects {'layer':layer, 'mission': mission}
+    this.maximumSpeed = 0.0;        // specific to the selected trajectory (selected in the graph panel)
+    this.headingAvailable = false;  // specific to the selected trajectory (selected in the graph panel)
 
     var position = new OpenLayers.LonLat(6.566,46.519).transform('EPSG:4326', 'EPSG:3857'); // Google.v3 uses web mercator as projection, so we have to transform our coordinates
     this.styleMap = new OpenLayers.StyleMap({
@@ -73,6 +74,7 @@ MapLayerUtil.prototype.addLayers = function(mission) {
  * Add the controls (highlight & select), called from testFeatures()
  */
 MapLayerUtil.prototype.addControls = function() {
+    console.log("addControls()");
     var layers = new Array();
     var map = mapLayerUtil.interactiveLayers;
     for (m in map) {
@@ -95,6 +97,19 @@ MapLayerUtil.prototype.addLayerInInteractiveLayerMap = function(layerKey, layer,
     var map = this.interactiveLayers;
     map[layerKey] = {'layer':layer, 'mission': mission};
     this.interactiveLayers = map;
+};
+
+/**
+ * Add layer in map containing the raster layers
+ * @param layerKey The key of the layer (mission id or mission id + '-POI')
+ * @param layer The layer to add
+ * @param mission The mission linked to the layer
+ */
+MapLayerUtil.prototype.addLayerInRasterLayerMap = function(layerKey, layer, mission) {
+    //console.log("addLayerInRasterLayerMap()", layerKey);
+    var map = this.rasterLayers;
+    map[layerKey] = {'layer':layer, 'mission': mission};
+    this.rasterLayers = map;
 };
 
 /**
@@ -201,7 +216,7 @@ MapLayerUtil.prototype.addRasterLayer = function(mission) {
     }).done(function(jsonData){
         jsonData=jsonData;
         for (j=0;j<jsonData.length;j++){
-            var raster = new OpenLayers.Layer.WMS(jsonData[j].device.name+" ("+ mission.date +" - "+mission.vehicle+")", "http://ecolvm1.epfl.ch/geoserver/"+mission.vehicle+"/wms",
+            var rasterLayer = new OpenLayers.Layer.WMS(jsonData[j].device.name+" ("+ mission.date +" - "+mission.vehicle+")", "http://ecolvm1.epfl.ch/geoserver/"+mission.vehicle+"/wms",
                 {
                     layers: jsonData[j].imagename,
                     transparent: true
@@ -213,8 +228,10 @@ MapLayerUtil.prototype.addRasterLayer = function(mission) {
                 }
             );
 
-            self.mapPanel.map.addLayers([raster])
-            self.mapPanel.map.setLayerIndex(raster, 0); // set raster layer under all other layers
+            self.mapPanel.map.addLayers([rasterLayer])
+            self.mapPanel.map.setLayerIndex(rasterLayer, 0); // set raster layer under all other layers
+            // add layer in raster layers map
+            self.addLayerInRasterLayerMap(mission.id, rasterLayer, mission);
         }
     })
 };
@@ -326,6 +343,7 @@ MapLayerUtil.prototype.setSelectCtrl = function(layers) {
  */
 MapLayerUtil.prototype.removeLayers = function() {
     this.interactiveLayers = {}; // reset map containing the interactive layers
+    this.rasterLayers = {}; // reset map containing the raster layers
     var nbLayers = this.mapPanel.map.getLayersBy("isBaseLayer",false);
     for(var a = 0; a < nbLayers.length; a++ ){
         if (nbLayers[a].isBaseLayer==false){
@@ -337,7 +355,7 @@ MapLayerUtil.prototype.removeLayers = function() {
 
 MapLayerUtil.prototype.printFeatureDetails = function(e) {
     var selectedLayer = e.feature.layer;
-    // show speed vector if there is a maximum speed, not otherwise
+    // show speed vector if there is a maximum speed and heading, not otherwise
     if (mapLayerUtil.maximumSpeed > 0 && mapLayerUtil.headingAvailable) {
         $('#speedVectorPlaceholder').show();
         var customStyle = new OpenLayers.Style({ // highlight is all transparent because we show speed cursor
@@ -359,6 +377,38 @@ MapLayerUtil.prototype.printFeatureDetails = function(e) {
 };
 
 /**
+ * Check that the raster are loaded
+ * @param inc The nb of times we checked (check is done every 500ms, 40x at most -> 20s max)
+ */
+MapLayerUtil.prototype.testRaster = function(inc) {
+    var self = this;
+    if (inc < 40 && !this.rastersAreLoaded()) {
+        setTimeout(function() {self.testRaster(inc + 1)}, 500)
+    } else {
+        if (self.rastersAreLoaded()) {
+            console.log("Rasters are loaded [All]");
+        } else {
+            console.log("Raster loading took too much time !");
+        }
+    }
+};
+
+/**
+ * Check that all raster layers are loaded
+ */
+MapLayerUtil.prototype.rastersAreLoaded = function() {
+    var loaded = true;
+    var map = mapLayerUtil.rasterLayers;
+    for (m in map) {
+        if (map[m].layer.features.length == 0) {
+            // if one layer is not loaded yet, set loaded to false
+            loaded = false;
+        }
+    }
+    return loaded;
+};
+
+/**
  * Check that the features are loaded
  * @param inc The nb of times we checked (check is done every 500ms, 40x at most -> 20s max)
  * @param callback The callback function to call when the features are loaded
@@ -370,14 +420,14 @@ MapLayerUtil.prototype.testFeatures = function(inc, callback) {
         setTimeout(function() {self.testFeatures(inc + 1, callback)}, 500)
     } else {
         if (self.featuresAreLoaded()) {
-            //console.log("Features are loaded [All]");
+            console.log("Features are loaded [All]");
             $('#loadingGifPlaceholder').hide();
             self.centerOnLoadedFeatures();
-            self.addControls();
             // call the function to load the data for the embedded graph
             if (callback != undefined) {
                 callback();
             }
+            setTimeout(function() {self.addControls()}, 1000) // fix time delay
         } else {
             console.log("Features loading took too much time !");
         }
