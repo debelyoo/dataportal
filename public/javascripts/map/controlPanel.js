@@ -202,6 +202,7 @@ ControlPanel.prototype.addMissionDate = function(mission) {
  * @param dateArr The list of date
  */
 ControlPanel.prototype.getMissionsForDates = function(dateArr) {
+    var self = this;
     nbSelectedDates = dateArr.length;
     nbFetchedDates = 0;
     $('#loadingGifPlaceholder').show();
@@ -218,15 +219,20 @@ ControlPanel.prototype.getMissionsForDates = function(dateArr) {
             }
             nbFetchedDates++;
             if (nbFetchedDates == nbSelectedDates) {
-                mapLayerUtil.testFeatures(0, graphPanel.createPathSelectForData);
-                mapLayerUtil.testRaster(0);
+                mapLayerUtil.testFeatures(0, self.afterLoadCallback);
             }
         });
     }
 };
 
+/**
+ * This function is the callback that will be called when the trajectory layers have been loaded
+ */
+ControlPanel.prototype.afterLoadCallback = function() {
+    graphPanel.createPathSelectForData();
+}
+
 ControlPanel.prototype.togglePanel = function() {
-    //var slideDistance = 430;
     //console.log($("#graphPanel").position().left);
     if (!$("#controlPanelHideBtnPlaceholder").hasClass('rotated180')) {
         $("#controlPanelHideBtnPlaceholder").addClass('rotated180');

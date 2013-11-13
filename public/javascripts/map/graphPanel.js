@@ -125,6 +125,9 @@ GraphPanel.prototype.getDeviceData = function(datatype, missionId, deviceId) {
         embeddedGraph.widthContainer = graphWidth;
         embeddedGraph.initialize(); // call initialize explicitly
         mapLayerUtil.activeGraph = embeddedGraph;
+    } else {
+        // if graph is already created, don't re-add the layer controls (in mapLayerUtil)
+        embeddedGraph.addLayerControlsAfterLoad = false;
     }
     embeddedGraph.refreshSensorGraph(url, false);
     $("#graphPanelZoomBtnPlaceholder").attr("onclick", "graphPanel.zoomGraph('"+ datatype +"','"+ missionId +"','"+ deviceId +"')");
@@ -173,6 +176,7 @@ GraphPanel.prototype.zoomGraph = function(datatype, mid, sid) {
             zoomedGraph.nbTicksY = 14;
             zoomedGraph.linkWithGeoData = false;
             zoomedGraph.withTooltip = true;
+            zoomedGraph.addLayerControlsAfterLoad = false;
             zoomedGraph.initialize();
         } else {
             zoomedGraph.datatype = datatype;

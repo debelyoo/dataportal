@@ -21,7 +21,6 @@ MapLayerUtil.prototype.initialize = function() {
     this.epsg4326 = new OpenLayers.Projection("EPSG:4326");
     this.nbTrajectory = 0;
     this.interactiveLayers = {};    // map of objects {'layer':layer, 'mission': mission}
-    this.rasterLayers = {};         // map of objects {'layer':layer, 'mission': mission}
     this.maximumSpeed = 0.0;        // specific to the selected trajectory (selected in the graph panel)
     this.headingAvailable = false;  // specific to the selected trajectory (selected in the graph panel)
 
@@ -97,19 +96,6 @@ MapLayerUtil.prototype.addLayerInInteractiveLayerMap = function(layerKey, layer,
     var map = this.interactiveLayers;
     map[layerKey] = {'layer':layer, 'mission': mission};
     this.interactiveLayers = map;
-};
-
-/**
- * Add layer in map containing the raster layers
- * @param layerKey The key of the layer (mission id or mission id + '-POI')
- * @param layer The layer to add
- * @param mission The mission linked to the layer
- */
-MapLayerUtil.prototype.addLayerInRasterLayerMap = function(layerKey, layer, mission) {
-    //console.log("addLayerInRasterLayerMap()", layerKey);
-    var map = this.rasterLayers;
-    map[layerKey] = {'layer':layer, 'mission': mission};
-    this.rasterLayers = map;
 };
 
 /**
@@ -230,8 +216,6 @@ MapLayerUtil.prototype.addRasterLayer = function(mission) {
 
             self.mapPanel.map.addLayers([rasterLayer])
             self.mapPanel.map.setLayerIndex(rasterLayer, 0); // set raster layer under all other layers
-            // add layer in raster layers map
-            self.addLayerInRasterLayerMap(mission.id, rasterLayer, mission);
         }
     })
 };
@@ -343,7 +327,6 @@ MapLayerUtil.prototype.setSelectCtrl = function(layers) {
  */
 MapLayerUtil.prototype.removeLayers = function() {
     this.interactiveLayers = {}; // reset map containing the interactive layers
-    this.rasterLayers = {}; // reset map containing the raster layers
     var nbLayers = this.mapPanel.map.getLayersBy("isBaseLayer",false);
     for(var a = 0; a < nbLayers.length; a++ ){
         if (nbLayers[a].isBaseLayer==false){
@@ -377,38 +360,6 @@ MapLayerUtil.prototype.printFeatureDetails = function(e) {
 };
 
 /**
- * Check that the raster are loaded
- * @param inc The nb of times we checked (check is done every 500ms, 40x at most -> 20s max)
- */
-MapLayerUtil.prototype.testRaster = function(inc) {
-    var self = this;
-    if (inc < 40 && !this.rastersAreLoaded()) {
-        setTimeout(function() {self.testRaster(inc + 1)}, 500)
-    } else {
-        if (self.rastersAreLoaded()) {
-            console.log("Rasters are loaded [All]");
-        } else {
-            console.log("Raster loading took too much time !");
-        }
-    }
-};
-
-/**
- * Check that all raster layers are loaded
- */
-MapLayerUtil.prototype.rastersAreLoaded = function() {
-    var loaded = true;
-    var map = mapLayerUtil.rasterLayers;
-    for (m in map) {
-        if (map[m].layer.features.length == 0) {
-            // if one layer is not loaded yet, set loaded to false
-            loaded = false;
-        }
-    }
-    return loaded;
-};
-
-/**
  * Check that the features are loaded
  * @param inc The nb of times we checked (check is done every 500ms, 40x at most -> 20s max)
  * @param callback The callback function to call when the features are loaded
@@ -427,7 +378,6 @@ MapLayerUtil.prototype.testFeatures = function(inc, callback) {
             if (callback != undefined) {
                 callback();
             }
-            setTimeout(function() {self.addControls()}, 1000) // fix time delay
         } else {
             console.log("Features loading took too much time !");
         }
