@@ -2,17 +2,18 @@
 
     <h2>Import sensor data</h2>
     @helper.form(action = routes.Application.importData, 'enctype -> "multipart/form-data") {
-        <div class="form-horizontal">
-            <div class="control-group">
-                <label class="control-label">Mission</label>
-                <div class="controls">
+        <div class="form-horizontal" role="form">
+            <div class="form-group">
+                <label class="col-sm-2 control-label">Mission</label>
+                <div class="col-sm-3">
                     <span id="missionSelectPlaceholder"></span>
                 </div>
             </div>
-            <div class="control-group">
-                <label class="control-label" for="selectDataType">Data type</label>
-                <div class="controls">
-                    <select id="selectDataType" name="dataType">
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label" for="selectDataType">Data type</label>
+                <div class="col-sm-3">
+                    <select id="selectDataType" name="dataType" class="form-control">
                         <option value="temperature">Temperature</option>
                         <option value="compass">Compass</option>
                         <option value="gps">GPS</option>
@@ -23,15 +24,15 @@
                     </select>
                 </div>
             </div>
-            <div id="addressFileSelectContainer" class="control-group">
-                <label class="control-label" for="inputAddressFile">Address file</label>
-                <div class="controls">
+            <div id="addressFileSelectContainer" class="form-group">
+                <label class="col-sm-2 control-label" for="inputAddressFile">Address file</label>
+                <div class="col-sm-3">
                     <input type="file" id="inputAddressFile" name="addressFile">
                 </div>
             </div>
-            <div class="control-group">
-                <label class="control-label" for="inputDataFile">Data file</label>
-                <div class="controls">
+            <div class="form-group">
+                <label class="col-sm-2 control-label" for="inputDataFile">Data file</label>
+                <div class="col-sm-3">
                     <input type="file" id="inputDataFile" name="dataFile">
                 </div>
             </div>
@@ -52,7 +53,7 @@
                         options += "<option value="+ mission.id +">"+ missionName +"</option>"
                     }
 
-                    var pathSelect = "<select id=\"pathSelect\" name=\"missionId\">" + options + "</select>";
+                    var pathSelect = "<select id=\"pathSelect\" name=\"missionId\" class=\"form-control\">" + options + "</select>";
                     $('#missionSelectPlaceholder').html(pathSelect);
 
                     $('#selectDataType').change(function(val) {
@@ -65,8 +66,8 @@
                     });
                 }
             </script>
-            <div class="control-group">
-                <div class="controls">
+            <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
                     <button type="submit" class="btn">Import</button>
                 </div>
             </div>

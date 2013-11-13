@@ -3,21 +3,21 @@
 @main("mission manager", true) {
 
     <h2>Manage missions</h2>
-    <div class="form-horizontal">
-        <div class="control-group">
-            <label class="control-label" for="selectAction">Action</label>
-            <div class="controls">
-                <select id="selectAction" name="action">
+    <div class="form-horizontal" role="form">
+        <div class="form-group">
+            <label class="col-sm-2 control-label" for="selectAction">Action</label>
+            <div class="col-sm-3">
+                <select id="selectAction" name="action" class="form-control">
                     <option value="create">Create</option>
                     <option value="delete">Delete</option>
                 </select>
             </div>
         </div>
         @helper.form(action = routes.Application.addDeviceType, 'enctype -> "multipart/form-data") {
-        <div id="missionListContainer" class="control-group" style="display: none">
-            <label class="control-label" for="selectMission">Mission</label>
-            <div class="controls">
-                <select id="selectMission" name="action">
+        <div id="missionListContainer" class="form-group" style="display: none">
+            <label class="col-sm-2 control-label" for="selectMission">Mission</label>
+            <div class="col-sm-3">
+                <select id="selectMission" name="action" class="form-control">
                     @for(m <- Mission.getAll) {
                     <option value="@m.id">@m.departureTime</option>
                     }
@@ -25,29 +25,27 @@
             </div>
         </div>
         <div id="fieldsContainer">
-            <div name="missionDate" class="bfh-datepicker">
+            <div class="form-group">
+                <label class="col-sm-2 control-label" for="selectDate">Date</label>
+                <div id="selectDate" name="missionDate" class="bfh-datepicker col-sm-3"></div>
             </div>
-            <div name="missionTime" class="bfh-timepicker">
+            <div class="form-group">
+                <label class="col-sm-2 control-label" for="selectTime">Time</label>
+                <div id="selectTime" name="missionTime" class="bfh-timepicker col-sm-3"></div>
             </div>
-            <div class="control-group">
-                <label class="control-label" for="inputMissionDate">Mission date</label>
-                <div class="controls">
-                    <input type="text" id="inputMissionDate" name="missionDate">
-                </div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="selectVehicle">Mission vehicle</label>
-                <div class="controls">
-                    <select id="selectVehicle" name="misionVehicle">
+            <div class="form-group">
+                <label class="col-sm-2 control-label" for="selectVehicle">Vehicle</label>
+                <div class="col-sm-3">
+                    <select id="selectVehicle" name="misionVehicle" class="form-control">
                         <option value="ulm">ULM</option>
                         <option value="catamaran">Catamaran</option>
                     </select>
                 </div>
             </div>
-            <div class="control-group">
-                <label class="control-label" for="selectTimezone">Mission timezone</label>
-                <div class="controls">
-                    <select id="selectTimezone" name="missionTimezone">
+            <div class="form-group">
+                <label class="col-sm-2 control-label" for="selectTimezone">Timezone</label>
+                <div class="col-sm-3">
+                    <select id="selectTimezone" name="missionTimezone" class="form-control">
                         <option value="GMT">GMT</option>
                         <option value="GMT+1">GMT+1</option>
                         <option value="GMT+2">GMT+2</option>
@@ -55,8 +53,8 @@
                 </div>
             </div>
         </div>
-        <div class="control-group">
-            <div class="controls">
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
                 <button id="submitBtn" type="submit" class="btn">Create</button>
             </div>
         </div>
