@@ -39,8 +39,11 @@
     <script src="@routes.Assets.at("javascripts/map/controlPanel.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/map/graphPanel.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/map/mapLayerUtil.js")" type="text/javascript"></script>
+    @epflHeaderSig()
 </head>
 <body onload="init()">
+    @epflHeaderEN()
+    @*
     <div id="navbarContainer">
         <div class="navbar navbar-inverse navbar-fixed-top">
             <div class="navbar-inner">
@@ -62,6 +65,7 @@
             </div>
         </div>
     </div>
+    *@
     <div class="container_large">
         <div id="mapPanel"></div>
         <div id="controlContainer">

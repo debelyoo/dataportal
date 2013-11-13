@@ -10,7 +10,7 @@ body {
 }
 
 .container_large {
-    top: 40px;
+    top: 65px; /* 40 for ECOl header, 65 for EPFL header */
     left: 0;
     right: 0;
     bottom: 0;
