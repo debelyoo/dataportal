@@ -1,4 +1,5 @@
 function MapLayerUtil() {
+    this.layerControlsLoaded = false;
     this.initialize();
 }
 
@@ -73,16 +74,21 @@ MapLayerUtil.prototype.addLayers = function(mission) {
  * Add the controls (highlight & select), called from testFeatures()
  */
 MapLayerUtil.prototype.addControls = function() {
-    console.log("addControls()");
-    var layers = new Array();
-    var map = mapLayerUtil.interactiveLayers;
-    for (m in map) {
-        layers.push(map[m].layer);
+    if (!mapLayerUtil.layerControlsLoaded) {
+        console.log("[MapLayerUtil] addControls()");
+        var layers = new Array();
+        var map = mapLayerUtil.interactiveLayers;
+        for (m in map) {
+            layers.push(map[m].layer);
+        }
+        //console.log(layers);
+        // layers for highlight and select must be the same (two sets of layers create a bug)
+        mapLayerUtil.setHighlightCtrl(layers);
+        mapLayerUtil.setSelectCtrl(layers);
+        mapLayerUtil.layerControlsLoaded = true;
+    } else {
+        console.log("[MapLayerUtil] controls are already loaded");
     }
-    //console.log(layers);
-    // layers for highlight and select must be the same (two sets of layers create a bug)
-    mapLayerUtil.setHighlightCtrl(layers);
-    mapLayerUtil.setSelectCtrl(layers);
 };
 
 /**
@@ -334,6 +340,7 @@ MapLayerUtil.prototype.removeLayers = function() {
         }
     };
     this.nbTrajectory = 0;
+    this.layerControlsLoaded = false;
 };
 
 MapLayerUtil.prototype.printFeatureDetails = function(e) {

@@ -20,7 +20,6 @@ function GraphD3() {
     this.zoomLowerBound = "";
     this.zoomUpperBound = "";
     this.originalDataUrl = "";
-    this.addLayerControlsAfterLoad = true; // if true, the addControls() function in mapLayerUtil will be called
 }
 
 /* initialize() function */
@@ -407,10 +406,8 @@ GraphD3.prototype.refreshSensorGraph = function(url, zoomed) {
           self.updateWidthHeight();
       });
 
-      if (self.addLayerControlsAfterLoad) {
-        // add layer controls in mapLayerUtil
-        mapLayerUtil.addControls();
-      }
+      // add layer controls in mapLayerUtil. Do it here (late) to avoid "white circles" bug
+      mapLayerUtil.addControls();
     });
 };
 
