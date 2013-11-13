@@ -144,4 +144,20 @@ object Mission {
       if (emOpt.isEmpty) em.close()
     }
   }
+
+  def getAll(): List[Mission] = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val q = em.createQuery("from "+ classOf[Mission].getName, classOf[Mission])
+      val missions = q.getResultList.toList
+      em.getTransaction().commit()
+      missions
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      em.close()
+    }
+  }
 }

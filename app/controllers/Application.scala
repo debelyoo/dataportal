@@ -23,6 +23,10 @@ object Application extends Controller with GetApi with PostApi with DeleteApi {
     Ok(views.html.importResult(batchId))
   }
 
+  def missionManager = Action {
+    Ok(views.html.missionManager())
+  }
+
   def view = Action {
     Ok(views.html.view())
   }

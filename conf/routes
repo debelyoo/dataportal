@@ -8,6 +8,7 @@ GET     /importForm                     controllers.Application.importForm
 GET     /importResult/*batchId          controllers.Application.importResult(batchId)
 GET     /batch/progress/*batchId        controllers.Application.insertionProgress(batchId)
 GET     /view                           controllers.Application.view
+GET     /mission                        controllers.Application.missionManager
 GET     /contact                        controllers.Application.contact
 GET     /config                         controllers.Application.setDeviceType
 

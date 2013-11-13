@@ -1,0 +1,84 @@
+@import models.Mission
+
+@main("mission manager", true) {
+
+    <h2>Manage missions</h2>
+    <div class="form-horizontal">
+        <div class="control-group">
+            <label class="control-label" for="selectAction">Action</label>
+            <div class="controls">
+                <select id="selectAction" name="action">
+                    <option value="create">Create</option>
+                    <option value="delete">Delete</option>
+                </select>
+            </div>
+        </div>
+        @helper.form(action = routes.Application.addDeviceType, 'enctype -> "multipart/form-data") {
+        <div id="missionListContainer" class="control-group" style="display: none">
+            <label class="control-label" for="selectMission">Mission</label>
+            <div class="controls">
+                <select id="selectMission" name="action">
+                    @for(m <- Mission.getAll) {
+                    <option value="@m.id">@m.departureTime</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div id="fieldsContainer">
+            <div name="missionDate" class="bfh-datepicker">
+            </div>
+            <div name="missionTime" class="bfh-timepicker">
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="inputMissionDate">Mission date</label>
+                <div class="controls">
+                    <input type="text" id="inputMissionDate" name="missionDate">
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="selectVehicle">Mission vehicle</label>
+                <div class="controls">
+                    <select id="selectVehicle" name="misionVehicle">
+                        <option value="ulm">ULM</option>
+                        <option value="catamaran">Catamaran</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="selectTimezone">Mission timezone</label>
+                <div class="controls">
+                    <select id="selectTimezone" name="missionTimezone">
+                        <option value="GMT">GMT</option>
+                        <option value="GMT+1">GMT+1</option>
+                        <option value="GMT+2">GMT+2</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="control-group">
+            <div class="controls">
+                <button id="submitBtn" type="submit" class="btn">Create</button>
+            </div>
+        </div>
+    </div>
+    <script src="@routes.Assets.at("javascripts/bootstrap-formhelpers.min.js")" type="text/javascript"></script>
+    <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/bootstrap-formhelpers.css")">
+    <script>
+        $().ready(function() {
+            //$( "#inputMissionDate" ).datepicker();
+            $('#selectAction').change(function(ev) {
+                var action = $('#selectAction').val();
+                if (action == 'create') {
+                    $('#missionListContainer').hide();
+                    $('#fieldsContainer').show();
+                    $('#submitBtn').text("Create");
+                } else {
+                    $('#missionListContainer').show();
+                    $('#fieldsContainer').hide();
+                    $('#submitBtn').text("Delete");
+                }
+            });
+        })
+    </script>
+    }
+}
