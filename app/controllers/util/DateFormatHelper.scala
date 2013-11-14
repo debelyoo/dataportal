@@ -11,7 +11,7 @@ object DateFormatHelper {
   val selectYearFormatter = new SimpleDateFormat("yyyy-MM-dd")
   val selectTimeFormatter = new SimpleDateFormat("HH:mm:ss")
   val selectHourMinFormatter = new SimpleDateFormat("HH:mm")
-  //val ulmKmlTimestampFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HHmmss.SSS")
+  val missionCreationDateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm")
 
   /**
    * Convert a labview timestamp to Java Date

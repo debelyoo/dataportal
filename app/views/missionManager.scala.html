@@ -1,44 +1,69 @@
+@()(implicit flash: Flash)
+
 @import models.Mission
+@import models.Vehicle
+@import util.DateFormatHelper
 
 @main("mission manager", true) {
 
     <h2>Manage missions</h2>
-    <div class="form-horizontal" role="form">
+    @if(flash.get("status").getOrElse("0") == "0") {
+        @if(flash.get("msg").getOrElse("") != "") {
+            <div id="statusText" class="success">@flash.get("msg").getOrElse("")</div>
+        }
+    } else {
+        <div id="statusText" class="failure">@flash.get("msg").getOrElse("")</div>
+    }
+    @helper.form(action = routes.Application.manageMission, 'enctype -> "multipart/form-data") {
+    <div id="missionFormContainer" class="form-horizontal" role="form">
         <div class="form-group">
             <label class="col-sm-2 control-label" for="selectAction">Action</label>
             <div class="col-sm-3">
                 <select id="selectAction" name="action" class="form-control">
-                    <option value="create">Create</option>
-                    <option value="delete">Delete</option>
-                </select>
-            </div>
-        </div>
-        @helper.form(action = routes.Application.addDeviceType, 'enctype -> "multipart/form-data") {
-        <div id="missionListContainer" class="form-group" style="display: none">
-            <label class="col-sm-2 control-label" for="selectMission">Mission</label>
-            <div class="col-sm-3">
-                <select id="selectMission" name="action" class="form-control">
-                    @for(m <- Mission.getAll) {
-                    <option value="@m.id">@m.departureTime</option>
+                    @if(flash.get("action").getOrElse("create") == "create") {
+                        <option value="create" selected="selected">Create</option>
+                        <option value="delete">Delete</option>
+                    } else {
+                        <option value="create">Create</option>
+                        <option value="delete" selected="selected">Delete</option>
                     }
                 </select>
             </div>
         </div>
-        <div id="fieldsContainer">
+        <div id="missionListContainer" style=@if(flash.get("action").getOrElse("create") == "create") {"display:none"}else{""}>
+            <div class="form-group">
+                <label class="col-sm-2 control-label" for="selectMission">Mission</label>
+                <div class="col-sm-3">
+                    <select id="selectMission" name="missionId" class="form-control">
+                        @for(m <- Mission.getAll) {
+                        <option value="@m.id">@{DateFormatHelper.postgresTimestampFormatter.format(m.departureTime) + " - " + m.vehicle.name}</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label" for="inputSecret">Secret</label>
+                <div class="col-sm-3">
+                    <input type="text" id="inputSecret" name="secret">
+                </div>
+            </div>
+        </div>
+        <div id="fieldsContainer" style=@if(flash.get("action").getOrElse("create") == "delete") {"display:none"}else{""}>
             <div class="form-group">
                 <label class="col-sm-2 control-label" for="selectDate">Date</label>
-                <div id="selectDate" name="missionDate" class="bfh-datepicker col-sm-3"></div>
+                <div id="selectDate" data-name="missionDate" class="bfh-datepicker col-sm-3" data-format="y-m-d"></div>
             </div>
             <div class="form-group">
                 <label class="col-sm-2 control-label" for="selectTime">Time</label>
-                <div id="selectTime" name="missionTime" class="bfh-timepicker col-sm-3"></div>
+                <div id="selectTime" data-name="missionTime" class="bfh-timepicker col-sm-3"></div>
             </div>
             <div class="form-group">
                 <label class="col-sm-2 control-label" for="selectVehicle">Vehicle</label>
                 <div class="col-sm-3">
-                    <select id="selectVehicle" name="misionVehicle" class="form-control">
-                        <option value="ulm">ULM</option>
-                        <option value="catamaran">Catamaran</option>
+                    <select id="selectVehicle" name="missionVehicle" class="form-control">
+                        @for(v <- Vehicle.getAll) {
+                        <option value="@v.id">@v.name</option>
+                        }
                     </select>
                 </div>
             </div>
@@ -47,8 +72,15 @@
                 <div class="col-sm-3">
                     <select id="selectTimezone" name="missionTimezone" class="form-control">
                         <option value="GMT">GMT</option>
-                        <option value="GMT+1">GMT+1</option>
+                        <option value="GMT+1" selected="selected">GMT+1</option>
                         <option value="GMT+2">GMT+2</option>
+                        <option value="GMT+2">GMT+3</option>
+                        <option value="GMT+2">GMT+4</option>
+                        <option value="GMT+2">GMT+5</option>
+                        <option value="GMT+2">GMT+6</option>
+                        <option value="GMT+2">GMT+7</option>
+                        <option value="GMT+2">GMT+8</option>
+                        <option value="GMT+2">GMT+9</option>
                     </select>
                 </div>
             </div>
@@ -76,6 +108,9 @@
                     $('#submitBtn').text("Delete");
                 }
             });
+            @if(flash.get("status").getOrElse("0") == "0") {
+                setTimeout(function() {$('#statusText').slideUp(700)}, 2000)
+            }
         })
     </script>
     }

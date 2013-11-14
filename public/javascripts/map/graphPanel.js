@@ -18,7 +18,7 @@ GraphPanel.prototype.createPathSelectForData = function() {
         options += "<option value="+ mission.id +">"+ missionName +"</option>";
     }
 
-    var pathSelect = "<select id=\"pathSelect\">" + options + "</select>";
+    var pathSelect = "<select id=\"pathSelect\" class=\"form-control\">" + options + "</select>";
     $('#trajectorySelectPlaceholder').html(pathSelect);
     $('#pathSelect').change(function() {
         var missionId = $("#pathSelect").val();
@@ -80,7 +80,7 @@ GraphPanel.prototype.createDeviceSelectForData = function(jsonData, mission) {
             options += "<option value=\""+ datatype +"--"+ deviceId +"\">"+ deviceName +"</option>"
         }
     });
-    var pathSelect = "<select id=\"deviceSelect\">" + options + "</select>";
+    var pathSelect = "<select id=\"deviceSelect\" class=\"form-control\">" + options + "</select>";
     $('#deviceSelectPlaceholder').html(pathSelect);
     $('#deviceSelect').change(function() {
         //console.log("load data for device: "+did+" and mission: "+missionId);

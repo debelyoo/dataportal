@@ -587,7 +587,8 @@ object DataLogManager {
         dataJson.getAsJsonObject.addProperty("xrl", resultArray(7).asInstanceOf[Double])
         dataJson.getAsJsonObject.addProperty("yrl", resultArray(8).asInstanceOf[Double])
         //val dev = new Device(resultArray(9).asInstanceOf[Int],resultArray(10).asInstanceOf[String],resultArray(11).asInstanceOf[String],resultArray(12).asInstanceOf[String])
-        val dev = Device.getById(List(resultArray(9).asInstanceOf[Int]), None).head._2
+        Logger.info("device id: "+resultArray(9).asInstanceOf[Int])
+        val dev = Device.getById(List(resultArray(9).asInstanceOf[Int]), Some(em)).head._2
         val gson: Gson = new Gson
         dataJson.getAsJsonObject.add("device", gson.fromJson(dev.toJson, classOf[JsonObject]))
         jsArr.add(dataJson)

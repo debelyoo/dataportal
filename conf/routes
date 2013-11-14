@@ -14,6 +14,7 @@ GET     /config                         controllers.Application.setDeviceType
 
 POST    /import                     controllers.Application.importData
 POST    /deviceType                 controllers.Application.addDeviceType
+POST    /manageMission                 controllers.Application.manageMission
 
 # POST sensor logs
 POST    /api/mission                controllers.Application.postMission

@@ -31,8 +31,8 @@ body {
 #controlPanelHideBtnPlaceholder {
 	position: relative;
 	/*left: 30%;*/
-	width: 20px;
-	height: 20px;
+	width: 30px;
+	height: 30px;
 	/*border-radius: 5px;*/
 	border: 1px solid white;
 	background: url('../../images/arrow-right.png');
@@ -49,7 +49,7 @@ body {
 #controlPanel {
 	position: absolute;
 	top: 0;
-	left: 32px;
+	left: 30px;
 	right: 0;
 	bottom: 0;
 	width: auto;
@@ -161,19 +161,19 @@ body {
 
 #graphPanelSpacer {
     position: absolute;
-    top: 32px;
+    top: 30px;
     left: 0;
     right: 0;
     bottom: 0;
-    width: 32px;
+    width: 30px;
     height: auto;
     border-top: 1px solid white;
 }
 
 #graphPanel {
 	position: absolute;
-	top: 32px;
-    left: 32px;
+	top: 30px;
+    left: 30px;
     right: 0;
     bottom: 0;
 	width: 75%;
@@ -212,8 +212,8 @@ body {
 
 #graphPanelHideBtnPlaceholder {
 	position: relative;
-	width: 20px;
-	height: 20px;
+	width: 30px;
+	height: 30px;
 	/*border-radius: 5px;*/
 	border: 1px solid white;
 	background: url('../../images/arrow-right.png');
@@ -226,8 +226,8 @@ body {
 }
 
 #graphPanelZoomBtnPlaceholder {
-	width: 20px;
-	height: 20px;
+	width: 30px;
+	height: 30px;
 	border: 1px solid white;
 	background: url('../../images/zoom.png');
 	background-size: 20px 20px;
@@ -248,7 +248,7 @@ body {
 }
 
 .buttonRow {
-	height: 30px;
+	height: 40px;
 	padding: 5px 0;
 }
 
@@ -280,9 +280,9 @@ body {
 	height: 25px;
 }
 
-/*#layerTreeContainer {
-	width: 60%;
-}*/
+#layerTreeContainer {
+	margin-top: 10px;
+}
 
 .rotated180 {
 	transform:rotate(180deg);

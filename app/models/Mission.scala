@@ -11,6 +11,7 @@ import java.util
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 import models.spatial.{PointOfInterest, TrajectoryPoint}
+import controllers.modelmanager.DataLogManager
 
 @Entity
 @Table(name = "mission")
@@ -156,6 +157,37 @@ object Mission {
     } catch {
       case nre: NoResultException => List()
       case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      em.close()
+    }
+  }
+
+  def create(depTime: Date, timeZone: String, vehicleId: Long): Boolean = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction.begin()
+      val vehicle = DataLogManager.getById[Vehicle](vehicleId).get
+      val mission = new Mission(depTime, timeZone, vehicle)
+      val b = mission.save(Some(em))
+      em.getTransaction.commit()
+      b
+    } catch {
+      case ex: Exception => ex.printStackTrace(); false
+    } finally {
+      em.close()
+    }
+  }
+
+  def delete(missionId: Long): Boolean = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction.begin()
+      val mission = DataLogManager.getById[Mission](missionId, Some(em)).get
+      val b = mission.delete(Some(em))
+      em.getTransaction.commit()
+      b
+    } catch {
+      case ex: Exception => ex.printStackTrace(); false
     } finally {
       em.close()
     }

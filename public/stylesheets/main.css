@@ -10,7 +10,7 @@ body {
 }
 
 .container_large {
-    top: 65px; /* 40 for ECOl header, 65 for EPFL header */
+    top: 60px; /* 40 for ECOl header, 60 for EPFL header */
     left: 0;
     right: 0;
     bottom: 0;
@@ -35,4 +35,39 @@ body {
     -moz-border-radius: 4px;
     margin: 30px 0 20px 180px;
     padding: 5px;
+}
+
+#missionFormContainer {
+    margin-top: 20px;
+}
+
+#statusText {
+    border-radius: 5px;
+    padding: 10px;
+    margin: 0 180px;
+}
+
+#statusText.success {
+    border: 1px #72A574 solid;
+    background-color: #66CC66;
+}
+
+#statusText.failure {
+    border: 1px #B22222 solid;
+    background-color: #FA8072;
+}
+
+#contactContainer {
+    position: relative;
+    top: 50px;
+    left: 50px;
+}
+
+/* fix for EPFL header with bootstrap v3 */
+#header2013 #nav-logo {
+    width: 140px !important;
+}
+
+#header2013 input.search, #header2013 .search-filter {
+    height: 25px !important;
 }

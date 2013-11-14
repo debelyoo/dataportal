@@ -2,6 +2,7 @@ package models
 
 import javax.persistence._
 import org.hibernate.annotations.GenericGenerator
+import scala.collection.JavaConversions._
 import controllers.util.JPAUtil
 
 @Entity
@@ -56,6 +57,22 @@ object Vehicle {
       case ex: Exception => ex.printStackTrace; None
     } finally {
       if (emOpt.isEmpty) em.close()
+    }
+  }
+
+  def getAll(): List[Vehicle] = {
+    val em = JPAUtil.createEntityManager()
+    try {
+      em.getTransaction().begin()
+      val q = em.createQuery("from "+ classOf[Vehicle].getName, classOf[Vehicle])
+      val vehicles = q.getResultList.toList
+      em.getTransaction().commit()
+      vehicles
+    } catch {
+      case nre: NoResultException => List()
+      case ex: Exception => ex.printStackTrace; List()
+    } finally {
+      em.close()
     }
   }
 }
