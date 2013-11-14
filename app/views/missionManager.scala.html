@@ -36,7 +36,11 @@
                 <div class="col-sm-3">
                     <select id="selectMission" name="missionId" class="form-control">
                         @for(m <- Mission.getAll) {
-                        <option value="@m.id">@{DateFormatHelper.postgresTimestampFormatter.format(m.departureTime) + " - " + m.vehicle.name}</option>
+                            @if(flash.get("lastMissionId").getOrElse("0") != "0" && flash.get("lastMissionId").get.toLong == m.id) {
+                                <option value="@m.id" selected="selected">@{DateFormatHelper.postgresTimestampFormatter.format(m.departureTime) + " - " + m.vehicle.name}</option>
+                            } else {
+                                <option value="@m.id">@{DateFormatHelper.postgresTimestampFormatter.format(m.departureTime) + " - " + m.vehicle.name}</option>
+                            }
                         }
                     </select>
                 </div>
@@ -87,7 +91,7 @@
         </div>
         <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
-                <button id="submitBtn" type="submit" class="btn">Create</button>
+                <button id="submitBtn" type="submit" class="btn">@if(flash.get("action").getOrElse("create") == "create") {Create}else{Delete}</button>
             </div>
         </div>
     </div>
@@ -97,6 +101,7 @@
         $().ready(function() {
             //$( "#inputMissionDate" ).datepicker();
             $('#selectAction').change(function(ev) {
+                $('#statusText').hide();
                 var action = $('#selectAction').val();
                 if (action == 'create') {
                     $('#missionListContainer').hide();

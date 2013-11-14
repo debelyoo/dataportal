@@ -61,6 +61,7 @@ object Application extends Controller with GetApi with PostApi with DeleteApi {
    */
   def manageMission = Action(parse.multipartFormData) { request =>
     val action = request.body.dataParts("action").mkString(",").toLowerCase
+    var lastMissionId: Long = 0
     val (status, msg) = if (action == "create") {
       Logger.info(request.body.dataParts.toString())
       val missionDate = request.body.dataParts("missionDate").mkString(",")
@@ -79,6 +80,7 @@ object Application extends Controller with GetApi with PostApi with DeleteApi {
       val secretVal = "1313"
       val mission = DataLogManager.getById[Mission](missionId).get
       if (secret != secretVal) {
+        lastMissionId = missionId
         ("1", "Secret is wrong !")
       } else {
         if (Mission.delete(missionId)) {
@@ -90,6 +92,7 @@ object Application extends Controller with GetApi with PostApi with DeleteApi {
     }
     Redirect(routes.Application.missionManager()).flashing(
       "action" -> action,
+      "lastMissionId" -> lastMissionId.toString,
       "status" -> status,
       "msg" -> msg
     )
