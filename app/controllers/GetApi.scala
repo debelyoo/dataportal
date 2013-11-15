@@ -71,9 +71,9 @@ trait GetApi extends ResponseFormatter {
         val missionId = map.get("mission_id").map(_.toLong)
         val maxNb = map.get("max_nb").map(_.toInt)
         val resp = if (mode == GIS_LINESTRING) {
-          DataLogManager.getTrajectoryLinestring(missionId.get)
+          Mission.getTrajectoryLinestring(missionId.get)
         } else {
-          val trajectoryPoints = DataLogManager.getTrajectoryPoints(missionId.get, None, None, maxNb)
+          val trajectoryPoints = Mission.getTrajectoryPoints(missionId.get, None, None, maxNb)
           pointsAsGeoJson(trajectoryPoints)
         }
         Ok(resp)
@@ -101,7 +101,7 @@ trait GetApi extends ResponseFormatter {
    * @return
    */
   def getPointOfInterestForMission(missionId: String) = Action {
-    val poiList = DataLogManager.getPointOfInterest(missionId.toLong)
+    val poiList = Mission.getPointOfInterest(missionId.toLong)
     Ok(pointsAsGeoJson(poiList))
   }
 
@@ -127,21 +127,11 @@ trait GetApi extends ResponseFormatter {
   ///
 
   /**
-   * Get dates (year-month-day) of measures in DB
-   * @return A list of dates (JSON)
-   */
-  /*def getLogDates = Action {
-    val dateList = DataLogManager.getDates
-    val jsList = Json.toJson(dateList.map(date => Json.toJson(date)))
-    Ok(Json.toJson(Map("dates" -> jsList, "count" -> Json.toJson(dateList.length))))
-  }*/
-
-  /**
    * Get missions from DB
    * @return A list of missions (JSON)
    */
   def getMissions = Action {
-    val missions = DataLogManager.getMissions
+    val missions = Mission.getAll()
     val jsList = Json.toJson(missions.map { case (mission) =>
       Json.toJson(Map("id" -> Json.toJson(mission.id),
         "date" -> Json.toJson(DateFormatHelper.selectYearFormatter.format(mission.departureTime)),
@@ -157,7 +147,7 @@ trait GetApi extends ResponseFormatter {
    */
   def getMissionsForDate(dateStr: String) = Action {
     val date = DateFormatHelper.selectYearFormatter.parse(dateStr)
-    val missionList = DataLogManager.getMissionsForDate(date)
+    val missionList = Mission.getByDate(date)
     val jsList = Json.toJson(missionList.map(m => Json.parse(m.toJson)))
     Ok(jsList)
   }
@@ -168,7 +158,7 @@ trait GetApi extends ResponseFormatter {
    * @return The coordinate of the raster (JSON)
    */
   def getRasterDataForMission(idStr: String) = Action {
-    val resp = DataLogManager.getRasterDataForMission(idStr.toLong)
+    val resp = Mission.getRasterData(idStr.toLong)
     Ok(resp)
   }
 
@@ -178,7 +168,7 @@ trait GetApi extends ResponseFormatter {
    * @return The max speed (JSON)
    */
   def getMaxSpeedAndHeadingForMission(idStr: String) = Action {
-    val resp = DataLogManager.getMaxSpeedAndHeadingForMission(idStr.toLong)
+    val resp = Mission.getMaxSpeedAndHeading(idStr.toLong)
     Ok(resp)
   }
 

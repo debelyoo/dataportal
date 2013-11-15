@@ -9,6 +9,7 @@ object DataImporter {
   object Types {
     val ALTITUDE = "altitude"
     val SPEED = "speed"
+    val HEADING = "heading"
     val TEMPERATURE = "temperature"
     val COMPASS = "compass"
     val WIND = "wind"

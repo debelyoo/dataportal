@@ -56,11 +56,12 @@ GraphPanel.prototype.createDeviceSelectForData = function(jsonData, mission) {
     var self = this;
     var devices = jsonData['devices'];
     //console.log("createDeviceSelectForData()", devices);
-    var options;
+    var options = "";
     if (isCatamaranMission(mission)) {
-        options = "<option value=\"speed--0\">Speed</option>";
+        options += "<option value=\"speed--0\">Speed</option>";
+        options += "<option value=\"heading--0\">Heading</option>";
     } else {
-        options = "<option value=\"altitude--0\">Altitude</option>";
+        options += "<option value=\"altitude--0\">Altitude</option>";
     }
 
     devices.map(function(d) {
