@@ -8,6 +8,13 @@ body {
 
 #mapPanel img { max-width:none; } /* to avoid bug with bootstrap for images in raster layers */
 
+#lonLatContainer {
+    position: absolute;
+    color: white;
+    top: 5px;
+    left: 150px;
+}
+
 /* useful for layer tree controls */
 .tree a{
 	display:inline;

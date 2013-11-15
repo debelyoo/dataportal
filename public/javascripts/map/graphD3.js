@@ -20,6 +20,7 @@ function GraphD3() {
     this.zoomLowerBound = "";
     this.zoomUpperBound = "";
     this.originalDataUrl = "";
+    this.isMouseOverGraph = false;
 }
 
 /* initialize() function */
@@ -125,7 +126,11 @@ GraphD3.prototype.handleMouseUp = function(event) {
     this.tooltip.classed("hide", false);
 };
 GraphD3.prototype.handleMouseOutGraph = function(event) {
-    //console.log("MouseOut graph");
+    if (this.isMouseOverGraph) {
+        this.isMouseOverGraph = false;
+        mapLayerUtil.unselectAllFeatures();
+        //console.log("MouseOut graph");
+    }
 };
 
 /**
@@ -139,6 +144,10 @@ GraphD3.prototype.handleMouseOverGraph = function(event) {
     //console.log("MouseOver graph => offsetX: "+event.offsetX+", offsetY: "+event.offsetY);
     //console.log("MouseOver graph => mouseX: "+mouseX +", mouseY: "+mouseY+", w: "+width+", h: "+height);
     if(mouseXY.mouseX >= 0 && mouseXY.mouseX <= this.width && mouseXY.mouseY >= 0 && mouseXY.mouseY <= this.height) {
+        if (!this.isMouseOverGraph) {
+            //console.log("MouseIn graph");
+            this.isMouseOverGraph = true;
+        }
         if (this.hoverLine != undefined) {
             // show the hover line
             this.hoverLine.classed("hide", false);

@@ -1,4 +1,5 @@
 function MapLayerUtil() {
+    this.highlightedFeature;
     this.layerControlsLoaded = false;
     this.initialize();
 }
@@ -58,6 +59,16 @@ MapLayerUtil.prototype.initialize = function() {
     this.mapPanel.map.addControl(new OpenLayers.Control.ScaleLine());			
 };
 
+MapLayerUtil.prototype.handleMouseMove = function(e) {
+    var position = mapLayerUtil.mapPanel.map.getLonLatFromViewPortPx(e.xy);
+    if (position) {
+        var pos = position.transform('EPSG:3857', 'EPSG:4326');
+        //console.log(pos);
+        $('#lonLatContainer').html("Lon: "+ Number(pos.lon).toFixed(3) +"   Lat: "+ Number(pos.lat).toFixed(3));
+    }
+
+};
+
 /**
  * Add all the layers related to a mission (trajectory, raster, POI)
  * @param mission The mission for which we add layers
@@ -75,7 +86,7 @@ MapLayerUtil.prototype.addLayers = function(mission) {
  */
 MapLayerUtil.prototype.addControls = function() {
     if (!mapLayerUtil.layerControlsLoaded) {
-        console.log("[MapLayerUtil] addControls()");
+        //console.log("[MapLayerUtil] addControls()");
         var layers = new Array();
         var map = mapLayerUtil.interactiveLayers;
         for (m in map) {
@@ -302,8 +313,8 @@ MapLayerUtil.prototype.setHighlightCtrl = function(layers) {
         highlightOnly: true,
         renderIntent: "temporary",
         eventListeners: {
-            //beforefeaturehighlighted: printFeatureDetails,
-            featurehighlighted: this.printFeatureDetails,
+            //beforefeaturehighlighted: this.unselectAllFeatures,
+            featurehighlighted: this.highlightFeature,
             featureunhighlighted: function() {
                 $('#speedVectorPlaceholder').hide();
             }
@@ -311,6 +322,14 @@ MapLayerUtil.prototype.setHighlightCtrl = function(layers) {
     });
     this.mapPanel.map.addControl(this.highlightCtrl);
     this.highlightCtrl.activate();
+};
+
+/**
+ * Unselect all features on all interactive layers
+ */
+MapLayerUtil.prototype.unselectAllFeatures = function() {
+    this.highlightCtrl.unselectAll();
+    this.highlightCtrl.unhighlight(this.highlightedFeature);
 };
 
 /**
@@ -343,7 +362,18 @@ MapLayerUtil.prototype.removeLayers = function() {
     this.layerControlsLoaded = false;
 };
 
-MapLayerUtil.prototype.printFeatureDetails = function(e) {
+/**
+ * Highlight a trajectory point.
+ * This function is called when the user passes the mouse cursor over a trajectory point.
+ * @param e The highlight event
+ */
+MapLayerUtil.prototype.highlightFeature = function(e) {
+    mapLayerUtil.highlightedFeature = e.feature;
+    var x = e.feature.geometry.x;
+    var y = e.feature.geometry.y;
+    var pos = new OpenLayers.LonLat(x,y).transform('EPSG:3857', 'EPSG:4326');
+    //console.log(newPos);
+    $('#lonLatContainer').html("Lon: "+ Number(pos.lon).toFixed(3) +"   Lat: "+ Number(pos.lat).toFixed(3));
     var selectedLayer = e.feature.layer;
     // show speed vector if there is a maximum speed and heading, not otherwise
     if (mapLayerUtil.maximumSpeed > 0 && mapLayerUtil.headingAvailable) {
@@ -378,7 +408,7 @@ MapLayerUtil.prototype.testFeatures = function(inc, callback) {
         setTimeout(function() {self.testFeatures(inc + 1, callback)}, 500)
     } else {
         if (self.featuresAreLoaded()) {
-            console.log("Features are loaded [All]");
+            //console.log("Features are loaded [All]");
             $('#loadingGifPlaceholder').hide();
             self.centerOnLoadedFeatures();
             // call the function to load the data for the embedded graph
@@ -430,7 +460,7 @@ MapLayerUtil.prototype.centerOnLoadedFeatures = function() {
     }
 };
 
-MapLayerUtil.prototype.selectData = function(e) {
+/*MapLayerUtil.prototype.selectData = function(e) {
     //console.log("Click: "+e['attributes'].value);
     this.selected = false;
     $('#infoDiv').css({'border-color': '#66cccc'})
@@ -440,14 +470,14 @@ MapLayerUtil.prototype.selectData = function(e) {
 MapLayerUtil.prototype.unselectData = function(e) {
     $('#infoDiv').css({'border-color': 'white'})
     this.selected = false;
-};
+};*/
 
 /**
  * Highlight a specific feature (called from graphD3.js)
  * @param xpf The index of the feature to highlight as a fraction of the total nb of features
  */
 MapLayerUtil.prototype.highlightFeaturePoint = function(xpf) {
-    this.highlightCtrl.unselectAll();
+    this.unselectAllFeatures();
     //console.log("highlightFeaturePoint() - "+xpf);
     var map = this.interactiveLayers;
     //console.log("highlightFeaturePoint()", $('#pathSelect').val(), map);
@@ -456,7 +486,8 @@ MapLayerUtil.prototype.highlightFeaturePoint = function(xpf) {
     if (index == layerForGraph.features.length)
         index = layerForGraph.features.length - 1;
     //console.log("highlightFeaturePoint() - "+index)
-    this.highlightCtrl.select(layerForGraph.features[index]);
+    //this.highlightCtrl.select(layerForGraph.features[index]);
+    this.highlightCtrl.highlight(layerForGraph.features[index]);
 };
 
 /**
