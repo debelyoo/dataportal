@@ -8,6 +8,7 @@ import com.google.gson.{JsonArray, JsonObject, JsonElement}
 import scala.concurrent.ExecutionContext.Implicits.global
 import controllers.modelmanager.DataLogManager
 import models.{Vehicle, Mission, DeviceType}
+import controllers.database.BatchManager
 
 object Application extends Controller with GetApi with PostApi with DeleteApi {
   
@@ -113,9 +114,13 @@ object Application extends Controller with GetApi with PostApi with DeleteApi {
     }
   }
 
-  // Get the progress of an insertion batch
+  /**
+   * Get the progress of an insertion batch
+   * @param batchId The id of the insertion batch
+   * @return The progress of a batch as JSON object {"progress": }
+   */
   def insertionProgress(batchId: String) = Action {
-    val hintAndProgress = DataLogManager.insertionProgress(batchId)
+    val hintAndProgress = BatchManager.insertionProgress(batchId)
     hintAndProgress.map { case (h, p) => Ok(Json.toJson(Map("progress" -> Json.toJson(p), "hint" -> Json.toJson(h))))}.getOrElse(NotFound)
   }
 

@@ -4,7 +4,10 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
-/* from: http://www.hibernatespatial.org/tutorial-hs4.html */
+/**
+ * A helper class to work with JPA
+ * from: http://www.hibernatespatial.org/tutorial-hs4.html
+ */
 public class JPAUtil {
     private static final EntityManagerFactory emFactory;
 

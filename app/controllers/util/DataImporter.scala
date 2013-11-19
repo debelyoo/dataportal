@@ -6,6 +6,10 @@ import play.api.libs.Files
 import models.Device
 
 object DataImporter {
+
+  /**
+   * The list of types that are handled by the backend
+   */
   object Types {
     val ALTITUDE = "altitude"
     val SPEED = "speed"
@@ -53,7 +57,7 @@ object DataImporter {
   /**
    * Get the files from the form data and save them in /tmp folder
    * @param request The HTTP request
-   * @return The 2 uplaoded files and the type of the data to import
+   * @return The 2 uploaded files and the type of the data to import
    */
   def uploadFiles(request: Request[MultipartFormData[Files.TemporaryFile]]): (Option[File], Option[File], String, Long) = {
     val addressFile = request.body.file("addressFile").map { file =>

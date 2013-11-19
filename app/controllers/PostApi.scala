@@ -69,7 +69,7 @@ trait PostApi {
           val value = (item \ "value").as[Double]
           val deviceType = (item \ "sensor_type").as[String]
           val deviceAddress = (item \ "sensor_address").as[String]
-          DataLogManager.insertionWorker ! Message.InsertSensorLog(batchId, missionId, date, value, deviceAddress)
+          DataLogManager.insertionWorker ! Message.InsertDeviceLog(batchId, missionId, date, value, deviceAddress)
         }
       }
     })

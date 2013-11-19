@@ -36,16 +36,6 @@ class InsertionBatchWorker extends Actor {
             line.split(",")
           if (chunksOnLine.nonEmpty) {
             //println(chunksOnLine.toList)
-            /*val date = if (chunksOnLine(1).contains(".") && dataType != DataImporter.Types.ULM_TRAJECTORY) {
-              // if TS comes from labview
-              DateFormatHelper.labViewTs2JavaDate(chunksOnLine(1))
-            } else {
-              // timestamp with new Qt interface is already a unix TS in ms
-              DateFormatHelper.unixTsMilli2JavaDate(chunksOnLine(1))
-            }
-            assert(date.isDefined || dataType == DataImporter.Types.ULM_TRAJECTORY, {println("Date is not parsable")})
-            */
-
             dataType match {
               case DataImporter.Types.COMPASS => {
                 if (chunksOnLine(0) == "41") {
@@ -53,7 +43,7 @@ class InsertionBatchWorker extends Actor {
                   val date = parseDate(chunksOnLine(1))
                   DataLogManager.insertionWorker ! Message.InsertCompassLog(batchId, trajectoryPoints, date, chunksOnLine(2).toDouble)
                 } else {
-                  DataLogManager.insertionWorker ! Message.SkipLog(batchId) // necessary to update batch progress correctly (when GPS error logs are skipped)
+                  DataLogManager.insertionWorker ! Message.SkipLog(batchId) // necessary to update batch progress correctly (when compass error logs are skipped)
                 }
               }
               case DataImporter.Types.GPS  => {
@@ -80,8 +70,8 @@ class InsertionBatchWorker extends Actor {
               case DataImporter.Types.ULM_TRAJECTORY => {
                 // latitude - longitude - elevation - ts
                 val (tsDate, timeZone) = DateFormatHelper.ulmTs2JavaDate(chunksOnLine(3))
-                DataLogManager.insertionWorker ! Message.InsertUlmTrajectory(batchId, missionId, tsDate,
-                  chunksOnLine(0).toDouble, chunksOnLine(1).toDouble, chunksOnLine(2).toDouble)
+                DataLogManager.insertionWorker ! Message.InsertGpsLog(batchId, missionId, tsDate,
+                  chunksOnLine(0).toDouble, chunksOnLine(1).toDouble, chunksOnLine(2).toDouble, None)
                 if (ind == lines.length-1) {
                   DataLogManager.insertionWorker ! Message.InsertTrajectoryLinestring(missionId)
                 }
@@ -90,7 +80,7 @@ class InsertionBatchWorker extends Actor {
                 val deviceOpt = devices.get(chunksOnLine(0))
                 DataLogManager.insertionWorker ! Message.InsertDevice(deviceOpt.get, missionId)
                 val date = parseDate(chunksOnLine(1))
-                DataLogManager.insertionWorker ! Message.InsertSensorLog(batchId, missionId, date, chunksOnLine(2).toDouble, chunksOnLine(0))
+                DataLogManager.insertionWorker ! Message.InsertDeviceLog(batchId, missionId, date, chunksOnLine(2).toDouble, chunksOnLine(0))
               }
             }
           }

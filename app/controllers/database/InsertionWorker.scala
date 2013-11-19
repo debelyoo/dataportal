@@ -60,32 +60,26 @@ class InsertionWorker extends Actor {
       try {
         em.getTransaction.begin()
         //println("[Message.InsertGpsLog] "+sensor.address)
-        //val sensorInDb = DeviceManager.getByNameAndAddress(sensor.getName, sensor.getAddress)
-        //assert(sensorInDb.isDefined, {println("[Message.InsertGpsLog] Sensor is not in Database !")})
-        //val uniqueString = createUniqueString(sensor.getAddress, DateFormatHelper.postgresTimestampWithMilliFormatter.format(ts))
-        //if (!logCache.contains(uniqueString)) {
-        val (lat, lon, alt) = if (math.abs(latitude) > 90 || math.abs(longitude) > 180) {
-          // east coordinate comes as longitude var, north coordinate comes as latitude var
-          val arr = ApproxSwissProj.LV03toWGS84(longitude, latitude, altitude).toList
-          //val latitude = arr(0)
-          //val longitude = arr(1)
-          (arr(0), arr(1), arr(2))
-        } else {
-          (latitude, longitude, altitude)
+        // create unique string with second precision so that only one point is inserted per second
+        val uniqueString = createUniqueString("perSecondTs", DateFormatHelper.postgresTimestampFormatter.format(ts))
+        if (!logCache.contains(uniqueString)) {
+          //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
+          val geom = CoordinateHelper.wktToGeometry("POINT("+ longitude +" "+ latitude +" "+ altitude +")")
+          val pt = geom.asInstanceOf[Point]
+          val speed = computeSpeed(ts, pt)
+          //Logger.info("Insert point: "+pt.getCoordinate.x+", "+pt.getCoordinate.y+", "+pt.getCoordinate.z)
+          val gl = new TrajectoryPoint()
+          gl.setTimestamp(ts)
+          gl.setCoordinate(pt)
+          gl.setSpeed(speed)
+          headingOpt.foreach(heading => gl.setHeading(heading))
+          val m = DataLogManager.getById[Mission](missionId, Some(em))
+          gl.setMission(m.get)
+          val persisted = gl.save(Some(em)) // persist in DB
+          if (persisted) {
+            logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
+          }
         }
-        //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
-        val geom = CoordinateHelper.wktToGeometry("POINT("+ lon +" "+ lat +" "+ alt +")")
-        val pt = geom.asInstanceOf[Point]
-        val speed = computeSpeed(ts, pt)
-        //Logger.info("Insert point: "+pt.getCoordinate.x+", "+pt.getCoordinate.y+", "+pt.getCoordinate.z)
-        val gl = new TrajectoryPoint()
-        gl.setTimestamp(ts)
-        gl.setCoordinate(pt)
-        gl.setSpeed(speed)
-        headingOpt.foreach(heading => gl.setHeading(heading))
-        val m = DataLogManager.getById[Mission](missionId, Some(em))
-        gl.setMission(m.get)
-        gl.save(Some(em)) // persist in DB
         BatchManager.updateBatchProgress(batchId, "Insertion")
         em.getTransaction.commit()
       } catch {
@@ -95,7 +89,7 @@ class InsertionWorker extends Actor {
       }
     }
     case Message.InsertTrajectoryLinestring(missionId) => {
-      Logger.info("InsertTrajectoryLinestring()")
+      //Logger.info("InsertTrajectoryLinestring()")
       Mission.setTrajectoryLinestring(missionId)
     }
     case Message.InsertPointOfInterest(batchId, missionId, ts, latitude, longitude, altitude) => {
@@ -119,7 +113,7 @@ class InsertionWorker extends Actor {
         poi.setCoordinate(geom.asInstanceOf[Point])
         val missionOpt = DataLogManager.getById[Mission](missionId, Some(em))
         poi.setMission(missionOpt.get)
-        val persisted = poi.save(Some(em)) // persist in DB
+        poi.save(Some(em)) // persist in DB
         BatchManager.updateBatchProgress(batchId, "Insertion")
         em.getTransaction.commit()
       } catch {
@@ -128,7 +122,7 @@ class InsertionWorker extends Actor {
         em.close()
       }
     }
-    case Message.InsertUlmTrajectory(batchId, missionId, ts, latitude, longitude, altitude) => {
+    /*case Message.InsertUlmTrajectory(batchId, missionId, ts, latitude, longitude, altitude) => {
       val em: EntityManager = JPAUtil.createEntityManager
       try {
         em.getTransaction.begin()
@@ -154,7 +148,7 @@ class InsertionWorker extends Actor {
       } finally {
         em.close()
       }
-    }
+    }*/
     case Message.InsertDevice(device, missionId) => {
       //println("[RCV message] - insert device: "+device)
       val em: EntityManager = JPAUtil.createEntityManager
@@ -228,7 +222,7 @@ class InsertionWorker extends Actor {
         em.close()
       }
     }
-    case Message.InsertSensorLog(batchId, missionId, timestamp, value, deviceAddress) => {
+    case Message.InsertDeviceLog(batchId, missionId, timestamp, value, deviceAddress) => {
       //println("[InsertSensorLog]")
       val em: EntityManager = JPAUtil.createEntityManager
       try {

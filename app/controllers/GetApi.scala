@@ -15,7 +15,7 @@ trait GetApi extends ResponseFormatter {
 
   /**
    * Handle data request with query params  (ex: /api/data?data_type=temperature&from_date=20130613-150000&to_date=20130613-170000&sensor_id=4&geo_only=true)
-   * @return AN HTTP response containing data (formatted as XML or JSON)
+   * @return A map of data by device (formatted as JSON)
    */
   def getData = Action {
     implicit request =>
@@ -56,7 +56,7 @@ trait GetApi extends ResponseFormatter {
 
   /**
    * Get the trajectory of a mission
-   * @return
+   * @return The trajectory of a mission either as Linestring or as list of points (both as GeoJSON)
    */
   def getTrajectory = Action {
     implicit request =>
@@ -86,7 +86,7 @@ trait GetApi extends ResponseFormatter {
   /**
    * Get the devices for a mission
    * @param missionId The id of the mission
-   * @return
+   * @return A list of devices as JSON object {"devices": [...], "count": 3}
    */
   def getDeviceForMission(missionId: String) = Action {
     val deviceList = Device.getForMission(missionId.toLong, None, None)
@@ -98,7 +98,7 @@ trait GetApi extends ResponseFormatter {
   /**
    * Get the points of interest for a mission
    * @param missionId The id of the mission
-   * @return
+   * @return The points of interest as GeoJSON
    */
   def getPointOfInterestForMission(missionId: String) = Action {
     val poiList = Mission.getPointOfInterest(missionId.toLong)
@@ -108,6 +108,7 @@ trait GetApi extends ResponseFormatter {
 
   /**
    * Get details of a particular device (used mainly for tests)
+   * @param dId The id of the device
    */
   def getDeviceById(dId: String) = Action {
     val deviceMap = Device.getById(List(dId.toLong), None)

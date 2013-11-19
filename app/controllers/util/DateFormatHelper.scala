@@ -3,6 +3,9 @@ package controllers.util
 import java.util.{TimeZone, Calendar, Date}
 import java.text.SimpleDateFormat
 
+/**
+ * A helper class to work with different date/time formats
+ */
 object DateFormatHelper {
 
   def dateTimeFormatter: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss")
@@ -43,6 +46,11 @@ object DateFormatHelper {
     }
   }
 
+  /**
+   * Convert a unix timestamp to Java Date
+   * @param unixTs The unix timestamp to convert
+   * @return A Java Date (as an Option)
+   */
   def unixTs2JavaDate(unixTs: Double): Option[Date] = {
     try {
       val cal = Calendar.getInstance()
@@ -54,6 +62,11 @@ object DateFormatHelper {
     }
   }
 
+  /**
+   * Convert a ULM timestamp (as it is formatted in gps files for ULM flights) to Java Date
+   * @param ulmTs The ULM timestamp (as String)
+   * @return The corresponding date, and timezone
+   */
   def ulmTs2JavaDate(ulmTs: String): (Date, TimeZone) = {
     //val defaultTz = TimeZone.getDefault
     val tokens = ulmTs.split("[\\.Z\\r]");

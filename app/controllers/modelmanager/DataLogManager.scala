@@ -22,10 +22,16 @@ import scala.collection.mutable
 
 object DataLogManager {
 
+  /**
+   * The actor which handles the messages to insert the different data
+   */
   val insertionWorker = Akka.system.actorOf(Props[InsertionWorker], name = "insertionWorker")
+  /**
+   * The actor which handles the messages to process the insertion batches
+   */
   val insertionBatchWorker = Akka.system.actorOf(Props[InsertionBatchWorker], name = "insertionBatchWorker")
-  val TIMEOUT = 5 seconds
-  implicit val timeout = Timeout(TIMEOUT) // needed for `?` below
+  //val TIMEOUT = 5 seconds
+  //implicit val timeout = Timeout(TIMEOUT) // needed for `?` below
 
   /**
    * Get a data log by Id (give log type in parameter using scala 2.10 ClassTag - https://wiki.scala-lang.org/display/SW/2.10+Reflection+and+Manifest+Migration+Notes)
@@ -327,19 +333,6 @@ object DataLogManager {
     }
   }
 
-  /**
-   * Get the insertion progress of a specific batch
-   * @param batchId The batch id
-   * @return The progress as a percentage
-   */
-  def insertionProgress(batchId: String): Option[(String, Long)] = {
-    val percentage = BatchManager.batchProgress.get(batchId).map {
-      case (hint, nbTot, nbDone) => (hint, math.floor((nbDone.toDouble / nbTot.toDouble) * 100).toLong)
-    }
-    if(percentage.isDefined && percentage.get._2 == 100L) {
-      BatchManager.cleanCompletedBatch(batchId)
-    }
-    percentage
-  }
+
 
 }
