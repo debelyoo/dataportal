@@ -97,7 +97,7 @@ class InsertionWorker extends Actor {
       try {
         em.getTransaction.begin()
         //println("[Message.InsertPointOfInterest] ")
-        val (lat, lon, alt) = if (math.abs(latitude) > 90 || math.abs(longitude) > 180) {
+        /*val (lat, lon, alt) = if (math.abs(latitude) > 90 || math.abs(longitude) > 180) {
           // east coordinate comes as longitude var, north coordinate comes as latitude var
           val arr = ApproxSwissProj.LV03toWGS84(longitude, latitude, altitude).toList
           //val latitude = arr(0)
@@ -105,14 +105,12 @@ class InsertionWorker extends Actor {
           (arr(0), arr(1), arr(2))
         } else {
           (latitude, longitude, altitude)
-        }
+        }*/
         //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
-        val geom = CoordinateHelper.wktToGeometry("POINT("+ lon +" "+ lat +" "+ alt +")")
-        val poi = new PointOfInterest()
-        poi.setTimestamp(ts)
-        poi.setCoordinate(geom.asInstanceOf[Point])
         val missionOpt = DataLogManager.getById[Mission](missionId, Some(em))
-        poi.setMission(missionOpt.get)
+        val geom = CoordinateHelper.wktToGeometry("POINT("+ longitude +" "+ latitude +" "+ altitude +")")
+        val pt = geom.asInstanceOf[Point]
+        val poi = new PointOfInterest(ts, pt, missionOpt.get)
         poi.save(Some(em)) // persist in DB
         BatchManager.updateBatchProgress(batchId, "Insertion")
         em.getTransaction.commit()

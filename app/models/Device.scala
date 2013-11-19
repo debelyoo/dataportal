@@ -9,26 +9,50 @@ import controllers.util.{DataImporter, JPAUtil}
 import java.util
 import scala.collection.JavaConversions._
 
+/**
+ * A class that represents a device (sensor that is connected to the catamaran and collects data)
+ * @param n The name of the device
+ * @param addr The address of the device
+ * @param dt The type of the device
+ */
 @Entity
 @Table(name = "device")
 class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
+  /**
+   * Id of the device in DB
+   */
   @Id
   @GeneratedValue(generator="increment")
   @GenericGenerator(name="increment", strategy = "increment")
   @Column(name = "id", unique = true, nullable = false)
   var id: Long = _
 
+  /**
+   * The name of the device
+   */
   var name: String = n
 
+  /**
+   * The address of the device
+   */
   var address: String = addr
 
+  /**
+   * The type of the device (ManyToOne)
+   */
   @ManyToOne
   @JoinColumn(name="devicetype_id")
   var deviceType: DeviceType = dt
 
+  /**
+   * The missions that are associated to the device (ManyToMany)
+   */
   @ManyToMany(mappedBy = "devices",targetEntity = classOf[Mission])
   var missions: util.Collection[Mission] = new util.HashSet[Mission]()
 
+  /**
+   * The data logs that are associated to the device (OneToMany)
+   */
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "device",cascade=Array(CascadeType.ALL))
   var sensorLogs: util.Collection[SensorLog] = new util.HashSet[SensorLog]()
 
@@ -46,7 +70,11 @@ class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
 
   def this() = this("", "", null) // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
 
-  def toJson: String = {
+  /**
+   * Format the device as JSON
+   * @return A JSON representation of the device
+   */
+  override def toJson: String = {
     return new GsonBuilder().registerTypeAdapter(classOf[Device], new DeviceSerializer).create.toJson(this)
   }
 
@@ -69,6 +97,8 @@ class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
 
   /**
    * Save the Device in Postgres database
+   * @param withDetachedDeviceType indicates if the device type has already been fetched by a DB query
+   * @param emOpt An optional entity manager
    */
   def save(withDetachedDeviceType: Boolean = false, emOpt: Option[EntityManager] = None): Boolean = {
     val em = emOpt.getOrElse(JPAUtil.createEntityManager())
@@ -94,6 +124,9 @@ class Device(n: String, addr: String, dt: DeviceType) extends JsonSerializable {
   }
 }
 
+/**
+ * The companion object for the Device class
+ */
 object Device {
   /**
    * Get a sensor by Id

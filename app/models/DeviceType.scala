@@ -7,6 +7,12 @@ import controllers.util.JPAUtil
 import scala.collection.JavaConversions._
 import play.api.libs.json.Json
 
+/**
+ * A case class that represents a Device Type
+ * @param name The name of the device type
+ * @param unit The unit for this type
+ * @param plotType The type of plot for this type
+ */
 @Entity
 @Table(name = "devicetype")
 case class DeviceType(name: String, unit: String, plotType: String) {
@@ -23,7 +29,8 @@ case class DeviceType(name: String, unit: String, plotType: String) {
 
   /**
    * Persist device type in DB (if it is not already in)
-   * @return
+   * @param emOpt An optional Entity manager
+   * @return true if success
    */
   def save(emOpt: Option[EntityManager] = None): Boolean = {
     val em: EntityManager = emOpt.getOrElse(JPAUtil.createEntityManager)
@@ -41,10 +48,16 @@ case class DeviceType(name: String, unit: String, plotType: String) {
   }
 }
 
+/**
+ * The companion object for case class DeviceType
+ */
 object DeviceType {
 
   implicit val deviceTypeFormat = Json.format[DeviceType] // an implicit conversion to JSON
 
+  /**
+   * The types of plot
+   */
   object PlotTypes {
     val LINE = "line"
   }
@@ -52,6 +65,7 @@ object DeviceType {
   /**
    * Get DeviceType by name
    * @param name The name of the device type
+   * @param emOpt An optional Entity manager
    * @return An option with the device type if it is in DB
    */
   def getByName(name: String, emOpt: Option[EntityManager] = None): Option[DeviceType] = {
@@ -70,6 +84,10 @@ object DeviceType {
     }
   }
 
+  /**
+   * Get all DeviceType in database
+   * @return A list of DeviceType
+   */
   def getAll(): List[DeviceType] = {
     val em = JPAUtil.createEntityManager()
     try {

@@ -15,8 +15,8 @@ import javax.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "pointofinterest")
-public class PointOfInterest implements GeoJsonSerializable {
+@Table(name = "pointofinterestjava")
+public class PointOfInterestJava implements GeoJsonSerializable {
 
     @Id
     @GeneratedValue(generator="increment")
@@ -33,15 +33,11 @@ public class PointOfInterest implements GeoJsonSerializable {
     @JoinColumn(name="mission_id")
     private Mission mission;
 
-    public PointOfInterest() {
+    public PointOfInterestJava() {
     }
 
     public Long getId() {
         return id;
-    }
-
-    private void setId(Long id) {
-        this.id = id;
     }
 
     public Date getTimestamp() {
@@ -74,15 +70,15 @@ public class PointOfInterest implements GeoJsonSerializable {
 
     @Override
     public String toGeoJson() {
-        return new GsonBuilder().registerTypeAdapter(PointOfInterest.class, new PointOfInterestGeoJsonSerializer()).create().toJson(this);
+        return new GsonBuilder().registerTypeAdapter(PointOfInterestJava.class, new PointOfInterestJavaGeoJsonSerializer()).create().toJson(this);
     }
 
     /**
      * Custom Geo JSON Serializer for GPS log
      */
-    public static class PointOfInterestGeoJsonSerializer implements JsonSerializer<PointOfInterest> {
+    public static class PointOfInterestJavaGeoJsonSerializer implements JsonSerializer<PointOfInterestJava> {
         @Override
-        public JsonElement serialize(PointOfInterest point, java.lang.reflect.Type type, JsonSerializationContext context) {
+        public JsonElement serialize(PointOfInterestJava point, java.lang.reflect.Type type, JsonSerializationContext context) {
             Gson gson = new Gson();
             JsonObject geometryObj = new JsonObject();
             geometryObj.addProperty("type", "Point");

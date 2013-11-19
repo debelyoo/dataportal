@@ -1,25 +1,11 @@
 package controllers.util
 
 import java.io.File
-import controllers.database.InsertionWorker
-import play.libs.Akka
-import akka.actor.Props
-import akka.pattern.ask
-import DateFormatHelper._
-import akka.util.Timeout
-import scala.concurrent.duration._
-import play.api.libs.concurrent.Execution.Implicits._
-import scala.concurrent.Await
 import java.util.UUID
-import play.Logger
 import controllers.modelmanager.DataLogManager
 import models.{DeviceType, Device}
 
-// for the ExecutionContext
-
 object FileParser {
-  val TIMEOUT = 5 seconds
-  //implicit val timeout = Timeout(TIMEOUT) // needed for `?` below
 
 
   /**

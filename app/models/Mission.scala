@@ -16,43 +16,80 @@ import play.api.libs.json.{Json, JsValue}
 import models.internal.OneDoubleValueLog
 import play.api.Logger
 
+/**
+ * A class that represents a Mission (ULM flight or Catamaran cruise)
+ * @param depTime The departure time
+ * @param tz The time zone
+ * @param v The vehicle for this mission
+ */
 @Entity
 @Table(name = "mission")
 class Mission(depTime: Date, tz: String, v: Vehicle) extends JsonSerializable {
+  /**
+   * The id of the mission in DB
+   */
   @Id
   @GeneratedValue(generator="increment")
   @GenericGenerator(name="increment", strategy = "increment")
   @Column(name = "id", unique = true, nullable = false)
   var id: Long = _
 
+  /**
+   * The departure time of the mission
+   */
   var departureTime: Date = depTime
+  /**
+   * The time zone of the mission
+   */
   var timeZone: String = tz
 
+  /**
+   * The vehicle associated with the mission (ManyToOne)
+   */
   @ManyToOne
   @JoinColumn(name = "vehicle_id")
   var vehicle: Vehicle = v
 
+  /**
+   * The trajectory of the mission (Linestring object defined by PostGIS)
+   */
   @Column(name = "trajectory")
   @Type(`type` = "org.hibernate.spatial.GeometryType")
   var trajectory: LineString = null
 
+  /**
+   * The devices associated with the mission (ManyToMany)
+   */
   @ManyToMany(fetch = FetchType.EAGER,targetEntity = classOf[Device])
   @JoinTable(name = "equipment",
     joinColumns = Array(new JoinColumn(name = "mission_id", referencedColumnName = "id")),
     inverseJoinColumns = Array(new JoinColumn(name = "device_id", referencedColumnName = "id")))
   var devices: util.Collection[Device] = new util.HashSet[Device]()
 
+  /**
+   * The data logs associated with the mission (OneToMany)
+   */
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission", cascade=Array(CascadeType.ALL)) // cascading constraint is set on a OneToMany relationship, not a ManyToOne
   var sensorLogs: util.Collection[SensorLog] = new util.HashSet[SensorLog]()
 
+  /**
+   * The GPS points of the trajectory (OneToMany)
+   */
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission", cascade=Array(CascadeType.ALL)) // cascading constraint is set on a OneToMany relationship, not a ManyToOne
   var trajectoryPoints: util.Collection[TrajectoryPoint] = new util.HashSet[TrajectoryPoint]()
 
+  /**
+   * The points of interest associated to the mission (OneToMany)
+   */
   @OneToMany(fetch = FetchType.LAZY, mappedBy = "mission", cascade=Array(CascadeType.ALL)) // cascading constraint is set on a OneToMany relationship, not a ManyToOne
   var pointsOfInterest: util.Collection[PointOfInterest] = new util.HashSet[PointOfInterest]()
 
   def this() = this(null, "", null) // default constructor - necessary to work with hibernate (otherwise not possible to do select queries)
 
+  /**
+   * Add device to the list of devices that are associated to the mission
+   * @param dev The device to add
+   */
   def addDevice(dev: Device) {
     if (!this.devices.contains(dev)) {
       devices.add(dev)
@@ -61,8 +98,11 @@ class Mission(depTime: Date, tz: String, v: Vehicle) extends JsonSerializable {
 
   override def toString = "[Mission] id:" +id + ", depTime: "+ departureTime + ", timezone: "+timeZone+", vehicle: "+vehicle.name
 
-  @Override
-  def toJson: String = {
+  /**
+   * Format the mission as JSON
+   * @return A JSON representation of the mission
+   */
+  override def toJson: String = {
     return new GsonBuilder().registerTypeAdapter(classOf[Mission], new MissionSerializer).create.toJson(this)
   }
 
@@ -131,6 +171,9 @@ class Mission(depTime: Date, tz: String, v: Vehicle) extends JsonSerializable {
   }
 }
 
+/**
+ * The companion object for the Mission class
+ */
 object Mission {
   /**
    * Get all missions in DB
