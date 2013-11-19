@@ -43,8 +43,8 @@ class InsertionWorker extends Actor {
         em.getTransaction().begin()
         val ptOpt = DataLogManager.getClosestGpsLog(trajectoryPoints, ts, 1)
         for (pt <- ptOpt) {
-          val p = DataLogManager.getById[TrajectoryPoint](pt.getId, Some(em)).get // need to reload the point in this entity manager to be persisted below
-          p.setHeading(compassValue)
+          val p = DataLogManager.getById[TrajectoryPoint](pt.id, Some(em)).get // need to reload the point in this entity manager to be persisted below
+          p.heading = compassValue
           p.save(Some(em))
         }
         BatchManager.updateBatchProgress(batchId, "Insertion")
@@ -64,17 +64,12 @@ class InsertionWorker extends Actor {
         val uniqueString = createUniqueString("perSecondTs", DateFormatHelper.postgresTimestampFormatter.format(ts))
         if (!logCache.contains(uniqueString)) {
           //println("[RCV message] - insert gps log: "+ longitude +":"+ latitude +", "+ sensorInDb.get)
+          val missionOpt = DataLogManager.getById[Mission](missionId, Some(em))
           val geom = CoordinateHelper.wktToGeometry("POINT("+ longitude +" "+ latitude +" "+ altitude +")")
           val pt = geom.asInstanceOf[Point]
           val speed = computeSpeed(ts, pt)
           //Logger.info("Insert point: "+pt.getCoordinate.x+", "+pt.getCoordinate.y+", "+pt.getCoordinate.z)
-          val gl = new TrajectoryPoint()
-          gl.setTimestamp(ts)
-          gl.setCoordinate(pt)
-          gl.setSpeed(speed)
-          headingOpt.foreach(heading => gl.setHeading(heading))
-          val m = DataLogManager.getById[Mission](missionId, Some(em))
-          gl.setMission(m.get)
+          val gl = new TrajectoryPoint(ts, pt, missionOpt.get, speed, headingOpt)
           val persisted = gl.save(Some(em)) // persist in DB
           if (persisted) {
             logCache = logCache.enqueueFinite(uniqueString, LOG_CACHE_MAX_SIZE)
@@ -258,29 +253,23 @@ class InsertionWorker extends Actor {
    */
   private def computeSpeed(ts: Date, point: Point): Double = {
     val INTERVAL_BETWEEN_SPEED_POINTS = 1000L // milliseconds (it means that we compute speed every 1000 ms)
-    val timeDiff = lastSpeedPoint.map(gpsLog => ts.getTime - gpsLog.getTimestamp.getTime) // time difference (ms) between gps points
+    val timeDiff = lastSpeedPoint.map(gpsLog => ts.getTime - gpsLog.timestamp.getTime) // time difference (ms) between gps points
     if (lastSpeedPoint.isEmpty) {
       val speed = 0.0
-      val gl = new TrajectoryPoint()
-      gl.setTimestamp(ts)
-      gl.setCoordinate(point)
-      gl.setSpeed(speed)
+      val gl = new TrajectoryPoint(ts, point, speed)
       lastSpeedPoint = Some(gl)
       speed
     } else if (lastSpeedPoint.isDefined && timeDiff.get >= INTERVAL_BETWEEN_SPEED_POINTS) {
       // speed needs to be recomputed for this point
-      val distance = computeDistanceBetween2GpsPoints(lastSpeedPoint.get.getCoordinate.getX, lastSpeedPoint.get.getCoordinate.getY, point.getX, point.getY)
+      val distance = computeDistanceBetween2GpsPoints(lastSpeedPoint.get.coordinate.getX, lastSpeedPoint.get.coordinate.getY, point.getX, point.getY)
       val speed = distance / (timeDiff.get.toDouble / 1000.0) // return m/s
       //Logger.info("TimeDiff: "+ timeDiff +" ms, Distance: "+distance+" m, speed: "+speed+" m/s")
-      val gl = new TrajectoryPoint()
-      gl.setTimestamp(ts)
-      gl.setCoordinate(point)
-      gl.setSpeed(speed)
+      val gl = new TrajectoryPoint(ts, point, speed)
       lastSpeedPoint = Some(gl)
       speed
     } else {
       // return the speed that was computed in the last speed point
-      lastSpeedPoint.map(_.getSpeed).get
+      lastSpeedPoint.map(_.speed).get
     }
   }
 

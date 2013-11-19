@@ -280,7 +280,7 @@ object Mission {
     try {
       em.getTransaction.begin()
       val points = getTrajectoryPoints(missionId, None, None, None, Some(em))
-      val pointsAsString = points.map(tp => tp.getCoordinate.getX + " " + tp.getCoordinate.getY) // coordinates are separated by space
+      val pointsAsString = points.map(tp => tp.coordinate.getX + " " + tp.coordinate.getY) // coordinates are separated by space
       val linestring = "LINESTRING("+ pointsAsString.mkString(",") +")"
       val q = em.createNativeQuery("UPDATE mission SET trajectory = '"+ linestring +"' WHERE id = "+missionId)
       val nbUpdated = q.executeUpdate()
@@ -360,9 +360,9 @@ object Mission {
     dateFormatter.setTimeZone(tz) // format TS with mission timezone
     val pointList = getTrajectoryPoints(missionId, startTime, endTime, maxNb)
     val altitudeLogList = pointList.map(trajPt =>
-      OneDoubleValueLog(trajPt.getId,
-        dateFormatter.format(trajPt.getTimestamp),
-        trajPt.getCoordinate.getCoordinate.z
+      OneDoubleValueLog(trajPt.id,
+        dateFormatter.format(trajPt.timestamp),
+        trajPt.coordinate.getCoordinate.z
       )
     )
     val virtualDev = new Device("altitude", "", DeviceType("", "m", DeviceType.PlotTypes.LINE))
@@ -380,9 +380,9 @@ object Mission {
   def getSpeed(missionId: Long, startTime: Option[Date], endTime: Option[Date], maxNb: Option[Int]): Map[Device, List[JsonSerializable]] = {
     val pointList = getTrajectoryPoints(missionId, startTime, endTime, maxNb)
     val speedLogList = pointList.map(trajPt =>
-      OneDoubleValueLog(trajPt.getId,
-        DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.getTimestamp),
-        trajPt.getSpeed)
+      OneDoubleValueLog(trajPt.id ,
+        DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.timestamp),
+        trajPt.speed)
     )
     val virtualDev = new Device("speed", "", DeviceType("", "m/s", DeviceType.PlotTypes.LINE))
     Map(virtualDev -> speedLogList)
@@ -399,9 +399,9 @@ object Mission {
   def getHeading(missionId: Long, startTime: Option[Date], endTime: Option[Date], maxNb: Option[Int]): Map[Device, List[JsonSerializable]] = {
     val pointList = getTrajectoryPoints(missionId, startTime, endTime, maxNb)
     val headingLogList = pointList.map(trajPt =>
-      OneDoubleValueLog(trajPt.getId,
-        DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.getTimestamp),
-        trajPt.getHeading)
+      OneDoubleValueLog(trajPt.id ,
+        DateFormatHelper.postgresTimestampWithMilliFormatter.format(trajPt.timestamp),
+        trajPt.heading)
     )
     val virtualDev = new Device("heading", "", DeviceType("", "degree", DeviceType.PlotTypes.LINE))
     Map(virtualDev -> headingLogList)

@@ -318,12 +318,12 @@ object DataLogManager {
     afterDate.add(Calendar.SECOND, marginInSeconds)
     //val closeLogs = getByTimeIntervalAndSensor[T](beforeDate.getTime, afterDate.getTime, sensorId, Some(em))
     val closePoints = trajectoryPoints.filter(pt =>
-      (pt.getTimestamp.getTime > beforeDate.getTime.getTime &&
-        pt.getTimestamp.getTime < afterDate.getTime.getTime)
+      (pt.timestamp.getTime > beforeDate.getTime.getTime &&
+        pt.timestamp.getTime < afterDate.getTime.getTime)
     )
     if (closePoints.nonEmpty) {
       val (closestPoint, diff) = closePoints.map(cl => {
-        val timeDiff = math.abs(cl.getTimestamp.getTime - ts.getTime)
+        val timeDiff = math.abs(cl.timestamp.getTime - ts.getTime)
         (cl, timeDiff)
       }).minBy(_._2)
       Some(closestPoint)
